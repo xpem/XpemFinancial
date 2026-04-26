@@ -1,3 +1,4 @@
 <Solution>
+  <Project Path="Model/Model.csproj" Id="0b607bf2-9c97-4750-acd3-7c42033d2cf4" />
   <Project Path="XpemFinancial/XpemFinancial.csproj" />
 </Solution>
