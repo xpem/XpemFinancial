@@ -1,10 +1,13 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vms="clr-namespace:XpemFinancial.VMs"
              x:Class="XpemFinancial.Views.TransactionEdit"
-             Shell.BackgroundColor="{StaticResource Inflow}"
+             x:DataType="vms:TransactionEditVM"
+             Shell.BackgroundColor="{Binding TransactionTypeColor}"
              Shell.TitleColor="{StaticResource Black}"
-             BackgroundColor="{StaticResource PageBackground}"             
+             BackgroundColor="{StaticResource PageBackground}"
+             x:Name="this"
              Title="Adicionar transação">
     <ContentPage.Resources>
         <Style x:Key="RadioButton" TargetType="RadioButton">
@@ -34,6 +37,7 @@
                                     </VisualStateGroup>
                                 </VisualStateGroupList>
                             </VisualStateManager.VisualStateGroups>
+
                             <Grid WidthRequest="20" HeightRequest="20" VerticalOptions="Center">
                                 <Ellipse Fill="Transparent" Stroke="#d6e0eb" StrokeThickness="2" />
                                 <Ellipse x:Name="checkedDot"
@@ -45,7 +49,6 @@
                                          IsVisible="False" />
                             </Grid>
 
-                            <!-- Renderiza o Content/texto do RadioButton -->
                             <ContentPresenter VerticalOptions="Center" />
                         </HorizontalStackLayout>
                     </ControlTemplate>
@@ -55,13 +58,21 @@
     </ContentPage.Resources>
     <ScrollView Margin="10">
         <VerticalStackLayout>
-            <HorizontalStackLayout  RadioButtonGroup.GroupName="TransactionType"   
-                                    Padding="0,5,0,0" 
+            <HorizontalStackLayout  RadioButtonGroup.GroupName="TransactionType" RadioButtonGroup.SelectedValue="{Binding TransactionTypeColor}"   
+                                    Padding="0,5,0,0"
+                                    Margin="0,0,0,10"
                                     BackgroundColor="{StaticResource HeaderBackground}">
-                <RadioButton Style="{StaticResource RadioButton}" Content="Despesa" IsChecked="True" Margin="10,0" />
-                <RadioButton Style="{StaticResource RadioButton}" Content="Receita" IsChecked="False" Margin="10,0" />
-                <RadioButton Style="{StaticResource RadioButton}" Content="Transferencia" IsChecked="False" Margin="10,0" />
+                <RadioButton Style="{StaticResource RadioButton}" Content="Despesa" IsChecked="True" Margin="10,0" Value="#f75c5c"/>
+                <RadioButton Style="{StaticResource RadioButton}" Content="Receita"  IsChecked="False" Margin="10,0" Value="#2bbf69"/>
+                <RadioButton Style="{StaticResource RadioButton}" Content="Transferência" IsChecked="False" Margin="10,0" Value="#6cc8ef"/>
+
             </HorizontalStackLayout>
+            <Label Text="Data" ></Label>
+            <DatePicker MinimumDate="01/01/1990" 
+                        MaximumDate="01/01/2100"
+                        Date="{Binding TransactionDate}" />
+            <Label Text="Descrição" />
+            <Entry Text="{Binding Description}" />
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

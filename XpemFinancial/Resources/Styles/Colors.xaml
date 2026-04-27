@@ -42,7 +42,9 @@
     <SolidColorBrush x:Key="Gray900Brush" Color="{StaticResource Gray900}"/>
     <SolidColorBrush x:Key="Gray950Brush" Color="{StaticResource Gray950}"/>
 
-    <Color x:Key="Inflow">#6cc8ef</Color>
+    <Color x:Key="Income">#2bbf69</Color>
+    <Color x:Key="Expense">#f75c5c</Color>
+    <Color x:Key="Transfer">#6cc8ef</Color>
     <Color x:Key="PageBackground">#10151e</Color>
     <Color x:Key="HeaderBackground">#232c39</Color>
     <Color x:Key="FontLight">#d6e0eb</Color>

@@ -22,7 +22,7 @@
         <Style x:Key="btnPrimary" TargetType="Button">
             <Setter Property="CornerRadius" Value="0" />
             <Setter Property="HeightRequest" Value="20" />
-            <Setter Property="BackgroundColor" Value="{StaticResource Inflow}" />
+            <Setter Property="BackgroundColor" Value="{StaticResource Income}" />
             <Setter Property="TextColor" Value="#121b27" />
             <Setter Property="FontSize" Value="15" />
             <Setter Property="FontAttributes" Value="Bold" />
@@ -48,7 +48,9 @@
                                        Glyph="{x:Static Icons:IconFont.CaretRight}"/>
                     </Button.ImageSource>
                 </Button>
-                <Button x:Name="CreateTransaction" Style="{StaticResource btnPrimary}" ContentLayout="Left, 10" Text="Adicionar transação" Command="{Binding GoToTransactionEditCommand}">
+                <Button x:Name="CreateTransaction" Style="{StaticResource btnPrimary}"
+                        ContentLayout="Left, 10" Text="Adicionar transação"
+                        Command="{Binding GoToTransactionEditCommand}">
                     <Button.ImageSource>
                         <FontImageSource FontFamily="Icons" Color="#121b27"
                                          Glyph="{x:Static Icons:IconFont.Plus}"/>
@@ -90,10 +92,10 @@
                         <Label Text="Saldo anterior" FontAttributes="Bold" TextColor="#d6e0eb" VerticalTextAlignment="Center" IsVisible="{Binding Totals.IncludePreviousBalance}"/>
                         <Label Grid.Column="1" Text="{Binding Totals.PreviousBalance, StringFormat='{}{0:C}'}" FontSize="Large" TextColor="#6cc8ef" HorizontalOptions="End" IsVisible="{Binding Totals.IncludePreviousBalance}"/>
 
-                        <Label Grid.Row="1" Text="Entradas" FontAttributes="Bold" TextColor="{StaticResource Inflow}" VerticalTextAlignment="Center"/>
-                        <Label Grid.Row="1" Grid.Column="1"  Text="{Binding Totals.Inflow, StringFormat='{}{0:C}'}" FontSize="Large" TextColor="{StaticResource Inflow}" HorizontalOptions="End"/>
+                        <Label Grid.Row="1" Text="Entradas" FontAttributes="Bold" TextColor="{StaticResource Income}" VerticalTextAlignment="Center"/>
+                        <Label Grid.Row="1" Grid.Column="1"  Text="{Binding Totals.Income, StringFormat='{}{0:C}'}" FontSize="Large" TextColor="{StaticResource Income}" HorizontalOptions="End"/>
                         <Label Grid.Row="2" Text="Saídas" FontAttributes="Bold" TextColor="#d6e0eb" VerticalTextAlignment="Center"/>
-                        <Label Grid.Row="2" Grid.Column="1"  Text="{Binding Totals.Outflow, StringFormat='{}{0:C}'}" FontSize="Large" TextColor="#f75c5c" HorizontalOptions="End"/>
+                        <Label Grid.Row="2" Grid.Column="1"  Text="{Binding Totals.Expense, StringFormat='{}{0:C}'}" FontSize="Large" TextColor="{StaticResource Expense}" HorizontalOptions="End"/>
 
                         <!--total separado por uma linha-->
                         <BoxView Grid.Row="3" Grid.ColumnSpan="2" HeightRequest="1" BackgroundColor="#6cc8ef" Margin="0,10,0,10"/>

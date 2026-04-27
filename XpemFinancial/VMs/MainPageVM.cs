@@ -22,11 +22,11 @@ namespace XpemFinancial.VMs
             {
                 IncludePreviousBalance = true,
                 PreviousBalance = 5000.00m,
-                Inflow = 2000.00m,
-                Outflow = 1000.00m
+                Income = 2000.00m,
+                Expense = 1000.00m
             };
 
-            totals.Total = totals.PreviousBalance + totals.Inflow - totals.Outflow;
+            totals.Total = totals.PreviousBalance + totals.Income - totals.Expense;
 
             // Criando a lista de Mock
             Transactions =
@@ -78,11 +78,11 @@ namespace XpemFinancial.VMs
             // 2. Perform the conditional calculation
             if (totals.IncludePreviousBalance)
             {
-                totals.Total = totals.PreviousBalance + totals.Inflow - totals.Outflow;
+                totals.Total = totals.PreviousBalance + totals.Income - totals.Expense;
             }
             else
             {
-                totals.Total = totals.Inflow - totals.Outflow;
+                totals.Total = totals.Income - totals.Expense;
             }
 
             // 3. Force the UI to refresh the Totals object
@@ -92,7 +92,7 @@ namespace XpemFinancial.VMs
         }
 
         [RelayCommand]
-        private Task GoToTransactionEdit() => Shell.Current.GoToAsync($"{nameof(Views.TransactionEdit)}");
+        private async Task GoToTransactionEdit() => await Shell.Current.GoToAsync($"{nameof(Views.TransactionEdit)}");
 
     }
 }
