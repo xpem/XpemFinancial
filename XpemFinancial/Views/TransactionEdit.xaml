@@ -4,17 +4,63 @@
              x:Class="XpemFinancial.Views.TransactionEdit"
              Shell.BackgroundColor="{StaticResource Inflow}"
              Shell.TitleColor="{StaticResource Black}"
-             BackgroundColor="{StaticResource PageBackgroundColor}"
-             
+             BackgroundColor="{StaticResource PageBackground}"             
              Title="Adicionar transação">
+    <ContentPage.Resources>
+        <Style x:Key="RadioButton" TargetType="RadioButton">
+            <Setter Property="TextColor" Value="#d6e0eb" />
+            <Setter Property="BorderColor" Value="#d6e0eb" />
+            <Setter Property="ControlTemplate">
+                <Setter.Value>
+                    <ControlTemplate>
+                        <HorizontalStackLayout Spacing="6" VerticalOptions="Center">
+                            <VisualStateManager.VisualStateGroups>
+                                <VisualStateGroupList>
+                                    <VisualStateGroup x:Name="CheckedStates">
+                                        <VisualState x:Name="Checked">
+                                            <VisualState.Setters>
+                                                <Setter TargetName="checkedDot"
+                                                        Property="Ellipse.IsVisible"
+                                                        Value="True" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="Unchecked">
+                                            <VisualState.Setters>
+                                                <Setter TargetName="checkedDot"
+                                                        Property="Ellipse.IsVisible"
+                                                        Value="False" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                    </VisualStateGroup>
+                                </VisualStateGroupList>
+                            </VisualStateManager.VisualStateGroups>
+                            <Grid WidthRequest="20" HeightRequest="20" VerticalOptions="Center">
+                                <Ellipse Fill="Transparent" Stroke="#d6e0eb" StrokeThickness="2" />
+                                <Ellipse x:Name="checkedDot"
+                                         Fill="#d6e0eb"
+                                         WidthRequest="10"
+                                         HeightRequest="10"
+                                         HorizontalOptions="Center"
+                                         VerticalOptions="Center"
+                                         IsVisible="False" />
+                            </Grid>
+
+                            <!-- Renderiza o Content/texto do RadioButton -->
+                            <ContentPresenter VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </ContentPage.Resources>
     <ScrollView Margin="10">
         <VerticalStackLayout>
             <HorizontalStackLayout  RadioButtonGroup.GroupName="TransactionType"   
                                     Padding="0,5,0,0" 
-                                    BackgroundColor="{StaticResource HeaderBackgroundColor}">
-                <RadioButton Content="Despesa" IsChecked="True" Margin="10,0" />
-                <RadioButton Content="Receita" IsChecked="False" Margin="10,0" />
-                <RadioButton Content="Transferencia" IsChecked="False" Margin="10,0" />
+                                    BackgroundColor="{StaticResource HeaderBackground}">
+                <RadioButton Style="{StaticResource RadioButton}" Content="Despesa" IsChecked="True" Margin="10,0" />
+                <RadioButton Style="{StaticResource RadioButton}" Content="Receita" IsChecked="False" Margin="10,0" />
+                <RadioButton Style="{StaticResource RadioButton}" Content="Transferencia" IsChecked="False" Margin="10,0" />
             </HorizontalStackLayout>
         </VerticalStackLayout>
     </ScrollView>

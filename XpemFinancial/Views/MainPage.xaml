@@ -4,7 +4,7 @@
              xmlns:Icons="clr-namespace:XpemFinancial.Resources"  
              xmlns:Utils="clr-namespace:XpemFinancial.Utils"
              xmlns:ViewModels="clr-namespace:XpemFinancial.VMs" x:DataType="ViewModels:MainPageVM"
-             BackgroundColor="{StaticResource PageBackgroundColor}"
+             BackgroundColor="{StaticResource PageBackground}"
              x:Class="XpemFinancial.Views.MainPage">
     <ContentPage.Resources>
         <ResourceDictionary>
@@ -126,17 +126,17 @@
                     <!-- Content Section -->
                     <!--collection view com as transações do mes. headers: Transações,Data,Categoria,Valor, #(sem header, icone de edit em cada line)-->
                     <CollectionView Grid.Row="1" ItemsSource="{Binding Transactions}" Margin="0,10,0,0">
-                        <CollectionView.Header>
+                        <!--<CollectionView.Header>
                             <Grid ColumnDefinitions="2*, 1.2*, 1*, 40" Padding="10" BackgroundColor="#232c39">
                                 <Label Text="Transação" FontAttributes="Bold" TextColor="#d6e0eb"/>
                                 <Label Grid.Column="1" Text="Data" FontAttributes="Bold" TextColor="#d6e0eb" HorizontalTextAlignment="Center"/>
-                                <!--<Label Grid.Column="2" Text="Categoria" FontAttributes="Bold" TextColor="#d6e0eb" HorizontalTextAlignment="Center"/>-->
+                                --><!--<Label Grid.Column="2" Text="Categoria" FontAttributes="Bold" TextColor="#d6e0eb" HorizontalTextAlignment="Center"/>--><!--
                                 <Label Grid.Column="2" Text="Valor" FontAttributes="Bold" TextColor="#d6e0eb" HorizontalTextAlignment="End"/>
                             </Grid>
-                        </CollectionView.Header>
+                        </CollectionView.Header>-->
                         <CollectionView.ItemTemplate>
                             <DataTemplate>
-                                <Grid ColumnDefinitions="2*, 1.2*, 1*, 40" Padding="10" VerticalOptions="Center">
+                                <Grid ColumnDefinitions="2*, 1.2*, 1*, 40" Padding="5,0,5,0" VerticalOptions="Center" RowSpacing="0">
                                     <Label Text="{Binding Description}" 
                                            TextColor="#d6e0eb" 
                                            LineBreakMode="TailTruncation"

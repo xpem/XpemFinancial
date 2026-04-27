@@ -7,6 +7,9 @@ namespace XpemFinancial
         public App()
         {
             InitializeComponent();
+
+            // Força o tema escuro como padrão
+            Application.Current.UserAppTheme = AppTheme.Dark;
         }
 
         protected override Window CreateWindow(IActivationState? activationState)
