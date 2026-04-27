@@ -11,8 +11,8 @@ namespace XpemFinancial.Utils
         {
             if (value is decimal amount)
             {
-                // Verde para positivo, Vermelho para negativo
-                return amount >= 0 ? Color.FromArgb("#3ca7f7") : Color.FromArgb("#f75c5c");
+                // Azul para positivo, Vermelho para negativo
+                return amount >= 0 ? Color.FromArgb("#6cc8ef") : Color.FromArgb("#f75c5c");
             }
             return Colors.White;
         }

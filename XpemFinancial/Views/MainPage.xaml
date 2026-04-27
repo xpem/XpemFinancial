@@ -3,9 +3,9 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:Icons="clr-namespace:XpemFinancial.Resources"  
              xmlns:Utils="clr-namespace:XpemFinancial.Utils"
-             xmlns:ViewModels="clr-namespace:XpemFinancial.VMs"
-              BackgroundColor="#10151e"
-             x:Class="XpemFinancial.MainPage">
+             xmlns:ViewModels="clr-namespace:XpemFinancial.VMs" x:DataType="ViewModels:MainPageVM"
+             BackgroundColor="{StaticResource PageBackgroundColor}"
+             x:Class="XpemFinancial.Views.MainPage">
     <ContentPage.Resources>
         <ResourceDictionary>
             <Utils:AmountToColorConverter x:Key="AmountToColorConverter" />
@@ -22,7 +22,7 @@
         <Style x:Key="btnPrimary" TargetType="Button">
             <Setter Property="CornerRadius" Value="0" />
             <Setter Property="HeightRequest" Value="20" />
-            <Setter Property="BackgroundColor" Value="#3ca7f7" />
+            <Setter Property="BackgroundColor" Value="{StaticResource Inflow}" />
             <Setter Property="TextColor" Value="#121b27" />
             <Setter Property="FontSize" Value="15" />
             <Setter Property="FontAttributes" Value="Bold" />
@@ -48,7 +48,7 @@
                                        Glyph="{x:Static Icons:IconFont.CaretRight}"/>
                     </Button.ImageSource>
                 </Button>
-                <Button x:Name="CreateTransaction" Style="{StaticResource btnPrimary}" ContentLayout="Left, 10" Text="Adicionar transação">
+                <Button x:Name="CreateTransaction" Style="{StaticResource btnPrimary}" ContentLayout="Left, 10" Text="Adicionar transação" Command="{Binding GoToTransactionEditCommand}">
                     <Button.ImageSource>
                         <FontImageSource FontFamily="Icons" Color="#121b27"
                                          Glyph="{x:Static Icons:IconFont.Plus}"/>
@@ -66,31 +66,38 @@
                            Padding="10"
                            />
                     <!-- Content Section -->
-                    <HorizontalStackLayout Spacing="10" Grid.Row="1" VerticalOptions="Center">
-                        <CheckBox  Color="White" x:Name="CheckBoxIncludePreviousBalance"/>
+                    <HorizontalStackLayout Spacing="0" 
+                       Grid.Row="1" 
+                       VerticalOptions="Center">
+
+                        <CheckBox x:Name="CheckBoxIncludePreviousBalance"
+                                  Color="White"
+                                  IsChecked="{Binding Totals.IncludePreviousBalance}" />
+
                         <Label Text="Incluir saldo anterior" 
-                               TextColor="#d6e0eb"       
+                               TextColor="#d6e0eb"                                     
                                VerticalOptions="Center">
                             <Label.GestureRecognizers>
-                                <TapGestureRecognizer Tapped="TapGestureRecognizer_Tapped"/>
+                                <TapGestureRecognizer Command="{Binding ToggleIncludePreviousBalanceCommand}"/>
                             </Label.GestureRecognizers>
                         </Label>
+
                     </HorizontalStackLayout>
                     <Grid Grid.Row="2" ColumnDefinitions="*, *" 
-                          HorizontalOptions="Fill"
+                          HorizontalOptions="Fill" Padding="5"
                           RowDefinitions="Auto, Auto, Auto, Auto, Auto">
-                        <Label Text="Saldo anterior" FontAttributes="Bold" TextColor="#d6e0eb" VerticalTextAlignment="Center"/>
-                        <Label Grid.Column="1" Text="$5,000.00" FontSize="Large" TextColor="#6cc8ef" HorizontalOptions="End"/>
 
-                        <Label Grid.Row="1" Text="Entradas" FontAttributes="Bold" TextColor="#6cc8ef" VerticalTextAlignment="Center"/>
-                        <Label Grid.Row="1" Grid.Column="1"  Text="$2,000.00" FontSize="Large" TextColor="#6cc8ef" HorizontalOptions="End"/>
+                        <Label Text="Saldo anterior" FontAttributes="Bold" TextColor="#d6e0eb" VerticalTextAlignment="Center" IsVisible="{Binding Totals.IncludePreviousBalance}"/>
+                        <Label Grid.Column="1" Text="{Binding Totals.PreviousBalance, StringFormat='{}{0:C}'}" FontSize="Large" TextColor="#6cc8ef" HorizontalOptions="End" IsVisible="{Binding Totals.IncludePreviousBalance}"/>
 
-                        <Label Grid.Row="2" Text="Total de saídas" FontAttributes="Bold" TextColor="#d6e0eb" VerticalTextAlignment="Center"/>
-                        <Label Grid.Row="2" Grid.Column="1"  Text="-$3,000.00" FontSize="Large" TextColor="#f75c5c" HorizontalOptions="End"/>
+                        <Label Grid.Row="1" Text="Entradas" FontAttributes="Bold" TextColor="{StaticResource Inflow}" VerticalTextAlignment="Center"/>
+                        <Label Grid.Row="1" Grid.Column="1"  Text="{Binding Totals.Inflow, StringFormat='{}{0:C}'}" FontSize="Large" TextColor="{StaticResource Inflow}" HorizontalOptions="End"/>
+                        <Label Grid.Row="2" Text="Saídas" FontAttributes="Bold" TextColor="#d6e0eb" VerticalTextAlignment="Center"/>
+                        <Label Grid.Row="2" Grid.Column="1"  Text="{Binding Totals.Outflow, StringFormat='{}{0:C}'}" FontSize="Large" TextColor="#f75c5c" HorizontalOptions="End"/>
 
                         <!--total separado por uma linha-->
                         <BoxView Grid.Row="3" Grid.ColumnSpan="2" HeightRequest="1" BackgroundColor="#6cc8ef" Margin="0,10,0,10"/>
-                        <Label Grid.Row="4" Grid.ColumnSpan="2" Text="$4,000.00" FontAttributes="Bold" TextColor="#d6e0eb" VerticalTextAlignment="Center" FontSize="Large" HorizontalOptions="End"/>
+                        <Label Grid.Row="4" Grid.ColumnSpan="2" Text="{Binding Totals.Total, StringFormat='{}{0:C}'}" FontAttributes="Bold" TextColor="#d6e0eb" VerticalTextAlignment="Center" FontSize="Large" HorizontalOptions="End"/>
                     </Grid>
                 </Grid>
             </Border>
@@ -98,7 +105,7 @@
                 <Grid RowDefinitions="Auto, *">
                     <!-- Header Section -->
                     <Grid BackgroundColor="#232c39">
-                    <Label Text="Transações" 
+                        <Label Text="Transações" 
                            Grid.ColumnSpan="3"
                            FontAttributes="Bold" 
                            FontSize="Header" 
@@ -106,7 +113,7 @@
                            Padding="10"
                            HorizontalOptions="Start"
                            />
-                    <Label Text="Agosto/2026" 
+                        <Label Text="Agosto/2026" 
                            Grid.Column="1"
                            Grid.ColumnSpan="2"
                            FontAttributes="Bold" 
@@ -120,60 +127,61 @@
                     <!--collection view com as transações do mes. headers: Transações,Data,Categoria,Valor, #(sem header, icone de edit em cada line)-->
                     <CollectionView Grid.Row="1" ItemsSource="{Binding Transactions}" Margin="0,10,0,0">
                         <CollectionView.Header>
-                            <Grid ColumnDefinitions="2*, 1.2*, 1.2*, 1*, 50" Padding="10" BackgroundColor="#232c39">
+                            <Grid ColumnDefinitions="2*, 1.2*, 1*, 40" Padding="10" BackgroundColor="#232c39">
                                 <Label Text="Transação" FontAttributes="Bold" TextColor="#d6e0eb"/>
                                 <Label Grid.Column="1" Text="Data" FontAttributes="Bold" TextColor="#d6e0eb" HorizontalTextAlignment="Center"/>
-                                <Label Grid.Column="2" Text="Categoria" FontAttributes="Bold" TextColor="#d6e0eb" HorizontalTextAlignment="Center"/>
-                                <Label Grid.Column="3" Text="Valor" FontAttributes="Bold" TextColor="#d6e0eb" HorizontalTextAlignment="End"/>
+                                <!--<Label Grid.Column="2" Text="Categoria" FontAttributes="Bold" TextColor="#d6e0eb" HorizontalTextAlignment="Center"/>-->
+                                <Label Grid.Column="2" Text="Valor" FontAttributes="Bold" TextColor="#d6e0eb" HorizontalTextAlignment="End"/>
                             </Grid>
                         </CollectionView.Header>
-
                         <CollectionView.ItemTemplate>
                             <DataTemplate>
-                                <Grid ColumnDefinitions="2*, 1.2*, 1.2*, 1*, 50" Padding="10" VerticalOptions="Center">
+                                <Grid ColumnDefinitions="2*, 1.2*, 1*, 40" Padding="10" VerticalOptions="Center">
                                     <Label Text="{Binding Description}" 
                                            TextColor="#d6e0eb" 
                                            LineBreakMode="TailTruncation"
-                                           VerticalOptions="Center"/>
-
+                                           VerticalOptions="Center"
+                                           />
                                     <Label Grid.Column="1" 
-                       Text="{Binding Date, StringFormat='{0:dd/MM}'}" 
-                       TextColor="#d6e0eb" 
-                       HorizontalTextAlignment="Center"
-                       VerticalOptions="Center"/>
+                                           Text="{Binding Date, StringFormat='{0:dd/MM}'}" 
+                                           TextColor="#d6e0eb" 
+                                           HorizontalTextAlignment="Center"
+                                           VerticalOptions="Center"
+                                           />
+
+                                    <!--<Label Grid.Column="2" 
+                                           Text="{Binding Category}" 
+                                           TextColor="#d6e0eb" 
+                                           HorizontalTextAlignment="Center"
+                                           VerticalOptions="Center"
+                                           />-->
 
                                     <Label Grid.Column="2" 
-                       Text="{Binding Category}" 
-                       TextColor="#d6e0eb" 
-                       HorizontalTextAlignment="Center"
-                       VerticalOptions="Center"/>
+                                           Text="{Binding Amount, StringFormat='{0:N2}'}" 
+                                           TextColor="{Binding Amount, Converter={StaticResource AmountToColorConverter}}" 
+                                           FontAttributes="Bold"
+                                           HorizontalTextAlignment="End"
+                                           VerticalOptions="Center"/>
 
-                                    <Label Grid.Column="3" 
-                       Text="{Binding Amount, StringFormat='{0:N2}'}" 
-                       TextColor="{Binding Amount, Converter={StaticResource AmountToColorConverter}}" 
-                       FontAttributes="Bold"
-                       HorizontalTextAlignment="End"
-                       VerticalOptions="Center"/>
-
-                                    <ImageButton Grid.Column="4" 
-                             HeightRequest="30"
-                             BackgroundColor="Transparent"
-                             VerticalOptions="Center">
-                                        <ImageButton.Source>
+                                    <Button Grid.Column="3" 
+                                                 BackgroundColor="Transparent"                                                
+                                                 VerticalOptions="Center">
+                                        <Button.ImageSource>
                                             <FontImageSource FontFamily="Icons"
-                                         Color="#3ca7f7"
-                                         Glyph="{x:Static Icons:IconFont.Pencil}"
-                                         Size="18"/>
-                                        </ImageButton.Source>
-                                    </ImageButton>
+                                                             Color="#3ca7f7"
+                                                             Size="10"
+                                                             Glyph="{x:Static Icons:IconFont.Pencil}"
+                                                             />
+                                        </Button.ImageSource>
+                                    </Button>
                                 </Grid>
                             </DataTemplate>
                         </CollectionView.ItemTemplate>
                         <CollectionView.EmptyView>
                             <Label Text="Nenhuma transação encontrada." 
-           HorizontalOptions="Center" 
-           Margin="20" 
-           TextColor="#758292"/>
+                                   HorizontalOptions="Center" 
+                                   Margin="20" 
+                                   TextColor="#758292"/>
                         </CollectionView.EmptyView>
                     </CollectionView>
                 </Grid>

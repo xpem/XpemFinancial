@@ -1,4 +1,4 @@
-﻿namespace XpemFinancial
+﻿namespace XpemFinancial.Views
 {
     public partial class MainPage : ContentPage
     {
