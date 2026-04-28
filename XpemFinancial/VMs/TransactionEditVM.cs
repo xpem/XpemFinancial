@@ -1,10 +1,14 @@
-﻿using CommunityToolkit.Maui;
-using CommunityToolkit.Mvvm.ComponentModel;
-using Microsoft.Maui.Graphics;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
+using Model;
+using System.Collections.ObjectModel;
+using XpemFinancial.Utils;
+using XpemFinancial.Views;
 
 namespace XpemFinancial.VMs
 {
-    public partial class TransactionEditVM : ObservableObject
+    public partial class TransactionEditVM : ObservableObject, IQueryAttributable
     {
         private string transactionTypeColor;
 
@@ -27,87 +31,54 @@ namespace XpemFinancial.VMs
         private string description;
 
         [ObservableProperty]
-        private string selectedCategory;
+        private string amount;
+
+        [ObservableProperty]
+        private SelectableCategory selectedCategory;
 
         [ObservableProperty]
         private List<string> categories;
+
+        public ObservableCollection<SelectableCategory> FlattenedCategories { get; set; } = new();
+
+
+        [ObservableProperty]
+        private string selectedTransactionCategory;
+
+        // Esta propriedade apenas facilita a exibição no botão/label da View
+        // Ela será atualizada sempre que a SelectedCategory mudar
+        public string CategoryDisplayName => selectedCategory?.Name ?? "Selecionar Categoria";
+
+        [ObservableProperty]
+        private string selectedCategoryName;
+
+        [RelayCommand]
+        async Task OpenCategoryPicker()
+        {
+            var navigationParameter = new Dictionary<string, object>
+            {        { "SelectedCategory", selectedCategory }    };
+
+            await Shell.Current.GoToAsync(nameof(CategoryPicker), true, navigationParameter);
+        }
 
         public TransactionEditVM()
         {
             transactionTypeColor = "#f75c5c";//Color.FromArgb("#2bbf69"); // Cor padrão para transações de entrada
             transactionDate = DateTime.Now;
-            //passar isso pro banco de dados depois
-            categories = new List<string> {
-                "Alimentação/Almoço",
-                "Alimentação/Lanche",
-                "Supermercado",
-                "Carro",
-                "Casa/Aluguel" ,
-                "Casa/Condomínio",
-                "Casa/Internet",
-                "Casa/Energia",
-                "Casa/Manutenção",
-                "Casa/Limpeza",
-                "Casa/Móveis",
-                "Casa/Utensílios",
-                "Educação/Cursos",
-                "Educação/Livros",
-                "Educação/Pós-Graduação",
-                "Doações",
-                "Eletrônicos",
-                "Presentes",
-                "Pessoais/Academia",
-                "Pessoais/Assessório",
-                "Pessoais/Celular",
-                "Pessoais/Cosmético",
-                "Pessoais/Roupa",
-                "Pessoais/Calçado",
-                //pessoal
-                "Pessoais/Servidor",
+        }
 
-                "Impostos/IR",
-                "Impostos/IPTU",
-                "Impostos/IPVA",
-                "Impostos/FGTS",
+        // Este método é chamado automaticamente quando a navegação volta para cá
+        public void ApplyQueryAttributes(IDictionary<string, object> query)
+        {
+            if (query.ContainsKey("SelectedCategory") &&
+                query["SelectedCategory"] is SelectableCategory selected)
+            {
+                SelectedCategory = selected;
 
-                "Lazer/Streaming",
-                "Lazer/Bar",
-                "Lazer/Cinema",
-                "Lazer/Show",
-                "Lazer/Jogo",
-                "Lazer/Viagem",
-
-                "Outros",
-
-                "Receita/13°",
-                "Receita/Bonificação",
-                "Receita/Comissão",
-                "Receita/Estorno",
-                "Receita/Férias",
-                "Receita/Juros",
-                "Receita/Reembolso",
-                "Receita/Salário",
-                "Receita/Outra",
-
-                "Saúde/Plano de Saúde",
-                "Saúde/Dentista",
-                "Saúde/Enxame",
-                "Saúde/Farmácia",
-                "Saúde/Médico",
-
-                "Seguro/Carro",
-                "Seguro/Moto",
-                "Seguro/Vida",
-                "Seguro/Residencial",
-
-                "Transporte/Combustível",
-                "Transporte/Estacionamento",
-                "Transporte/Lavagem",
-                "Transporte/Metrô",
-                "Transporte/Multas",
-                "Transporte/Pedágio",
-                "Transporte/Transporte por app",
-            };
+                SelectedCategoryName = selectedCategory.Name;
+                // Limpa o dicionário para evitar re-processamento indesejado
+                query.Clear();
+            }
         }
     }
 }

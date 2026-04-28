@@ -3,10 +3,12 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vms="clr-namespace:XpemFinancial.VMs"
              x:Class="XpemFinancial.Views.TransactionEdit"
+                          xmlns:Icons="clr-namespace:XpemFinancial.Resources" 
+             xmlns:Components="clr-namespace:XpemFinancial.Components"
              x:DataType="vms:TransactionEditVM"
              Shell.BackgroundColor="{Binding TransactionTypeColor}"
              Shell.TitleColor="{StaticResource Black}"
-             BackgroundColor="{StaticResource PageBackground}"
+             BackgroundColor="{StaticResource BodyBackground}"
              x:Name="this"
              Title="Adicionar transação">
     <ContentPage.Resources>
@@ -57,7 +59,7 @@
         </Style>
     </ContentPage.Resources>
     <ScrollView Margin="10">
-        <VerticalStackLayout>
+        <VerticalStackLayout BackgroundColor="{StaticResource BodyBackground}">
             <HorizontalStackLayout  RadioButtonGroup.GroupName="TransactionType" RadioButtonGroup.SelectedValue="{Binding TransactionTypeColor}"   
                                     Padding="0,5,0,0"
                                     Margin="0,0,0,10"
@@ -67,12 +69,57 @@
                 <RadioButton Style="{StaticResource RadioButton}" Content="Transferência" IsChecked="False" Margin="10,0" Value="#6cc8ef"/>
 
             </HorizontalStackLayout>
-            <Label Text="Data" ></Label>
-            <DatePicker MinimumDate="01/01/1990" 
+            <Grid ColumnDefinitions="auto, auto">
+                <VerticalStackLayout>
+                    <Label Text="Data"></Label>
+                    <DatePicker MinimumDate="01/01/1990" 
                         MaximumDate="01/01/2100"
                         Date="{Binding TransactionDate}" />
-            <Label Text="Descrição" />
+                </VerticalStackLayout>
+                <VerticalStackLayout Grid.Column="1" Margin="10,0,0,0">
+                    <Label Text="Categoria" FontSize="14" />
+                    <Border StrokeShape="RoundRectangle 8" Padding="10" Stroke="LightGray" BackgroundColor="{StaticResource InputBackground}">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding OpenCategoryPickerCommand}" />
+                        </Border.GestureRecognizers>
+
+                        <HorizontalStackLayout>
+                            <Label Text="{Binding SelectedCategoryName, TargetNullValue='Selecionar Categoria'}" 
+                   VerticalOptions="Center" 
+                   FontSize="16" />
+                            <Label Text="{x:Static Icons:IconFont.AngleRight}"  FontFamily="Icons" FontSize="16" Margin="10,0,0,0" VerticalOptions="Center" ></Label>
+                        </HorizontalStackLayout>
+                    </Border>
+                </VerticalStackLayout>
+            </Grid>
+            <Label Text="Descrição" Padding="0,10,0,0" />
             <Entry Text="{Binding Description}" />
+            <Components:CurrencyEntry LabelText="Valor" Text="{Binding Amount}" Margin="0,10,0,0" />
+            <!--<CollectionView ItemsSource="{Binding FlattenedCategories}"
+                SelectionMode="Single"
+                SelectedItem="{Binding SelectedTransactionCategory}">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Padding="15,10">
+                            <VisualStateManager.VisualStateGroups>
+                                <VisualStateGroup Name="CommonStates">
+                                    <VisualState Name="Selected">
+                                        <VisualState.Setters>
+                                            <Setter Property="BackgroundColor" Value="{StaticResource PrimaryColor}" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                </VisualStateGroup>
+                            </VisualStateManager.VisualStateGroups>
+
+                            <Label Text="{Binding Name}" 
+                       FontSize="16"
+                       FontAttributes="{Binding IsCategory, Converter={StaticResource BoldIfTrueConverter}}"
+                       Margin="{Binding IsCategory, Converter={StaticResource MarginConverter}}" />
+                        </Grid>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>-->
+
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

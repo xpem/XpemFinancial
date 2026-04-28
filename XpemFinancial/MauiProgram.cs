@@ -35,6 +35,7 @@ namespace XpemFinancial
         {
             services.AddTransientWithShellRoute<Views.MainPage, VMs.MainPageVM>(nameof(Views.MainPage));
             services.AddTransientWithShellRoute<Views.TransactionEdit, VMs.TransactionEditVM>(nameof(Views.TransactionEdit));
+            services.AddTransientWithShellRoute <Views.CategoryPicker, VMs.CategoryPickerVM>(nameof(Views.CategoryPicker));
             return services;
         }
     }
