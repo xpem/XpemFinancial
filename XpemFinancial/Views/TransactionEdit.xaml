@@ -7,10 +7,11 @@
              xmlns:Components="clr-namespace:XpemFinancial.Components"
              x:DataType="vms:TransactionEditVM"
              Shell.BackgroundColor="{Binding TransactionTypeColor}"
-             Shell.TitleColor="{StaticResource Black}"
+             Shell.TitleColor="{StaticResource White}"
              BackgroundColor="{StaticResource BodyBackground}"
              x:Name="this"
-             Title="Adicionar transação">
+             Title="Adicionar transação"
+             xmlns:model="clr-namespace:Model;assembly=Model">
     <ContentPage.Resources>
         <Style x:Key="RadioButton" TargetType="RadioButton">
             <Setter Property="TextColor" Value="#d6e0eb" />
@@ -95,30 +96,26 @@
             <Label Text="Descrição" Padding="0,10,0,0" />
             <Entry Text="{Binding Description}" />
             <Components:CurrencyEntry LabelText="Valor" Text="{Binding Amount}" Margin="0,10,0,0" />
-            <!--<CollectionView ItemsSource="{Binding FlattenedCategories}"
-                SelectionMode="Single"
-                SelectedItem="{Binding SelectedTransactionCategory}">
-                <CollectionView.ItemTemplate>
-                    <DataTemplate>
-                        <Grid Padding="15,10">
-                            <VisualStateManager.VisualStateGroups>
-                                <VisualStateGroup Name="CommonStates">
-                                    <VisualState Name="Selected">
-                                        <VisualState.Setters>
-                                            <Setter Property="BackgroundColor" Value="{StaticResource PrimaryColor}" />
-                                        </VisualState.Setters>
-                                    </VisualState>
-                                </VisualStateGroup>
-                            </VisualStateManager.VisualStateGroups>
-
-                            <Label Text="{Binding Name}" 
-                       FontSize="16"
-                       FontAttributes="{Binding IsCategory, Converter={StaticResource BoldIfTrueConverter}}"
-                       Margin="{Binding IsCategory, Converter={StaticResource MarginConverter}}" />
-                        </Grid>
-                    </DataTemplate>
-                </CollectionView.ItemTemplate>
-            </CollectionView>-->
+            <!--<Picker x:Name="PickerAccount" Title="Conta"
+                    ItemsSource="{Binding Account}"
+                    ItemDisplayBinding="{Binding Name}"
+                    SelectedItem="{Binding SelectedAccount}" />-->
+            <HorizontalStackLayout x:Name="Repetition"
+                                   RadioButtonGroup.GroupName="Repetition"
+                                   RadioButtonGroup.SelectedValue="{Binding SelectedRepetition}"
+                                   Padding="0,5,0,0"
+                                   Margin="0,10,0,10"
+                                   BackgroundColor="{StaticResource InputBackground}"
+                                   HorizontalOptions="Start">
+                <RadioButton Style="{StaticResource RadioButton}" Content="Sem repetição" IsChecked="True"  Margin="10,0" Value="{x:Static model:Repetition.None}" />
+                <RadioButton Style="{StaticResource RadioButton}" Content="Repetição"     IsChecked="False" Margin="10,0" Value="{x:Static model:Repetition.Monthly}" />
+            </HorizontalStackLayout>
+            <HorizontalStackLayout x:Name="InstallmentPanel" IsVisible="{Binding InstallmentPanelIsVisible}">
+                <Label Text="Parcelas de" VerticalOptions="Center" Margin="0,0,10,0"/>
+                <Components:NumericEntry Text="{Binding InitialInstallments}" Keyboard="Numeric" WidthRequest="50" HorizontalOptions="Start" />
+                <Label Text="até" VerticalOptions="Center" Margin="10,0" />
+                <Components:NumericEntry Text="{Binding NumberOfInstallments}" Keyboard="Numeric" WidthRequest="50" HorizontalOptions="Start" />
+            </HorizontalStackLayout>
 
         </VerticalStackLayout>
     </ScrollView>

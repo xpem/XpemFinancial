@@ -34,16 +34,15 @@ namespace XpemFinancial.VMs
         private string amount;
 
         [ObservableProperty]
-        private SelectableCategory selectedCategory;
+        private Category selectedCategory;
 
         [ObservableProperty]
         private List<string> categories;
 
-        public ObservableCollection<SelectableCategory> FlattenedCategories { get; set; } = new();
-
+        public ObservableCollection<Category> FlattenedCategories { get; set; } = new();
 
         [ObservableProperty]
-        private string selectedTransactionCategory;
+        private ObservableCollection<Account> account;
 
         // Esta propriedade apenas facilita a exibição no botão/label da View
         // Ela será atualizada sempre que a SelectedCategory mudar
@@ -51,6 +50,20 @@ namespace XpemFinancial.VMs
 
         [ObservableProperty]
         private string selectedCategoryName;
+
+        [ObservableProperty]
+        private Repetition selectedRepetition;
+
+
+        [ObservableProperty]
+        private bool installmentPanelIsVisible = false;
+
+        [ObservableProperty]
+        private int numberOfInstallments;
+
+        [ObservableProperty]
+        private int initialInstallments;
+
 
         [RelayCommand]
         async Task OpenCategoryPicker()
@@ -61,16 +74,22 @@ namespace XpemFinancial.VMs
             await Shell.Current.GoToAsync(nameof(CategoryPicker), true, navigationParameter);
         }
 
-        public TransactionEditVM()
+        public async Task InitializeAsync()
         {
-            transactionTypeColor = "#f75c5c";//Color.FromArgb("#2bbf69"); // Cor padrão para transações de entrada
+            transactionTypeColor = "#f75c5c"; //Color.FromArgb("#2bbf69"); // Cor padrão para transações de entrada
             transactionDate = DateTime.Now;
+            await LoadAccounts();
+        }
+
+        private async Task LoadAccounts()
+        {
+            Account = new ObservableCollection<Account>(MockAccount.GetMockAccounts());
         }
 
         // Este método é chamado automaticamente quando a navegação volta para cá
         public void ApplyQueryAttributes(IDictionary<string, object> query)
         {
-            if (query.TryGetValue("SelectedCategory", out var val) && val is SelectableCategory selected)
+            if (query.TryGetValue("SelectedCategory", out var val) && val is Category selected)
             {
                 SelectedCategory = selected; // só atualiza se vier com item
 
@@ -78,6 +97,11 @@ namespace XpemFinancial.VMs
                 query.Clear();
             }
             // sem item → mantém o valor anterior ✅
+        }
+
+        partial void OnSelectedRepetitionChanged(Repetition value)
+        {
+            InstallmentPanelIsVisible = value == Repetition.Monthly;
         }
     }
 }

@@ -4,24 +4,32 @@ using System.Text;
 
 namespace Model
 {
-
-    public class SelectableCategory
+    public class Category
     {
+        public int Id { get; set; }
         public string Name { get; set; }
-        public string ParentCategory { get; set; }
-        public bool IsCategory { get; set; } // Define se é o título principal ou sub
+        public int? ParentId { get; set; }
+        public bool IsCategory { get; set; }
     }
 
-    public class TransactionCategories
+    public class Categories
     {
         public string Category { get; set; }
-
         public List<string>? Subcategories { get; set; }
 
-        public static List<TransactionCategories> LoadTransactionCategories() {
-            return
-        [
-        new()
+        public class TransactionCategories
+        {
+            public int Id { get; set; } = 0;
+
+            public string Category { get; set; }
+
+            public List<string>? Subcategories { get; set; }
+
+            public static List<TransactionCategories> LoadTransactionCategories()
+            {
+                return
+            [
+            new()
                 {
                     Category = "Alimentação",
                     Subcategories = new List<string> { "Almoço", "Lanche" }
@@ -90,77 +98,78 @@ namespace Model
                ];
 
 
-            //categories = new List<string> {
-            //    "Alimentação/Almoço",
-            //    "Alimentação/Lanche",
-            //    "Supermercado",
-            //    "Carro",
-            //    "Casa/Aluguel" ,
-            //    "Casa/Condomínio",
-            //    "Casa/Internet",
-            //    "Casa/Energia",
-            //    "Casa/Manutenção",
-            //    "Casa/Limpeza",
-            //    "Casa/Móveis",
-            //    "Casa/Utensílios",
-            //    "Educação/Cursos",
-            //    "Educação/Livros",
-            //    "Educação/Pós-Graduação",
-            //    "Doações",
-            //    "Eletrônicos",
-            //    "Presentes",
-            //    "Pessoais/Academia",
-            //    "Pessoais/Assessório",
-            //    "Pessoais/Celular",
-            //    "Pessoais/Cosmético",
-            //    "Pessoais/Roupa",
-            //    "Pessoais/Calçado",
-            //    //pessoal
-            //    "Pessoais/Servidor",
+                //categories = new List<string> {
+                //    "Alimentação/Almoço",
+                //    "Alimentação/Lanche",
+                //    "Supermercado",
+                //    "Carro",
+                //    "Casa/Aluguel" ,
+                //    "Casa/Condomínio",
+                //    "Casa/Internet",
+                //    "Casa/Energia",
+                //    "Casa/Manutenção",
+                //    "Casa/Limpeza",
+                //    "Casa/Móveis",
+                //    "Casa/Utensílios",
+                //    "Educação/Cursos",
+                //    "Educação/Livros",
+                //    "Educação/Pós-Graduação",
+                //    "Doações",
+                //    "Eletrônicos",
+                //    "Presentes",
+                //    "Pessoais/Academia",
+                //    "Pessoais/Assessório",
+                //    "Pessoais/Celular",
+                //    "Pessoais/Cosmético",
+                //    "Pessoais/Roupa",
+                //    "Pessoais/Calçado",
+                //    //pessoal
+                //    "Pessoais/Servidor",
 
-            //    "Impostos/IR",
-            //    "Impostos/IPTU",
-            //    "Impostos/IPVA",
-            //    "Impostos/FGTS",
+                //    "Impostos/IR",
+                //    "Impostos/IPTU",
+                //    "Impostos/IPVA",
+                //    "Impostos/FGTS",
 
-            //    "Lazer/Streaming",
-            //    "Lazer/Bar",
-            //    "Lazer/Cinema",
-            //    "Lazer/Show",
-            //    "Lazer/Jogo",
-            //    "Lazer/Viagem",
+                //    "Lazer/Streaming",
+                //    "Lazer/Bar",
+                //    "Lazer/Cinema",
+                //    "Lazer/Show",
+                //    "Lazer/Jogo",
+                //    "Lazer/Viagem",
 
-            //    "Outros",
+                //    "Outros",
 
-            //    "Receita/13°",
-            //    "Receita/Bonificação",
-            //    "Receita/Comissão",
-            //    "Receita/Estorno",
-            //    "Receita/Férias",
-            //    "Receita/Juros",
-            //    "Receita/Reembolso",
-            //    "Receita/Salário",
-            //    "Receita/Outra",
+                //    "Receita/13°",
+                //    "Receita/Bonificação",
+                //    "Receita/Comissão",
+                //    "Receita/Estorno",
+                //    "Receita/Férias",
+                //    "Receita/Juros",
+                //    "Receita/Reembolso",
+                //    "Receita/Salário",
+                //    "Receita/Outra",
 
-            //    "Saúde/Plano de Saúde",
-            //    "Saúde/Dentista",
-            //    "Saúde/Enxame",
-            //    "Saúde/Farmácia",
-            //    "Saúde/Médico",
+                //    "Saúde/Plano de Saúde",
+                //    "Saúde/Dentista",
+                //    "Saúde/Enxame",
+                //    "Saúde/Farmácia",
+                //    "Saúde/Médico",
 
-            //    "Seguro/Carro",
-            //    "Seguro/Moto",
-            //    "Seguro/Vida",
-            //    "Seguro/Residencial",
+                //    "Seguro/Carro",
+                //    "Seguro/Moto",
+                //    "Seguro/Vida",
+                //    "Seguro/Residencial",
 
-            //    "Transporte/Combustível",
-            //    "Transporte/Estacionamento",
-            //    "Transporte/Lavagem",
-            //    "Transporte/Metrô",
-            //    "Transporte/Multas",
-            //    "Transporte/Pedágio",
-            //    "Transporte/Transporte por app",
-            //};
+                //    "Transporte/Combustível",
+                //    "Transporte/Estacionamento",
+                //    "Transporte/Lavagem",
+                //    "Transporte/Metrô",
+                //    "Transporte/Multas",
+                //    "Transporte/Pedágio",
+                //    "Transporte/Transporte por app",
+                //};
+            }
         }
     }
 }

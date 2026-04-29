@@ -32,7 +32,7 @@
                         RemainingItemsThresholdReachedCommand="{Binding LoadMoreCommand}"
                         SelectedItem="{Binding SelectedItem, Mode=TwoWay}">
             <CollectionView.ItemTemplate>
-                <DataTemplate x:DataType="Models:SelectableCategory">
+                <DataTemplate x:DataType="Models:Category">
                     <Grid Padding="15">
                         <VisualStateManager.VisualStateGroups>
                             <VisualStateGroup Name="CommonStates">

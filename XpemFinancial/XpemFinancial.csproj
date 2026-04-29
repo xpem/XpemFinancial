@@ -88,6 +88,9 @@
 	  <MauiXaml Update="Components\CurrencyEntry.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
+	  <MauiXaml Update="Components\NumericEntry.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
 	  <MauiXaml Update="Views\CategoryPicker.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>

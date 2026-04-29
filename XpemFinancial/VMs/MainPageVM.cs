@@ -35,35 +35,35 @@ namespace XpemFinancial.VMs
                 {
                     Description = "Assinatura Netflix",
                     Date = DateTime.Now.AddDays(-2),
-                    Category = "Lazer",
+                    Category = new Category { Id = 1, Name = "Assinatura Netflix", IsCategory = false },
                     Amount = -55.90m
                 },
                 new Transaction
                 {
                     Description = "Salário Mensal",
                     Date = DateTime.Now.AddDays(-1),
-                    Category = "Trabalho",
+                    Category = new Category { Id = 2, Name = "Trabalho", IsCategory = false },
                     Amount = 5000.00m
                 },
                 new Transaction
                 {
                     Description = "Supermercado",
                     Date = DateTime.Now,
-                    Category = "Alimentação",
+                    Category = new Category { Id = 3, Name = "Alimentação", IsCategory = false },
                     Amount = -350.25m
                 },
                 new Transaction
                 {
                     Description = "Venda de Monitor",
                     Date = DateTime.Now,
-                    Category = "Extra",
+                    Category = new Category { Id = 4, Name = "Extra", IsCategory = false },
                     Amount = 850.00m
                 },
                 new Transaction
                 {
                     Description = "Posto de Gasolina",
                     Date = DateTime.Now.AddDays(1),
-                    Category = "Transporte",
+                    Category = new Category { Id = 5, Name = "Transporte", IsCategory = false },
                     Amount = -200.00m
                 }
             ];

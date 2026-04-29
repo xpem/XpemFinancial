@@ -8,16 +8,16 @@ namespace XpemFinancial.VMs
 {
     public partial class CategoryPickerVM : VMBase
     {
-        private static readonly List<SelectableCategory> _cachedCategories = BuildCategories();
+        private static readonly List<Category> _cachedCategories = BuildCategories();
         private const int BatchSize = 20;
-        private List<SelectableCategory> _currentSource = [];
+        private List<Category> _currentSource = [];
         private int _loadedCount = 0;
 
         [ObservableProperty]
-        private ObservableCollection<SelectableCategory> categories = new();
+        private ObservableCollection<Category> categories = new();
 
         [ObservableProperty]
-        private SelectableCategory selectedItem;
+        private Category selectedItem;
 
         [ObservableProperty]
         private string searchText;
@@ -30,7 +30,7 @@ namespace XpemFinancial.VMs
             await ReloadSourceAsync(_cachedCategories);
         }
 
-        private async Task ReloadSourceAsync(List<SelectableCategory> source)
+        private async Task ReloadSourceAsync(List<Category> source)
         {
             _currentSource = source;
             _loadedCount = 0;
@@ -57,15 +57,15 @@ namespace XpemFinancial.VMs
             await Task.Yield();
         }
 
-        private static List<SelectableCategory> BuildCategories()
+        private static List<Category> BuildCategories()
         {
-            var result = new List<SelectableCategory>();
-            foreach (var cat in TransactionCategories.LoadTransactionCategories())
+            var result = new List<Category>();
+            foreach (var cat in Model.Categories.TransactionCategories.LoadTransactionCategories())
             {
-                result.Add(new SelectableCategory { Name = cat.Category, IsCategory = true });
+                result.Add(new Category { Name = cat.Category, IsCategory = true });
                 if (cat.Subcategories != null)
                     foreach (var sub in cat.Subcategories)
-                        result.Add(new SelectableCategory { Name = sub, ParentCategory = cat.Category, IsCategory = false });
+                        result.Add(new Category { Name = sub, ParentId = cat.Id, IsCategory = false });
             }
             return result;
         }
@@ -80,7 +80,7 @@ namespace XpemFinancial.VMs
         }
 
         [RelayCommand]
-        private async Task SelectItem(SelectableCategory item)
+        private async Task SelectItem(Category item)
         {
             if (item == null) return;
             var navigationParameter = new Dictionary<string, object> { { "SelectedCategory", item } };
@@ -89,7 +89,7 @@ namespace XpemFinancial.VMs
 
         public void ApplyQueryAttributes(IDictionary<string, object> query)
         {
-            if (query.TryGetValue("SelectedCategory", out var val) && val is SelectableCategory selected)
+            if (query.TryGetValue("SelectedCategory", out var val) && val is Category selected)
             {
                 SelectedItem = selected;
                 query.Clear();
