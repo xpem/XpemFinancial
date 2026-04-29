@@ -2,45 +2,61 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="XpemFinancial.Views.CategoryPicker"
-              xmlns:Models="clr-namespace:Model;assembly=Model"
-                          xmlns:vms="clr-namespace:XpemFinancial.VMs"
-                x:DataType="vms:CategoryPickerVM"
+             xmlns:Models="clr-namespace:Model;assembly=Model"
+             BackgroundColor="{StaticResource BodyBackground}"             
+             xmlns:vms="clr-namespace:XpemFinancial.VMs"
+             x:DataType="vms:CategoryPickerVM"
              Title="Selecionar Categoria">
     <Grid RowDefinitions="Auto, *">
-        <SearchBar x:Name="searchBar" Grid.Row="0" Placeholder="Procurar..." 
-                   Text="{Binding SearchText, Mode=TwoWay}"
-                   SearchCommand="{Binding SearchCommand}"/>
 
-        <CollectionView Grid.Row="1" 
+        <SearchBar x:Name="searchBar" Grid.Row="0" Placeholder="Procurar..."
+                   Text="{Binding SearchText, Mode=TwoWay}"
+                   SearchCommand="{Binding SearchCommand}"
+                   IsEnabled="{Binding IsNotBusy}"/>
+
+        <!-- Loading -->
+        <ActivityIndicator Grid.Row="1"
+                           IsRunning="{Binding IsBusy}"
+                           IsVisible="{Binding IsBusy}"
+                           HorizontalOptions="Center"
+                           VerticalOptions="Center"
+                           Color="{StaticResource White}" />
+
+        <!-- Lista -->
+        <CollectionView Grid.Row="1"
+                        IsVisible="{Binding IsNotBusy}"
                         ItemsSource="{Binding Categories}"
                         SelectionMode="Single"
+                        ItemSizingStrategy="MeasureFirstItem"
+                        RemainingItemsThreshold="5"
+                        RemainingItemsThresholdReachedCommand="{Binding LoadMoreCommand}"
                         SelectedItem="{Binding SelectedItem, Mode=TwoWay}">
             <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="Models:SelectableCategory">
                     <Grid Padding="15">
-                    <VisualStateManager.VisualStateGroups>
-                        <VisualStateGroup Name="CommonStates">
-                            <VisualState Name="Normal" />
-                            <VisualState Name="PointerOver">
-                                <VisualState.Setters>
-                                    <Setter Property="BackgroundColor" Value="#10000000" />
-                                </VisualState.Setters>
-                            </VisualState>
-                        </VisualStateGroup>
-                    </VisualStateManager.VisualStateGroups>
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup Name="CommonStates">
+                                <VisualState Name="Normal" />
+                                <VisualState Name="PointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Property="BackgroundColor" Value="#10000000" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
                         <Grid.GestureRecognizers>
-                            <TapGestureRecognizer 
-                        Command="{Binding Source={RelativeSource AncestorType={x:Type vms:CategoryPickerVM}}, Path=SelectItemCommand}"
-                        CommandParameter="{Binding .}" />
+                            <TapGestureRecognizer
+                                Command="{Binding Source={RelativeSource AncestorType={x:Type vms:CategoryPickerVM}}, Path=SelectItemCommand}"
+                                CommandParameter="{Binding .}" />
                         </Grid.GestureRecognizers>
-
-                        <Label Text="{Binding Name}" 
-                       FontAttributes="{Binding IsCategory, Converter={StaticResource BoldConverter}}"
-                       Margin="{Binding IsCategory, Converter={StaticResource IndentConverter}}"
-                       FontSize="16" />
+                        <Label Text="{Binding Name}"
+                               FontAttributes="{Binding IsCategory, Converter={StaticResource BoldConverter}}"
+                               Margin="{Binding IsCategory, Converter={StaticResource IndentConverter}}"
+                               FontSize="16" />
                     </Grid>
                 </DataTemplate>
             </CollectionView.ItemTemplate>
         </CollectionView>
+
     </Grid>
 </ContentPage>

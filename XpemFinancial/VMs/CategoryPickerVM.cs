@@ -1,25 +1,20 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using CommunityToolkit.Mvvm.Messaging;
 using Model;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Text;
 using XpemFinancial.Views;
-using static XpemFinancial.VMs.TransactionEditVM;
 
 namespace XpemFinancial.VMs
 {
-    public partial class CategoryPickerVM : ObservableObject
+    public partial class CategoryPickerVM : VMBase
     {
-        // Lista completa (backup para o filtro)
-        private List<SelectableCategory> allCategories = new();
+        private static readonly List<SelectableCategory> _cachedCategories = BuildCategories();
+        private const int BatchSize = 20;
+        private List<SelectableCategory> _currentSource = [];
+        private int _loadedCount = 0;
 
-        // Lista que o CollectionView observa
         [ObservableProperty]
-        private ObservableCollection<SelectableCategory> categories;
-
+        private ObservableCollection<SelectableCategory> categories = new();
 
         [ObservableProperty]
         private SelectableCategory selectedItem;
@@ -27,75 +22,78 @@ namespace XpemFinancial.VMs
         [ObservableProperty]
         private string searchText;
 
-        public CategoryPickerVM()
+        public CategoryPickerVM() { }
+
+        public async Task InitializeAsync()
         {
-            LoadAndFlattenCategories(); // Ou receba de um serviço
+            if (Categories.Count > 0) return;
+            await ReloadSourceAsync(_cachedCategories);
         }
 
-        public void ApplyQueryAttributes(IDictionary<string, object> query)
+        private async Task ReloadSourceAsync(List<SelectableCategory> source)
         {
-            if (query.ContainsKey("SelectedCategory") &&
-                query["SelectedCategory"] is SelectableCategory selected)
-            {
-                selectedItem = selected;
-
-                // Limpa o dicionário para evitar re-processamento indesejado
-                query.Clear();
-            }
+            _currentSource = source;
+            _loadedCount = 0;
+            IsBusy = true;
+            Categories.Clear();
+            await LoadNextBatchAsync();
+            IsBusy = false;
         }
 
-        private void LoadAndFlattenCategories()
+        [RelayCommand]
+        private async Task LoadMore()
         {
-            var tempItems = new List<SelectableCategory>();
+            if (_loadedCount >= _currentSource.Count) return;
+            await LoadNextBatchAsync();
+        }
 
+        private async Task LoadNextBatchAsync()
+        {
+            var batch = _currentSource.Skip(_loadedCount).Take(BatchSize).ToList();
+            foreach (var item in batch)
+                Categories.Add(item);
+
+            _loadedCount += batch.Count;
+            await Task.Yield();
+        }
+
+        private static List<SelectableCategory> BuildCategories()
+        {
+            var result = new List<SelectableCategory>();
             foreach (var cat in TransactionCategories.LoadTransactionCategories())
             {
-                tempItems.Add(new SelectableCategory { Name = cat.Category, IsCategory = true });
-
+                result.Add(new SelectableCategory { Name = cat.Category, IsCategory = true });
                 if (cat.Subcategories != null)
-                {
                     foreach (var sub in cat.Subcategories)
-                    {
-                        tempItems.Add(new SelectableCategory
-                        {
-                            Name = sub,
-                            ParentCategory = cat.Category,
-                            IsCategory = false
-                        });
-                    }
-                }
+                        result.Add(new SelectableCategory { Name = sub, ParentCategory = cat.Category, IsCategory = false });
             }
-
-            allCategories = tempItems;
-            Categories = new ObservableCollection<SelectableCategory>(allCategories);
+            return result;
         }
 
-        // Executado toda vez que o SearchText mudar (via partial method do Toolkit)
         partial void OnSearchTextChanged(string value)
         {
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                // Importante usar a Propriedade (Maiúscula) para disparar o OnPropertyChanged
-                Categories = new ObservableCollection<SelectableCategory>(allCategories);
-                return;
-            }
+            var filtered = string.IsNullOrWhiteSpace(value)
+                ? _cachedCategories
+                : _cachedCategories.Where(x => x.Name.Contains(value, StringComparison.OrdinalIgnoreCase)).ToList();
 
-            var search = value.ToLower();
-            var filtered = allCategories.Where(x => x.Name.ToLower().Contains(search));
-            Categories = new ObservableCollection<SelectableCategory>(filtered);
+            _ = ReloadSourceAsync(filtered);
         }
 
         [RelayCommand]
         private async Task SelectItem(SelectableCategory item)
         {
             if (item == null) return;
+            var navigationParameter = new Dictionary<string, object> { { "SelectedCategory", item } };
+            await Shell.Current.GoToAsync("..", true, navigationParameter);
+        }
 
-            // Criamos o dicionário de parâmetros
-            var navigationParameter = new Dictionary<string, object>
-            {        { "SelectedCategory", item }    };
-
-            // Navegamos de volta passando o objeto
-            await Shell.Current.GoToAsync(nameof(TransactionEdit), true, navigationParameter);
+        public void ApplyQueryAttributes(IDictionary<string, object> query)
+        {
+            if (query.TryGetValue("SelectedCategory", out var val) && val is SelectableCategory selected)
+            {
+                SelectedItem = selected;
+                query.Clear();
+            }
         }
     }
 }

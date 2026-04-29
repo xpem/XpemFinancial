@@ -33,9 +33,14 @@ namespace XpemFinancial
 
         public static IServiceCollection ShellRoutes(this IServiceCollection services)
         {
-            services.AddTransientWithShellRoute<Views.MainPage, VMs.MainPageVM>(nameof(Views.MainPage));
+            // MainPage é raiz do Shell (AppShell.xaml) — registrar só no DI, não como rota
+            services.AddTransient<Views.MainPage>();
+            services.AddTransient<VMs.MainPageVM>();
+
+            // Páginas de navegação secundária
             services.AddTransientWithShellRoute<Views.TransactionEdit, VMs.TransactionEditVM>(nameof(Views.TransactionEdit));
-            services.AddTransientWithShellRoute <Views.CategoryPicker, VMs.CategoryPickerVM>(nameof(Views.CategoryPicker));
+            services.AddTransientWithShellRoute<Views.CategoryPicker, VMs.CategoryPickerVM>(nameof(Views.CategoryPicker));
+
             return services;
         }
     }

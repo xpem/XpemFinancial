@@ -70,15 +70,14 @@ namespace XpemFinancial.VMs
         // Este método é chamado automaticamente quando a navegação volta para cá
         public void ApplyQueryAttributes(IDictionary<string, object> query)
         {
-            if (query.ContainsKey("SelectedCategory") &&
-                query["SelectedCategory"] is SelectableCategory selected)
+            if (query.TryGetValue("SelectedCategory", out var val) && val is SelectableCategory selected)
             {
-                SelectedCategory = selected;
+                SelectedCategory = selected; // só atualiza se vier com item
 
                 SelectedCategoryName = selectedCategory.Name;
-                // Limpa o dicionário para evitar re-processamento indesejado
                 query.Clear();
             }
+            // sem item → mantém o valor anterior ✅
         }
     }
 }
