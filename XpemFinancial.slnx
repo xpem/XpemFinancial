@@ -1,4 +1,8 @@
 <Solution>
   <Project Path="Model/Model.csproj" Id="0b607bf2-9c97-4750-acd3-7c42033d2cf4" />
-  <Project Path="XpemFinancial/XpemFinancial.csproj" />
+  <Project Path="Repo/Repo.csproj" Id="287f96e8-ae14-4fd0-9e79-c11b4abdcf1f" />
+  <Project Path="Services/Service.csproj" Id="9f96a53e-40f6-4be3-b0e5-5583b06b10e8" />
+  <Project Path="XpemFinancial/XpemFinancial.csproj">
+    <Deploy Solution="Debug|*" />
+  </Project>
 </Solution>

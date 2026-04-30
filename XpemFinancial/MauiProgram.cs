@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using CommunityToolkit.Maui;
+using Service.DI;
 
 namespace XpemFinancial
 {
@@ -25,7 +26,9 @@ namespace XpemFinancial
 #if DEBUG
             builder.Logging.AddDebug();
 #endif
-
+            builder.Services.AddDbContext();
+            builder.Services.AddService();
+            builder.Services.AddRepo();
             builder.Services.ShellRoutes();
 
             return builder.Build();
