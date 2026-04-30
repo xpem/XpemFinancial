@@ -9,9 +9,9 @@ public partial class NumericEntry : ContentView
 
     public static readonly BindableProperty TextProperty = BindableProperty.Create(
         nameof(Text),
-        typeof(string),
+        typeof(int),        // ✅ correto
         typeof(NumericEntry),
-        string.Empty,
+        0,                  // ✅ valor padrão int
         BindingMode.TwoWay,
         propertyChanged: OnExternalValueChanged);
 
@@ -36,7 +36,7 @@ public partial class NumericEntry : ContentView
         var control = (NumericEntry)bindable;
         if (control.EntryNumeric == null || control._isUpdating) return;
 
-        string text = newValue?.ToString() ?? "0";
+        string text = newValue is int i ? i.ToString() : "0";  // ✅ trata como int
         if (control.EntryNumeric.Text != text)
             control.EntryNumeric.Text = text;
     }
@@ -52,17 +52,18 @@ public partial class NumericEntry : ContentView
 
         if (string.IsNullOrEmpty(digits)) digits = "0";
 
-        // Remove zeros à esquerda
         digits = int.TryParse(digits, out int parsed) ? parsed.ToString() : "0";
-
-        if (e.NewTextValue == digits)
-            return;
 
         _isUpdating = true;
         try
         {
-            EntryNumeric.Text = digits;
-            Text = int.Parse(digits);
+            // Corrige o texto na Entry apenas se necessário (evita loop)
+            if (EntryNumeric.Text != digits)
+                EntryNumeric.Text = digits;
+
+            // Sempre propaga o valor ao ViewModel via binding
+            SetValue(TextProperty, parsed);
+
             EntryNumeric.Dispatcher.Dispatch(() =>
             {
                 if (EntryNumeric?.Text is string t)

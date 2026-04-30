@@ -10,19 +10,8 @@ namespace XpemFinancial.VMs
 {
     public partial class TransactionEditVM : ObservableObject, IQueryAttributable
     {
+        [ObservableProperty]
         private string transactionTypeColor;
-
-        public string TransactionTypeColor
-        {
-            get => transactionTypeColor;
-            set
-            {
-                if (transactionTypeColor != value)
-                {
-                    SetProperty(ref transactionTypeColor, value);
-                }
-            }
-        }
 
         [ObservableProperty]
         private DateTime transactionDate;
@@ -54,6 +43,8 @@ namespace XpemFinancial.VMs
         [ObservableProperty]
         private Repetition selectedRepetition;
 
+        [ObservableProperty]
+        private TransactionType selectedTransactionType;
 
         [ObservableProperty]
         private bool installmentPanelIsVisible = false;
@@ -64,20 +55,35 @@ namespace XpemFinancial.VMs
         [ObservableProperty]
         private int initialInstallments;
 
+        [ObservableProperty]
+        private string totalAmountInstallments = "0,00";
+
+
+        [ObservableProperty]
+        private string note;
+
+
+        partial void OnSelectedTransactionTypeChanged(TransactionType value)
+        {
+            // Atualiza a cor com base no tipo de transação
+            TransactionTypeColor = value == TransactionType.Income ? "#2bbf69" : "#f75c5c";
+        }
+
 
         [RelayCommand]
         async Task OpenCategoryPicker()
         {
             var navigationParameter = new Dictionary<string, object>
-            {        { "SelectedCategory", selectedCategory }    };
+            {        { "SelectedCategory", SelectedCategory }    };
 
             await Shell.Current.GoToAsync(nameof(CategoryPicker), true, navigationParameter);
         }
 
         public async Task InitializeAsync()
         {
-            transactionTypeColor = "#f75c5c"; //Color.FromArgb("#2bbf69"); // Cor padrão para transações de entrada
-            transactionDate = DateTime.Now;
+            TransactionTypeColor = "#f75c5c"; //Color.FromArgb("#2bbf69"); // Cor padrão para transações de entrada
+            TransactionDate = DateTime.Now;
+            SelectedTransactionType = TransactionType.Expense;
             await LoadAccounts();
         }
 
@@ -93,10 +99,54 @@ namespace XpemFinancial.VMs
             {
                 SelectedCategory = selected; // só atualiza se vier com item
 
-                SelectedCategoryName = selectedCategory.Name;
+                SelectedCategoryName = SelectedCategory.Name;
                 query.Clear();
             }
             // sem item → mantém o valor anterior ✅
+        }
+
+        partial void OnNumberOfInstallmentsChanged(int oldValue, int newValue)
+        {
+            if (oldValue != newValue)
+            {
+                UpdateTotalAmountInstallments();
+            }
+        }
+
+        partial void OnAmountChanged(string? oldValue, string newValue)
+        {
+            if (oldValue != newValue)
+            {
+                UpdateTotalAmountInstallments();
+            }
+        }
+
+        partial void OnInitialInstallmentsChanged(int oldValue, int newValue)
+        {
+            if (oldValue != newValue)
+            {
+                UpdateTotalAmountInstallments();
+            }
+        }
+
+        private void UpdateTotalAmountInstallments()
+        {
+            if(SelectedRepetition != Repetition.Monthly)
+            {
+                TotalAmountInstallments = "0,00";
+                return;
+            }
+
+            if (NumberOfInstallments > 0 && decimal.TryParse(Amount, System.Globalization.NumberStyles.Currency, new System.Globalization.CultureInfo("pt-BR"), out decimal totalAmount))
+            {
+                int installmentsToCalculate = NumberOfInstallments - InitialInstallments;
+                decimal _totalAmountInstallments = totalAmount * installmentsToCalculate;
+                TotalAmountInstallments = _totalAmountInstallments.ToString("C", new System.Globalization.CultureInfo("pt-BR"));
+            }
+            else
+            {
+                TotalAmountInstallments = "0,00";
+            }
         }
 
         partial void OnSelectedRepetitionChanged(Repetition value)

@@ -3,14 +3,14 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
                    xmlns:local="clr-namespace:XpemFinancial.Components"
              x:DataType="local:NumericEntry"
+             x:Name="this"
              x:Class="XpemFinancial.Components.NumericEntry">
     <VerticalStackLayout>
-        <Label Style="{StaticResource LblHEntry}" Text="{Binding Source={x:Reference this}, Path=LabelText}" />
         <Entry
-                   x:Name="EntryNumeric"
-                   HorizontalOptions="Fill"
-                   Keyboard="Numeric"
-                   Style="{StaticResource Entry}"
-                   TextChanged="EntryCurrency_TextChanged" />
+            x:Name="EntryNumeric"
+            MaxLength="999"
+            Keyboard="Numeric"
+            Style="{StaticResource Entry}"
+            TextChanged="EntryNumeric_TextChanged" />
     </VerticalStackLayout>
 </ContentView>
