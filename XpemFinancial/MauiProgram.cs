@@ -38,12 +38,12 @@ namespace XpemFinancial
         {
             // MainPage é raiz do Shell (AppShell.xaml) — registrar só no DI, não como rota
             services.AddTransient<Views.MainPage>();
-            services.AddTransient<VMs.MainPageVM>();
+            services.AddTransient<VMs.MainVM>();
 
             // Páginas de navegação secundária
             services.AddTransientWithShellRoute<Views.TransactionEdit, VMs.TransactionEditVM>(nameof(Views.TransactionEdit));
             services.AddTransientWithShellRoute<Views.CategoryPicker, VMs.CategoryPickerVM>(nameof(Views.CategoryPicker));
-
+            services.AddTransientWithShellRoute<Views.AccountPage, VMs.AccountVM>(nameof(Views.AccountPage));
             return services;
         }
     }

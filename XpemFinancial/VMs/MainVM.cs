@@ -8,7 +8,7 @@ using CommunityToolkit.Mvvm.Input;
 
 namespace XpemFinancial.VMs
 {
-    public partial class MainPageVM : ObservableObject
+    public partial class MainVM : ObservableObject
     {
         public ObservableCollection<Transaction> Transactions { get; set; }
 
@@ -16,7 +16,7 @@ namespace XpemFinancial.VMs
 
         private Totals totals;
 
-        public MainPageVM()
+        public MainVM()
         {
             totals = new Totals
             {

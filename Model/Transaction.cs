@@ -25,7 +25,7 @@
     {
         Income,
         Expense,
-        //Transfer
+        Transfer
     }
 
     public enum Repetition

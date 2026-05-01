@@ -6,7 +6,7 @@
         {
             InitializeComponent();
 
-            BindingContext = new VMs.MainPageVM();
+            BindingContext = new VMs.MainVM();
         }
 
         private void TapGestureRecognizer_Tapped(object sender, TappedEventArgs e)

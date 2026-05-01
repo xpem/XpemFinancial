@@ -9,55 +9,39 @@ namespace Service
 {
     public interface IBuildDbService
     {
-        Task CleanLocalDatabase();
-        void Init();
+        Task InitAsync();
+        Task CleanLocalDatabaseAsync();
     }
 
     public class BuildDbService(IDbContextFactory<DbCtx> DbCtx) : IBuildDbService
     {
-        public void Init()
+        private const int CurrentDbVersion = 1;
+
+        public async Task InitAsync()
         {
-            using var context = DbCtx.CreateDbContext();
-            context.Database.EnsureCreated();
+            await using var context = await DbCtx.CreateDbContextAsync();
 
-            VersionDbTablesDTO? actualVesionDbTables = context.VersionDbTables.FirstOrDefault();
+            await context.Database.EnsureCreatedAsync();
 
-            VersionDbTablesDTO newVersionDbTables = new() { Id = 0, Version = 6 };
+            var actualVersion = context.VersionDbTables.FirstOrDefault();
 
-            if (actualVesionDbTables != null)
+            if (actualVersion is null || actualVersion.Version != CurrentDbVersion)
             {
-                if (actualVesionDbTables.Version != newVersionDbTables.Version)
-                {
-                    context.Database.EnsureDeleted();
-                    context.Database.EnsureCreated();
+                await context.Database.EnsureDeletedAsync();
+                await context.Database.EnsureCreatedAsync();
 
-                    actualVesionDbTables.Version = newVersionDbTables.Version;
-
-                    context.VersionDbTables.Add(actualVesionDbTables);
-
-                    context.SaveChanges();
-                }
-            }
-            else
-            {
-                context.Database.EnsureDeleted();
-                context.Database.EnsureCreated();
-
-                context.VersionDbTables.Add(newVersionDbTables);
-
-                context.SaveChanges();
+                context.VersionDbTables.Add(new VersionDbTablesDTO { Id = 0, Version = CurrentDbVersion });
+                await context.SaveChangesAsync();
             }
         }
 
-        public async Task CleanLocalDatabase()
+        public async Task CleanLocalDatabaseAsync()
         {
-            using var context = DbCtx.CreateDbContext();
+            await using var context = await DbCtx.CreateDbContextAsync();
 
-            context.User.RemoveRange(context.User);
-            context.Transaction.RemoveRange(context.Transaction);
-            context.Category.RemoveRange(context.Category);
-
-            await context.SaveChangesAsync();
+            // Recria o banco do zero em vez de remover tabela por tabela
+            await context.Database.EnsureDeletedAsync();
+            await context.Database.EnsureCreatedAsync();
         }
     }
 }

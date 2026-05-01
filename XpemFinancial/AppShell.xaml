@@ -4,12 +4,52 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:local="clr-namespace:XpemFinancial.Views"
+    xmlns:icons="clr-namespace:XpemFinancial.Resources"
     FlyoutHeaderBehavior="CollapseOnScroll"
+    xmlns:Components="clr-namespace:XpemFinancial.Components"
+    FlyoutBackgroundColor="{StaticResource PageBackground}"
     BackgroundColor="#10151e"
     Title="XpemFinancial">
 
-    <ShellContent
+    <Shell.ItemTemplate>
+        <DataTemplate>
+            <Grid
+                ColumnDefinitions="0.2*,0.8*"
+                HeightRequest="50"
+                HorizontalOptions="Start">
+                <Label
+                    Margin="10,5,10,5"
+                    FontFamily="Icons"
+                    FontSize="17"
+                    Text="{Binding Icon}"
+                    TextColor="{StaticResource White}"
+                    VerticalOptions="Center" />
+                <Label
+                    Grid.Column="1"
+                    FontAttributes="Bold"
+                    FontSize="15"
+                    Text="{Binding Title}"
+                    TextColor="White"
+                    VerticalTextAlignment="Center" />
+            </Grid>
+        </DataTemplate>
+    </Shell.ItemTemplate>
+    
+    <Shell.FlyoutHeader>
+        <Components:FlyoutHeader Name="{Binding Name}" Email="{Binding Email}" />
+    </Shell.FlyoutHeader>
+
+    <ShellContent FlyoutItemIsVisible="False"
         ContentTemplate="{DataTemplate local:MainPage}"
         Route="MainPage" />
 
+    <FlyoutItem Title="Principal" Icon="{x:Static icons:IconFont.House}">
+        <ShellContent ContentTemplate="{DataTemplate local:MainPage}" />
+    </FlyoutItem>
+
+
+    <FlyoutItem Title="Contas" Icon="{x:Static icons:IconFont.Wallet}">
+        <ShellContent ContentTemplate="{DataTemplate local:AccountPage}" />
+    </FlyoutItem>
+    
 </Shell>

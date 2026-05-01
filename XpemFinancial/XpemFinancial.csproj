@@ -92,10 +92,28 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <Compile Update="Views\AccountPage.xaml.cs">
+	    <DependentUpon>AccountPage.xaml</DependentUpon>
+	  </Compile>
+	  <Compile Update="Views\MainPage.xaml.cs">
+	    <DependentUpon>MainPage.xaml</DependentUpon>
+	  </Compile>
+	  <Compile Update="Views\TransactionEdit.xaml.cs">
+	    <DependentUpon>TransactionEdit.xaml</DependentUpon>
+	  </Compile>
+	</ItemGroup>
+
+	<ItemGroup>
 	  <MauiXaml Update="Components\CurrencyEntry.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
+	  <MauiXaml Update="Components\FlyoutHeader.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
 	  <MauiXaml Update="Components\NumericEntry.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
+	  <MauiXaml Update="Views\AccountPage.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
 	  <MauiXaml Update="Views\CategoryPicker.xaml">

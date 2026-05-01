@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vms="clr-namespace:XpemFinancial.VMs"
              x:Class="XpemFinancial.Views.TransactionEdit"
-                          xmlns:Icons="clr-namespace:XpemFinancial.Resources" 
+             xmlns:Icons="clr-namespace:XpemFinancial.Resources" 
              xmlns:Components="clr-namespace:XpemFinancial.Components"
              x:DataType="vms:TransactionEditVM"
              Shell.BackgroundColor="{Binding TransactionTypeColor}"
@@ -95,11 +95,8 @@
             </Grid>
             <Label Text="Descrição" Padding="0,10,0,0" />
             <Entry Text="{Binding Description}" IsTextPredictionEnabled="True"/>
-            <Components:CurrencyEntry LabelText="Valor" Text="{Binding Amount}" Margin="0,10,0,0" />
-            <!--<Picker x:Name="PickerAccount" Title="Conta"
-                    ItemsSource="{Binding Account}"
-                    ItemDisplayBinding="{Binding Name}"
-                    SelectedItem="{Binding SelectedAccount}" />-->
+            <Label Text="Valor" Padding="0,10,0,0"></Label>
+            <Components:CurrencyEntry Text="{Binding Amount}" />
             <HorizontalStackLayout x:Name="Repetition"
                                    RadioButtonGroup.GroupName="Repetition"
                                    RadioButtonGroup.SelectedValue="{Binding SelectedRepetition}"

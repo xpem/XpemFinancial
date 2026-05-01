@@ -12,5 +12,7 @@ namespace Repo
         public DbSet<CategoryDTO> Category => Set<CategoryDTO>();
 
         public DbSet<TransactionDTO> Transaction => Set<TransactionDTO>();
+
+        public DbSet<AccountDTO> Account => Set<AccountDTO>();
     }
 }

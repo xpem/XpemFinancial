@@ -6,7 +6,6 @@
              x:Name="this"
              x:Class="XpemFinancial.Components.CurrencyEntry">
     <VerticalStackLayout>
-        <Label Style="{StaticResource LblHEntry}" Text="{Binding Source={x:Reference this}, Path=LabelText}" />
         <Entry
                    x:Name="EntryCurrency"
                    HorizontalOptions="Fill"

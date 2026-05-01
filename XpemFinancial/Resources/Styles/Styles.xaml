@@ -123,7 +123,7 @@
                     <VisualState x:Name="Normal" />
                     <VisualState x:Name="Disabled">
                         <VisualState.Setters>
-                            <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray600}}" />
+                            <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray200}}" />
                         </VisualState.Setters>
                     </VisualState>
                 </VisualStateGroup>
@@ -402,7 +402,7 @@
 
     <Style TargetType="Page" ApplyToDerivedTypes="True">
         <Setter Property="Padding" Value="0"/>
-        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource OffBlack}}" />
+        <Setter Property="BackgroundColor" Value="{StaticResource BodyBackground}" />
     </Style>
 
     <Style TargetType="Shell" ApplyToDerivedTypes="True">
@@ -431,4 +431,91 @@
         <Setter Property="SelectedTabColor" Value="{AppThemeBinding Light={StaticResource Gray950}, Dark={StaticResource Gray200}}" />
     </Style>
 
+    <Style x:Key="PrimaryButtonOutline" TargetType="Button">
+        <Setter Property="BorderColor" Value="{StaticResource PrimaryAction}" />
+        <Setter Property="TextColor" Value="{StaticResource PrimaryAction}"></Setter>
+        <Setter Property="BorderWidth" Value="1"></Setter>
+        <Setter Property="BackgroundColor" Value="Transparent"></Setter>
+        <Setter Property="CornerRadius" Value="5" />
+        <Setter Property="VisualStateManager.VisualStateGroups">
+            <VisualStateGroupList>
+                <VisualStateGroup Name="CommonStates">
+                    <VisualState Name="Normal" />
+
+                    <VisualState Name="Pressed">
+                        <VisualState.Setters>
+                            <Setter Property="BackgroundColor" Value="{StaticResource PrimaryAction}" />
+                            <Setter Property="Opacity" Value="0.8" />
+                            <Setter Property="Scale" Value="0.95" />
+                        </VisualState.Setters>
+                    </VisualState>
+
+                    <VisualState Name="Disabled">
+                        <VisualState.Setters>
+                            <Setter Property="BorderColor" Value="Gray" />
+                        </VisualState.Setters>
+                    </VisualState>
+                </VisualStateGroup>
+            </VisualStateGroupList>
+        </Setter>
+    </Style>
+
+    <Style x:Key="EditButtonOutline" TargetType="Button">
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="BorderColor" Value="{StaticResource UpdateAction}" />
+        <Setter Property="BorderColor" Value="{StaticResource UpdateAction}" />
+        <Setter Property="CornerRadius" Value="5" />
+        <Setter Property="BorderWidth" Value="1" />
+        <Setter Property="VisualStateManager.VisualStateGroups">
+            <VisualStateGroupList>
+                <VisualStateGroup Name="CommonStates">
+                    <VisualState Name="Normal" />
+
+                    <VisualState Name="Pressed">
+                        <VisualState.Setters>
+                            <Setter Property="BackgroundColor" Value="{StaticResource UpdateAction}" />
+                            <Setter Property="Opacity" Value="0.8" />
+                            <Setter Property="Scale" Value="0.95" />
+                        </VisualState.Setters>
+                    </VisualState>
+
+                    <VisualState Name="Disabled">
+                        <VisualState.Setters>
+                            <Setter Property="BorderColor" Value="Gray" />
+                        </VisualState.Setters>
+                    </VisualState>
+                </VisualStateGroup>
+            </VisualStateGroupList>
+        </Setter>
+    </Style>
+    
+    <Style x:Key="DeleteButtonOutline" TargetType="Button">
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="BorderColor" Value="{StaticResource DeleteAction}" />
+        <Setter Property="TextColor" Value="{StaticResource DeleteAction}" />
+        <Setter Property="CornerRadius" Value="5" />
+        <Setter Property="BorderWidth" Value="1" />
+        <Setter Property="VisualStateManager.VisualStateGroups">
+            <VisualStateGroupList>
+                <VisualStateGroup Name="CommonStates">
+                    <VisualState Name="Normal" />
+
+                    <VisualState Name="Pressed">
+                        <VisualState.Setters>
+                            <Setter Property="BackgroundColor" Value="{StaticResource DeleteAction}" />
+                            <Setter Property="Opacity" Value="0.8" />
+                            <Setter Property="Scale" Value="0.95" />
+                        </VisualState.Setters>
+                    </VisualState>
+
+                    <VisualState Name="Disabled">
+                        <VisualState.Setters>
+                            <Setter Property="BorderColor" Value="Gray" />
+                        </VisualState.Setters>
+                    </VisualState>
+                </VisualStateGroup>
+            </VisualStateGroupList>
+        </Setter>
+    </Style>
+    
 </ResourceDictionary>

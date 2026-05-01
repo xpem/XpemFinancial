@@ -9,7 +9,7 @@ namespace Service
     {
         Task AddUserAsync(UserDTO user);
         Task GetMockUserAsync();
-        Task<UserDTO?> Get();
+        Task<UserDTO?> GetAsync();
     }
 
     public class UserService(Repo.IUserRepo UserRepo) : IUserService
@@ -19,7 +19,7 @@ namespace Service
             await UserRepo.Add(user);
         }
 
-        public async Task<Model.DTO.UserDTO?> Get()
+        public async Task<Model.DTO.UserDTO?> GetAsync()
         {
             return await UserRepo.Get();
         }

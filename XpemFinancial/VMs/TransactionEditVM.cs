@@ -30,9 +30,6 @@ namespace XpemFinancial.VMs
 
         public ObservableCollection<Category> FlattenedCategories { get; set; } = new();
 
-        [ObservableProperty]
-        private ObservableCollection<Account> account;
-
         // Esta propriedade apenas facilita a exibição no botão/label da View
         // Ela será atualizada sempre que a SelectedCategory mudar
         public string CategoryDisplayName => selectedCategory?.Name ?? "Selecionar Categoria";
@@ -84,12 +81,6 @@ namespace XpemFinancial.VMs
             TransactionTypeColor = "#f75c5c"; //Color.FromArgb("#2bbf69"); // Cor padrão para transações de entrada
             TransactionDate = DateTime.Now;
             SelectedTransactionType = TransactionType.Expense;
-            await LoadAccounts();
-        }
-
-        private async Task LoadAccounts()
-        {
-            Account = new ObservableCollection<Account>(MockAccount.GetMockAccounts());
         }
 
         // Este método é chamado automaticamente quando a navegação volta para cá

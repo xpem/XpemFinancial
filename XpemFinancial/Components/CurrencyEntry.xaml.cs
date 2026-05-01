@@ -27,15 +27,6 @@ public partial class CurrencyEntry : ContentView
         set => SetValue(TextProperty, value);
     }
 
-    public static readonly BindableProperty LabelTextProperty = BindableProperty.Create(
-        nameof(LabelText), typeof(string), typeof(CurrencyEntry), string.Empty);
-
-    public string LabelText
-    {
-        get => (string)GetValue(LabelTextProperty);
-        set => SetValue(LabelTextProperty, value);
-    }
-
     protected override void OnHandlerChanged()
     {
         base.OnHandlerChanged();

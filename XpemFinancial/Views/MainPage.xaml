@@ -3,8 +3,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:Icons="clr-namespace:XpemFinancial.Resources"  
              xmlns:Utils="clr-namespace:XpemFinancial.Utils"
-             xmlns:ViewModels="clr-namespace:XpemFinancial.VMs" x:DataType="ViewModels:MainPageVM"
-             BackgroundColor="{StaticResource PageBackground}"
+             Shell.FlyoutBehavior="Flyout"
+             xmlns:ViewModels="clr-namespace:XpemFinancial.VMs" x:DataType="ViewModels:MainVM"
              x:Class="XpemFinancial.Views.MainPage">
     <ContentPage.Resources>
         <ResourceDictionary>
@@ -31,7 +31,7 @@
         </Style>
     </ContentPage.Resources>
     <ScrollView Margin="10">
-        <VerticalStackLayout BackgroundColor="#181f2a" Padding="5">
+        <VerticalStackLayout Padding="5">
             <FlexLayout Wrap="Wrap" Direction="Row" AlignItems="Center">
                 <Button x:Name="PreviousMonthButton" Style="{StaticResource btnDefault}">
                     <Button.ImageSource>
@@ -49,7 +49,7 @@
                     </Button.ImageSource>
                 </Button>
                 <Button x:Name="CreateTransaction" Style="{StaticResource btnPrimary}"
-                        ContentLayout="Left, 10" Text="Adicionar transação"
+                        ContentLayout="Left, 10"
                         Command="{Binding GoToTransactionEditCommand}">
                     <Button.ImageSource>
                         <FontImageSource FontFamily="Icons" Color="#121b27"
@@ -97,7 +97,6 @@
                         <Label Grid.Row="2" Text="Saídas" FontAttributes="Bold" TextColor="#d6e0eb" VerticalTextAlignment="Center"/>
                         <Label Grid.Row="2" Grid.Column="1"  Text="{Binding Totals.Expense, StringFormat='{}{0:C}'}" FontSize="Large" TextColor="{StaticResource Expense}" HorizontalOptions="End"/>
 
-                        <!--total separado por uma linha-->
                         <BoxView Grid.Row="3" Grid.ColumnSpan="2" HeightRequest="1" BackgroundColor="#6cc8ef" Margin="0,10,0,10"/>
                         <Label Grid.Row="4" Grid.ColumnSpan="2" Text="{Binding Totals.Total, StringFormat='{}{0:C}'}" FontAttributes="Bold" TextColor="#d6e0eb" VerticalTextAlignment="Center" FontSize="Large" HorizontalOptions="End"/>
                     </Grid>
@@ -105,7 +104,6 @@
             </Border>
             <Border Stroke="#232c39" StrokeShape="5" Margin="10" Padding="0" >
                 <Grid RowDefinitions="Auto, *">
-                    <!-- Header Section -->
                     <Grid BackgroundColor="#232c39">
                         <Label Text="Transações" 
                            Grid.ColumnSpan="3"
@@ -125,17 +123,7 @@
                            HorizontalOptions="End"
                            />
                     </Grid>
-                    <!-- Content Section -->
-                    <!--collection view com as transações do mes. headers: Transações,Data,Categoria,Valor, #(sem header, icone de edit em cada line)-->
                     <CollectionView Grid.Row="1" ItemsSource="{Binding Transactions}" Margin="0,10,0,0">
-                        <!--<CollectionView.Header>
-                            <Grid ColumnDefinitions="2*, 1.2*, 1*, 40" Padding="10" BackgroundColor="#232c39">
-                                <Label Text="Transação" FontAttributes="Bold" TextColor="#d6e0eb"/>
-                                <Label Grid.Column="1" Text="Data" FontAttributes="Bold" TextColor="#d6e0eb" HorizontalTextAlignment="Center"/>
-                                --><!--<Label Grid.Column="2" Text="Categoria" FontAttributes="Bold" TextColor="#d6e0eb" HorizontalTextAlignment="Center"/>--><!--
-                                <Label Grid.Column="2" Text="Valor" FontAttributes="Bold" TextColor="#d6e0eb" HorizontalTextAlignment="End"/>
-                            </Grid>
-                        </CollectionView.Header>-->
                         <CollectionView.ItemTemplate>
                             <DataTemplate>
                                 <Grid ColumnDefinitions="2*, 1.2*, 1*, 40" Padding="5,0,5,0" VerticalOptions="Center" RowSpacing="0">
@@ -150,13 +138,6 @@
                                            HorizontalTextAlignment="Center"
                                            VerticalOptions="Center"
                                            />
-
-                                    <!--<Label Grid.Column="2" 
-                                           Text="{Binding Category}" 
-                                           TextColor="#d6e0eb" 
-                                           HorizontalTextAlignment="Center"
-                                           VerticalOptions="Center"
-                                           />-->
 
                                     <Label Grid.Column="2" 
                                            Text="{Binding Amount, StringFormat='{0:N2}'}" 

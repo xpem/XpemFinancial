@@ -9,9 +9,9 @@ public partial class NumericEntry : ContentView
 
     public static readonly BindableProperty TextProperty = BindableProperty.Create(
         nameof(Text),
-        typeof(int),        // ✅ correto
+        typeof(int),
         typeof(NumericEntry),
-        0,                  // ✅ valor padrão int
+        0,
         BindingMode.TwoWay,
         propertyChanged: OnExternalValueChanged);
 
@@ -19,16 +19,6 @@ public partial class NumericEntry : ContentView
     {
         get => (int)GetValue(TextProperty);
         set => SetValue(TextProperty, value);
-    }
-
-
-    public static readonly BindableProperty LabelTextProperty = BindableProperty.Create(
-        nameof(LabelText), typeof(string), typeof(CurrencyEntry), string.Empty);
-
-    public string LabelText
-    {
-        get => (string)GetValue(LabelTextProperty);
-        set => SetValue(LabelTextProperty, value);
     }
 
     private static void OnExternalValueChanged(BindableObject bindable, object oldValue, object newValue)
@@ -77,7 +67,7 @@ public partial class NumericEntry : ContentView
     }
 
     public NumericEntry()
-	{
-		InitializeComponent();
-	}
+    {
+        InitializeComponent();
+    }
 }
