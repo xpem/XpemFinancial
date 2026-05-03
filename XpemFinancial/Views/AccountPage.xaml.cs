@@ -10,4 +10,10 @@ public partial class AccountPage : ContentPage
 
 		BindingContext = accountVM;
 	}
+
+    protected override async void OnAppearing()
+    {
+        base.OnAppearing();
+        await ((AccountVM)BindingContext).InitializeAsync();
+    }
 }

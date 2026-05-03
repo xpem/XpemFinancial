@@ -5,84 +5,76 @@ using System.Text;
 using Model;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Service;
 
 namespace XpemFinancial.VMs
 {
-    public partial class MainVM : ObservableObject
+    public partial class MainVM(IAccountService accountService) : ObservableObject
     {
-        public ObservableCollection<Transaction> Transactions { get; set; }
+        [ObservableProperty]
+        private ObservableCollection<Transaction> transactions;
 
         [ObservableProperty]
+        private bool includePreviousBalance;
 
-        private Totals totals;
+        [ObservableProperty]
+        private decimal previousBalance;
 
-        public MainVM()
+        [ObservableProperty]
+        private decimal income;
+
+        [ObservableProperty]
+        private decimal expense;
+
+        [ObservableProperty]
+        private decimal total;
+
+        [ObservableProperty]
+        private bool isNullAccount = false;
+
+        public async Task InitializeAsync()
         {
-            totals = new Totals
-            {
-                IncludePreviousBalance = true,
-                PreviousBalance = 5000.00m,
-                Income = 2000.00m,
-                Expense = 1000.00m
-            };
+            var existingAccount = await accountService.GetAsync();
 
-            totals.Total = totals.PreviousBalance + totals.Income - totals.Expense;
+            if (existingAccount == null)
+            {
+                IsNullAccount = true;
+            }
+            else
+                IsNullAccount = false;
+
+            IncludePreviousBalance = true;
+
+            //saldo anterior será o saldo da conta menos as transações do mes até o dia de hoje.
+            PreviousBalance = existingAccount?.Balance ?? 0;
+
+            Income = 0;
+            Expense = 0;
+
+            //saldo anterior será o saldo da conta mais  as transações do mes incluindo as futuras.
+            Total = PreviousBalance + Income - Expense;
 
             // Criando a lista de Mock
-            Transactions =
-            [
-                new Transaction
-                {
-                    Description = "Assinatura Netflix",
-                    Date = DateTime.Now.AddDays(-2),
-                    Category = new Category { Id = 1, Name = "Assinatura Netflix", IsCategory = false },
-                    Amount = -55.90m
-                },
-                new Transaction
-                {
-                    Description = "Salário Mensal",
-                    Date = DateTime.Now.AddDays(-1),
-                    Category = new Category { Id = 2, Name = "Trabalho", IsCategory = false },
-                    Amount = 5000.00m
-                },
-                new Transaction
-                {
-                    Description = "Supermercado",
-                    Date = DateTime.Now,
-                    Category = new Category { Id = 3, Name = "Alimentação", IsCategory = false },
-                    Amount = -350.25m
-                },
-                new Transaction
-                {
-                    Description = "Venda de Monitor",
-                    Date = DateTime.Now,
-                    Category = new Category { Id = 4, Name = "Extra", IsCategory = false },
-                    Amount = 850.00m
-                },
-                new Transaction
-                {
-                    Description = "Posto de Gasolina",
-                    Date = DateTime.Now.AddDays(1),
-                    Category = new Category { Id = 5, Name = "Transporte", IsCategory = false },
-                    Amount = -200.00m
-                }
-            ];
+            Transactions = [];
         }
+
+        [RelayCommand]
+        private async Task GoToAccountPage() => await Shell.Current.GoToAsync($"{nameof(Views.AccountPage)}");
 
         [RelayCommand]
         private async Task ToggleIncludePreviousBalance()
         {
             // 1. Toggle the state
-            totals.IncludePreviousBalance = !totals.IncludePreviousBalance;
+            IncludePreviousBalance = !IncludePreviousBalance;
 
             // 2. Perform the conditional calculation
-            if (totals.IncludePreviousBalance)
+            if (IncludePreviousBalance)
             {
-                totals.Total = totals.PreviousBalance + totals.Income - totals.Expense;
+                Total = PreviousBalance + Income - Expense;
             }
             else
             {
-                totals.Total = totals.Income - totals.Expense;
+                Total = Income - Expense;
             }
 
             // 3. Force the UI to refresh the Totals object

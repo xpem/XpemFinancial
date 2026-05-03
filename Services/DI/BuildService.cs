@@ -8,6 +8,9 @@ namespace Service.DI
         {
             services.AddScoped<IBuildDbService, BuildDbService>();
             services.AddScoped<IUserService, UserService>();
+            services.AddScoped<IAccountService, AccountService>();
+            services.AddSingleton<IUserService, UserService>();
+            services.AddSingleton<IUserSessionService, UserSessionService>();
         }
     }
 }

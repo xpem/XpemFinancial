@@ -6,13 +6,13 @@ namespace XpemFinancial
 {
     public partial class App : Application
     {
-        public IUserService UserService { get; set; }
+        public IUserSessionService UserSessionService { get; set; }
 
-        public App(IUserService userService, IBuildDbService buildDbService)
+        public App(IUserService userService, IUserSessionService userSessionService, IBuildDbService buildDbService)
         {
             InitializeComponent();
 
-            UserService = userService;
+            UserSessionService = userSessionService;
 
             Application.Current.UserAppTheme = AppTheme.Dark;
 
@@ -24,7 +24,7 @@ namespace XpemFinancial
 
         protected override Window CreateWindow(IActivationState? activationState)
         {
-            var appShellVM = new AppShellVM(UserService);
+            var appShellVM = new AppShellVM(UserSessionService);
 
             _= appShellVM.UserFlyoutAsync();
 

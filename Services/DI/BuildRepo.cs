@@ -11,6 +11,8 @@ namespace Service.DI
         public static void AddRepo(this IServiceCollection services)
         {
             services.AddScoped<IUserRepo, UserRepo>();
+            services.AddScoped<IAccountRepo, AccountRepo>();
+            services.AddScoped<ITransactionRepo, TransactionRepo>();
         }
     }
 }

@@ -32,6 +32,18 @@
     </ContentPage.Resources>
     <ScrollView Margin="10">
         <VerticalStackLayout Padding="5">
+            <Grid IsVisible="{Binding IsNullAccount}">
+                <Border Stroke="{StaticResource DeleteAction}" StrokeShape="10" Padding="10">
+                    <StackLayout>
+                        <Label Text="*Defina um valor inicial para a sua conta" Margin="0,0,0,10"></Label>
+                        <Button Text="Ajustar Saldo Inicial" Style="{StaticResource PrimaryButtonOutline}" HorizontalOptions="Start" Command="{Binding GoToAccountPageCommand}">
+                            <Button.ImageSource>
+                                <FontImageSource Size="15" FontFamily="Icons" Glyph="{x:Static Icons:IconFont.Wallet}" Color="{StaticResource PrimaryAction}" />
+                            </Button.ImageSource>
+                        </Button>
+                    </StackLayout>
+                </Border>
+            </Grid>
             <FlexLayout Wrap="Wrap" Direction="Row" AlignItems="Center">
                 <Button x:Name="PreviousMonthButton" Style="{StaticResource btnDefault}">
                     <Button.ImageSource>
@@ -74,7 +86,7 @@
 
                         <CheckBox x:Name="CheckBoxIncludePreviousBalance"
                                   Color="White"
-                                  IsChecked="{Binding Totals.IncludePreviousBalance}" />
+                                  IsChecked="{Binding IncludePreviousBalance}" />
 
                         <Label Text="Incluir saldo anterior" 
                                TextColor="#d6e0eb"                                     
@@ -89,16 +101,16 @@
                           HorizontalOptions="Fill" Padding="5"
                           RowDefinitions="Auto, Auto, Auto, Auto, Auto">
 
-                        <Label Text="Saldo anterior" FontAttributes="Bold" TextColor="#d6e0eb" VerticalTextAlignment="Center" IsVisible="{Binding Totals.IncludePreviousBalance}"/>
-                        <Label Grid.Column="1" Text="{Binding Totals.PreviousBalance, StringFormat='{}{0:C}'}" FontSize="Large" TextColor="#6cc8ef" HorizontalOptions="End" IsVisible="{Binding Totals.IncludePreviousBalance}"/>
+                        <Label Text="Saldo anterior" FontAttributes="Bold" TextColor="#d6e0eb" VerticalTextAlignment="Center" IsVisible="{Binding IncludePreviousBalance}"/>
+                        <Label Grid.Column="1" Text="{Binding PreviousBalance, StringFormat='{}{0:C}'}" FontSize="Large" TextColor="#6cc8ef" HorizontalOptions="End" IsVisible="{Binding IncludePreviousBalance}"/>
 
                         <Label Grid.Row="1" Text="Entradas" FontAttributes="Bold" TextColor="{StaticResource Income}" VerticalTextAlignment="Center"/>
-                        <Label Grid.Row="1" Grid.Column="1"  Text="{Binding Totals.Income, StringFormat='{}{0:C}'}" FontSize="Large" TextColor="{StaticResource Income}" HorizontalOptions="End"/>
+                        <Label Grid.Row="1" Grid.Column="1"  Text="{Binding Income, StringFormat='{}{0:C}'}" FontSize="Large" TextColor="{StaticResource Income}" HorizontalOptions="End"/>
                         <Label Grid.Row="2" Text="Saídas" FontAttributes="Bold" TextColor="#d6e0eb" VerticalTextAlignment="Center"/>
-                        <Label Grid.Row="2" Grid.Column="1"  Text="{Binding Totals.Expense, StringFormat='{}{0:C}'}" FontSize="Large" TextColor="{StaticResource Expense}" HorizontalOptions="End"/>
+                        <Label Grid.Row="2" Grid.Column="1"  Text="{Binding Expense, StringFormat='{}{0:C}'}" FontSize="Large" TextColor="{StaticResource Expense}" HorizontalOptions="End"/>
 
                         <BoxView Grid.Row="3" Grid.ColumnSpan="2" HeightRequest="1" BackgroundColor="#6cc8ef" Margin="0,10,0,10"/>
-                        <Label Grid.Row="4" Grid.ColumnSpan="2" Text="{Binding Totals.Total, StringFormat='{}{0:C}'}" FontAttributes="Bold" TextColor="#d6e0eb" VerticalTextAlignment="Center" FontSize="Large" HorizontalOptions="End"/>
+                        <Label Grid.Row="4" Grid.ColumnSpan="2" Text="{Binding Total, StringFormat='{}{0:C}'}" FontAttributes="Bold" TextColor="#d6e0eb" VerticalTextAlignment="Center" FontSize="Large" HorizontalOptions="End"/>
                     </Grid>
                 </Grid>
             </Border>

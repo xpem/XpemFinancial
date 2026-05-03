@@ -14,12 +14,12 @@ namespace Service
 
     public class UserService(Repo.IUserRepo UserRepo) : IUserService
     {
-        public async Task AddUserAsync(Model.DTO.UserDTO user)
+        public async Task AddUserAsync(UserDTO user)
         {
             await UserRepo.Add(user);
         }
 
-        public async Task<Model.DTO.UserDTO?> GetAsync()
+        public async Task<UserDTO?> GetAsync()
         {
             return await UserRepo.Get();
         }

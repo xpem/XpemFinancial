@@ -1,13 +1,16 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Maui.Alerts;
+using CommunityToolkit.Maui.Core;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Model.DTO;
+using Service;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace XpemFinancial.VMs
 {
-    public partial class AccountVM : VMBase
+    public partial class AccountVM(IAccountService accountService, IUserSessionService userSessionService) : VMBase
     {
         [ObservableProperty]
         private string currentBalance;
@@ -26,16 +29,34 @@ namespace XpemFinancial.VMs
         }
 
         [RelayCommand]
-        private void SaveBalance()
+        private async Task SaveBalance()
         {
-            // Aqui você pode adicionar a lógica para salvar o novo saldo, como chamar um serviço ou atualizar o banco de dados
+            if (CurrentBalance == Account.Balance.ToString("C"))
+            {
+                IsEditingBalance = false;
+                return;
+            }
+
+            Account.Balance = decimal.Parse(CurrentBalance, System.Globalization.NumberStyles.Currency);
+
+            await accountService.AdjustAccountBalanceAsync(Account);
+
+            if (DeviceInfo.Platform == DevicePlatform.iOS || DeviceInfo.Platform == DevicePlatform.Android)
+            {
+                ToastDuration duration = ToastDuration.Short;
+
+                var toast = Toast.Make("Valor atualizado!", duration, 15);
+                await toast.Show();
+            }
+            else
+                await Application.Current.Windows[0].Page.DisplayAlertAsync("Success", "Valor atualizado!", null, "Ok");
+
             IsEditingBalance = false;
         }
 
         [RelayCommand]
         private void CancelEditBalance()
         {
-            // Aqui você pode adicionar a lógica para cancelar a edição, como restaurar o valor original do saldo
             IsEditingBalance = false;
         }
 
@@ -45,9 +66,21 @@ namespace XpemFinancial.VMs
             IsEditingBalance = true;
         }
 
-        public AccountVM()
+        public async Task InitializeAsync()
         {
-            CurrentBalance = "0";
+            var existingAccount = await accountService.GetAsync();
+
+            if (existingAccount == null)
+            {
+                var currentUser = await userSessionService.GetCurrentUserAsync();
+                Account = new AccountDTO { Balance = 0, UserId = currentUser?.Id ?? 0 };
+            }
+            else
+            {
+                Account = existingAccount;
+            }
+
+            CurrentBalance = Account.Balance.ToString("C");
         }
     }
 }

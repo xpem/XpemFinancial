@@ -9,12 +9,12 @@ namespace Model.DTO
     public class AccountDTO : BaseDTO
     {
 
-        public string Name { get; set; }
+        //public string Name { get; set; }
 
         public decimal Balance { get; set; }
 
-        public int UserId { get; set; }
+        public required int UserId { get; set; }
 
-        public UserDTO User { get; set; }
+        public UserDTO? User { get; set; }
     }
 }

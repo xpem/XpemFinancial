@@ -7,7 +7,7 @@ using System.Text;
 
 namespace XpemFinancial.VMs
 {
-    public partial class AppShellVM(Service.IUserService UserService) : ObservableObject
+    public partial class AppShellVM(Service.IUserSessionService userSessionService) : ObservableObject
     {
         [ObservableProperty]
         private string email;
@@ -17,7 +17,7 @@ namespace XpemFinancial.VMs
 
         public async Task UserFlyoutAsync()
         {
-            UserDTO? user = await UserService.GetAsync();
+            UserDTO? user = await userSessionService.GetCurrentUserAsync();
 
             if (user is not null)
             {

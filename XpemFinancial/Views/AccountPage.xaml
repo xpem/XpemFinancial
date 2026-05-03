@@ -9,7 +9,7 @@
                 x:DataType="vms:AccountVM"
              Title="Conta">
     <ContentPage.Resources>
-      
+
     </ContentPage.Resources>
     <VerticalStackLayout Margin="10" HorizontalOptions="Start">
         <Label 
@@ -27,12 +27,12 @@
                 </Button.ImageSource>
             </Button>
         </HorizontalStackLayout>
-            <HorizontalStackLayout Spacing="5" Margin="0,10,0,0" VerticalOptions="Center" HorizontalOptions="Center" IsVisible="{Binding IsEditingBalance}">
-            <Button Text="Salvar" Style="{StaticResource PrimaryButtonOutline}" >
-                    <Button.ImageSource>
-                        <FontImageSource Size="15" FontFamily="Icons" Glyph="{x:Static icons:IconFont.Check}" Color="{StaticResource PrimaryAction}" />
-                    </Button.ImageSource>
-                </Button>
+        <HorizontalStackLayout Spacing="5" Margin="0,10,0,0" VerticalOptions="Center" HorizontalOptions="Center" IsVisible="{Binding IsEditingBalance}">
+            <Button Text="Salvar" Style="{StaticResource PrimaryButtonOutline}" Command="{Binding SaveBalanceCommand}" >
+                <Button.ImageSource>
+                    <FontImageSource Size="15" FontFamily="Icons" Glyph="{x:Static icons:IconFont.Check}" Color="{StaticResource PrimaryAction}" />
+                </Button.ImageSource>
+            </Button>
             <Button Text="Cancelar" Command="{Binding CancelEditBalanceCommand}" Style="{StaticResource DeleteButtonOutline}">
                 <Button.ImageSource>
                     <FontImageSource Size="15" FontFamily="Icons" Glyph="{x:Static icons:IconFont.Xmark}" Color="{StaticResource DeleteAction}" />
