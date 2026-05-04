@@ -5,14 +5,19 @@
              xmlns:Models="clr-namespace:Model.DTO;assembly=Model"
              BackgroundColor="{StaticResource BodyBackground}"             
              xmlns:vms="clr-namespace:XpemFinancial.VMs"
+             xmlns:utils="clr-namespace:XpemFinancial.Utils"
              x:DataType="vms:CategoryPickerVM"
              Title="Selecionar Categoria">
+    <ContentPage.Resources>
+        <utils:BoldConverter x:Key="BoldConverter" />
+        <utils:IndentConverter x:Key="IndentConverter" />
+    </ContentPage.Resources>
     <Grid RowDefinitions="Auto, *">
 
         <SearchBar x:Name="searchBar" Grid.Row="0" Placeholder="Procurar..."
                    Text="{Binding SearchText, Mode=TwoWay}"
                    IsEnabled="{Binding IsNotBusy}"/>
-                   <!--SearchCommand="{Binding SearchCommand}"-->
+        <!--SearchCommand="{Binding SearchCommand}"-->
 
         <!-- Loading -->
         <ActivityIndicator Grid.Row="1"
@@ -49,7 +54,7 @@
                                 Command="{Binding Source={RelativeSource AncestorType={x:Type vms:CategoryPickerVM}}, Path=SelectItemCommand}"
                                 CommandParameter="{Binding .}" />
                         </Grid.GestureRecognizers>
-                        <Label Text="{Binding Name}"
+                        <Label Text="{Binding Name}"                           
                                FontAttributes="{Binding IsMainCategory, Converter={StaticResource BoldConverter}}"
                                Margin="{Binding IsMainCategory, Converter={StaticResource IndentConverter}}"
                                FontSize="16" />

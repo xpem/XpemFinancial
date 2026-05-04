@@ -43,7 +43,7 @@ namespace Service
                 {
                     Category = "Carro",
                     Subcategories = new List<string> { "Combustível", "Estacionamento", "Lavagem", "Multas", "Pedágio" }
-                   },
+                },
                    new(){
                         Category = "Casa",
                         Subcategories = new List<string> { "Aluguel", "Condomínio", "Internet", "Energia", "Manutenção", "Limpeza", "Móveis", "Utensílios" }
@@ -94,7 +94,7 @@ namespace Service
                 },
                 new(){
                       Category = "Transporte",
-                      Subcategories = new List<string> { "Combustível", "Estacionamento", "Lavagem", "Metrô", "Multas", "Pedágio", "Transporte por app" }
+                      Subcategories = new List<string> { "Metrô", "Ônibus", "Bicicleta", "App" }
                 },
                 new(){
                       Category = "Investimentos",

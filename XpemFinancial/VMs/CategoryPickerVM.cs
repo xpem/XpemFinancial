@@ -37,38 +37,46 @@ namespace XpemFinancial.VMs
                     ? _cachedCategories
                     : _cachedCategories.Where(x => x.Name.Contains(newValue, StringComparison.OrdinalIgnoreCase)).ToList();
 
-                _ = ReloadSourceAsync(filtered);
+                _ = ReloadSourceAsync(filtered, showBusy: false);
             }
         }
-
 
         public async Task InitializeAsync()
         {
             var user = await userSessionService.GetCurrentUserAsync();
 
-            if (_cachedCategories == null)
-                _cachedCategories = await categoryService.GetAllAsync();
+            _cachedCategories ??= await categoryService.GetAllAsync();
 
             if (Categories.Count > 0) return;
 
             await ReloadSourceAsync(_cachedCategories);
         }
 
-        private async Task ReloadSourceAsync(List<CategoryDTO> source)
+        private async Task ReloadSourceAsync(List<CategoryDTO> source, bool showBusy = true)
         {
             _currentSource = source;
             _loadedCount = 0;
-            IsBusy = true;
+            if (showBusy) IsBusy = true;
             Categories.Clear();
             await LoadNextBatchAsync();
-            IsBusy = false;
+            if (showBusy) IsBusy = false;
         }
+
+        private bool _isLoadingMore = false;
 
         [RelayCommand]
         private async Task LoadMore()
         {
-            if (_loadedCount >= _currentSource.Count) return;
-            await LoadNextBatchAsync();
+            if (_isLoadingMore || _loadedCount >= _currentSource.Count) return;
+            _isLoadingMore = true;
+            try
+            {
+                await LoadNextBatchAsync();
+            }
+            finally
+            {
+                _isLoadingMore = false;
+            }
         }
 
         private async Task LoadNextBatchAsync()
@@ -79,15 +87,6 @@ namespace XpemFinancial.VMs
 
             _loadedCount += batch.Count;
             await Task.Yield();
-        }
-
-        partial void OnSearchTextChanged(string value)
-        {
-            var filtered = string.IsNullOrWhiteSpace(value)
-                ? _cachedCategories
-                : _cachedCategories.Where(x => x.Name.Contains(value, StringComparison.OrdinalIgnoreCase)).ToList();
-
-            _ = ReloadSourceAsync(filtered);
         }
 
         [RelayCommand]
