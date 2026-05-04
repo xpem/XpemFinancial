@@ -1,8 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Repo;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Service.DI
 {
@@ -13,6 +10,7 @@ namespace Service.DI
             services.AddScoped<IUserRepo, UserRepo>();
             services.AddScoped<IAccountRepo, AccountRepo>();
             services.AddScoped<ITransactionRepo, TransactionRepo>();
+            services.AddScoped<ICategoryRepo, CategoryRepo>();
         }
     }
 }

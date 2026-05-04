@@ -30,8 +30,6 @@ namespace Model.DTO
 
         public string? Note { get; set; }
 
-        public bool IsDeleted { get; set; }
-
         public int AccountId { get; set; }
 
         public AccountDTO? Account { get; set; }

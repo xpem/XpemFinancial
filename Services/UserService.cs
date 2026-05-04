@@ -12,33 +12,32 @@ namespace Service
         Task<UserDTO?> GetAsync();
     }
 
-    public class UserService(Repo.IUserRepo UserRepo) : IUserService
+    public class UserService(Repo.IUserRepo userRepo) : IUserService
     {
         public async Task AddUserAsync(UserDTO user)
         {
-            await UserRepo.Add(user);
+            await userRepo.AddAsync(user);
         }
 
         public async Task<UserDTO?> GetAsync()
         {
-            return await UserRepo.Get();
+            return await userRepo.GetAsync();
         }
 
         //mock user for testing purposes
         public async Task GetMockUserAsync()
         {
-            if(await UserRepo.Get() != null)
+            if(await userRepo.GetAsync() != null)
                 return;
 
             var mockUser = new Model.DTO.UserDTO
             {
-                Id = 1,
                 Name = "Mock User",
                 Email = "emanuel.xpe@gmail.com",
                 CreatedAt = DateTime.UtcNow,
             };
 
-            await UserRepo.Add(mockUser);
+            await userRepo.AddAsync(mockUser);
         }
     }
 }

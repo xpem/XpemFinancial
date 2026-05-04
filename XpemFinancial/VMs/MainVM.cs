@@ -6,13 +6,14 @@ using Model;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Service;
+using Model.DTO;
 
 namespace XpemFinancial.VMs
 {
-    public partial class MainVM(IAccountService accountService) : ObservableObject
+    public partial class MainVM(IAccountService accountService) : VMBase
     {
         [ObservableProperty]
-        private ObservableCollection<Transaction> transactions;
+        private ObservableCollection<TransactionDTO> transactions;
 
         [ObservableProperty]
         private bool includePreviousBalance;
@@ -32,6 +33,14 @@ namespace XpemFinancial.VMs
         [ObservableProperty]
         private bool isNullAccount = false;
 
+        [ObservableProperty]
+        private bool isNotNullAccount = false;
+        
+        partial void OnIsNullAccountChanged(bool value)
+        {
+            IsNotNullAccount = !value;
+        }
+
         public async Task InitializeAsync()
         {
             var existingAccount = await accountService.GetAsync();
@@ -42,6 +51,8 @@ namespace XpemFinancial.VMs
             }
             else
                 IsNullAccount = false;
+
+            IsNotNullAccount = !IsNullAccount;
 
             IncludePreviousBalance = true;
 

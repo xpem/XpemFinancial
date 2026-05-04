@@ -8,7 +8,8 @@ namespace XpemFinancial
     {
         public IUserSessionService UserSessionService { get; set; }
 
-        public App(IUserService userService, IUserSessionService userSessionService, IBuildDbService buildDbService)
+        public App(IUserService userService, IUserSessionService userSessionService, ICategoryService categoryService,
+            IBuildDbService buildDbService, IAccountService accountService)
         {
             InitializeComponent();
 
@@ -20,13 +21,17 @@ namespace XpemFinancial
 
             // Inicializa o banco local com o mock user ao iniciar o app
             Task.Run(async () => await userService.GetMockUserAsync()).Wait();
+
+            Task.Run(async () => await accountService.MockAccount(1)).Wait();
+
+            Task.Run(async () => await categoryService.MockCategories(1)).Wait();
         }
 
         protected override Window CreateWindow(IActivationState? activationState)
         {
             var appShellVM = new AppShellVM(UserSessionService);
 
-            _= appShellVM.UserFlyoutAsync();
+            _ = appShellVM.UserFlyoutAsync();
 
             return new Window(new AppShell(appShellVM));
         }

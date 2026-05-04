@@ -8,6 +8,7 @@ namespace Service
         Task AdjustAccountBalanceAsync(AccountDTO account);
 
         Task<AccountDTO?> GetAsync();
+        Task MockAccount(int userId);
     }
 
     public class AccountService(IAccountRepo accountRepo, ITransactionRepo transactionRepo) : IAccountService
@@ -34,14 +35,29 @@ namespace Service
                 Date = DateTime.Now,
                 Description = "Ajuste de saldo",
                 AccountId = existingAccount.Id,
-                Type = Model.TransactionType.Transfer,
+                Type = TransactionType.Transfer,
                 CreatedAt = DateTime.Now,
-                Repetition = Model.Repetition.None,
+                Repetition = Repetition.None,
             };
 
             await transactionRepo.Add(transaction);
 
             await accountRepo.Update(account);
+        }
+
+        public async Task MockAccount(int userId)
+        {
+            if (await accountRepo.GetAsync() != null)
+                return;
+
+            var mockAccount = new Model.DTO.AccountDTO
+            {
+                Balance = 1000,
+                CreatedAt = DateTime.UtcNow,
+                UserId = userId,
+            };
+
+            await accountRepo.Add(mockAccount);
         }
     }
 }

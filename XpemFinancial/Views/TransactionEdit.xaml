@@ -11,7 +11,7 @@
              BackgroundColor="{StaticResource BodyBackground}"
              x:Name="this"
              Title="Adicionar transação"
-             xmlns:model="clr-namespace:Model;assembly=Model">
+             xmlns:model="clr-namespace:Model.DTO;assembly=Model">
     <ContentPage.Resources>
         <Style x:Key="RadioButton" TargetType="RadioButton">
             <Setter Property="TextColor" Value="#d6e0eb" />
@@ -59,65 +59,83 @@
             </Setter>
         </Style>
     </ContentPage.Resources>
-    <ScrollView Margin="10">
-        <VerticalStackLayout BackgroundColor="{StaticResource BodyBackground}">
-            <HorizontalStackLayout  RadioButtonGroup.GroupName="TransactionType" RadioButtonGroup.SelectedValue="{Binding SelectedTransactionType}"   
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <ScrollView Margin="10">
+            <VerticalStackLayout BackgroundColor="{StaticResource BodyBackground}">
+                <HorizontalStackLayout  RadioButtonGroup.GroupName="TransactionType" RadioButtonGroup.SelectedValue="{Binding SelectedTransactionType}"   
                                     Padding="0,5,0,0"
                                     Margin="0,0,0,10"
                                     BackgroundColor="{StaticResource HeaderBackground}">
-                <RadioButton Style="{StaticResource RadioButton}" Content="Despesa" IsChecked="True" Margin="10,0" Value="{x:Static model:TransactionType.Expense}"/>
-                <RadioButton Style="{StaticResource RadioButton}" Content="Receita"  IsChecked="False" Margin="10,0" Value="{x:Static model:TransactionType.Income}"/>
-                <!--<RadioButton Style="{StaticResource RadioButton}" Content="Transferência" IsChecked="False" Margin="10,0" Value="#6cc8ef"/>-->
-
-            </HorizontalStackLayout>
-            <Grid ColumnDefinitions="auto, auto">
-                <VerticalStackLayout>
-                    <Label Text="Data"></Label>
-                    <DatePicker MinimumDate="01/01/1990" 
+                    <RadioButton Style="{StaticResource RadioButton}" Content="Despesa" IsChecked="True" Margin="10,0" Value="{x:Static model:TransactionType.Expense}"/>
+                    <RadioButton Style="{StaticResource RadioButton}" Content="Receita"  IsChecked="False" Margin="10,0" Value="{x:Static model:TransactionType.Income}"/>
+                    <!--<RadioButton Style="{StaticResource RadioButton}" Content="Transferência" IsChecked="False" Margin="10,0" Value="#6cc8ef"/>-->
+                </HorizontalStackLayout>
+                <Grid ColumnDefinitions="auto, auto">
+                    <VerticalStackLayout>
+                        <Label Text="Data"></Label>
+                        <DatePicker MinimumDate="01/01/1990" 
                         MaximumDate="01/01/2100"
                         Date="{Binding TransactionDate}" />
-                </VerticalStackLayout>
-                <VerticalStackLayout Grid.Column="1" Margin="10,0,0,0">
-                    <Label Text="Categoria" FontSize="14" />
-                    <Border StrokeShape="RoundRectangle 8" Padding="10" Stroke="LightGray" BackgroundColor="{StaticResource InputBackground}">
-                        <Border.GestureRecognizers>
-                            <TapGestureRecognizer Command="{Binding OpenCategoryPickerCommand}" />
-                        </Border.GestureRecognizers>
+                    </VerticalStackLayout>
+                    <VerticalStackLayout Grid.Column="1" Margin="10,0,0,0">
+                        <Label Text="Categoria" FontSize="14" />
+                        <Border StrokeShape="RoundRectangle 8" Padding="10" Stroke="LightGray" BackgroundColor="{StaticResource InputBackground}">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding OpenCategoryPickerCommand}" />
+                            </Border.GestureRecognizers>
 
-                        <HorizontalStackLayout>
-                            <Label Text="{Binding SelectedCategoryName, TargetNullValue='Selecionar Categoria'}" 
+                            <HorizontalStackLayout>
+                                <Label Text="{Binding SelectedCategoryName, TargetNullValue='Selecionar Categoria'}" 
                    VerticalOptions="Center" 
                    FontSize="16" />
-                            <Label Text="{x:Static Icons:IconFont.AngleRight}"  FontFamily="Icons" FontSize="16" Margin="10,0,0,0" VerticalOptions="Center" ></Label>
-                        </HorizontalStackLayout>
-                    </Border>
-                </VerticalStackLayout>
-            </Grid>
-            <Label Text="Descrição" Padding="0,10,0,0" />
-            <Entry Text="{Binding Description}" IsTextPredictionEnabled="True"/>
-            <Label Text="Valor" Padding="0,10,0,0"></Label>
-            <Components:CurrencyEntry Text="{Binding Amount}" />
-            <HorizontalStackLayout x:Name="Repetition"
+                                <Label Text="{x:Static Icons:IconFont.AngleRight}"  FontFamily="Icons" FontSize="16" Margin="10,0,0,0" VerticalOptions="Center" ></Label>
+                            </HorizontalStackLayout>
+                        </Border>
+                    </VerticalStackLayout>
+                </Grid>
+                <Label Text="Descrição" Padding="0,10,0,0" />
+                <Entry Text="{Binding Description}" IsTextPredictionEnabled="True"/>
+                <Label Text="Valor" Padding="0,10,0,0"></Label>
+                <Components:CurrencyEntry Text="{Binding Amount}" />
+                <HorizontalStackLayout x:Name="Repetition"
                                    RadioButtonGroup.GroupName="Repetition"
                                    RadioButtonGroup.SelectedValue="{Binding SelectedRepetition}"
                                    Padding="0,5,0,0"
                                    Margin="0,10,0,10"
                                    BackgroundColor="{StaticResource InputBackground}"
                                    HorizontalOptions="Start">
-                <RadioButton Style="{StaticResource RadioButton}" Content="Sem repetição" IsChecked="True"  Margin="10,0" Value="{x:Static model:Repetition.None}" />
-                <RadioButton Style="{StaticResource RadioButton}" Content="Repetição"     IsChecked="False" Margin="10,0" Value="{x:Static model:Repetition.Monthly}" />
-            </HorizontalStackLayout>
-            <HorizontalStackLayout x:Name="InstallmentPanel" IsVisible="{Binding InstallmentPanelIsVisible}">
-                <Label Text="Parcelas de" VerticalOptions="Center" Margin="0,0,10,0" />
-                <Components:NumericEntry Text="{Binding InitialInstallments}" VerticalOptions="Center"/>
-                <Label Text="até" VerticalOptions="Center" Margin="10,0" />
-                <Components:NumericEntry Text="{Binding NumberOfInstallments}"  VerticalOptions="Center" />
-                <Label Text="Total restante:" VerticalOptions="Center" Margin="10,0"></Label>
-                <Label Text="{Binding TotalAmountInstallments}" VerticalOptions="Center" FontAttributes="Bold"></Label>
-            </HorizontalStackLayout>
-            <Label Text="Notas" Padding="0,10,0,0" />
-            <Editor Text="{Binding Note}" HeightRequest="100" />
-
-        </VerticalStackLayout>
-    </ScrollView>
+                    <RadioButton Style="{StaticResource RadioButton}" Content="Sem repetição" IsChecked="True"  Margin="10,0" Value="{x:Static model:Repetition.None}" />
+                    <RadioButton Style="{StaticResource RadioButton}" Content="Repetição"     IsChecked="False" Margin="10,0" Value="{x:Static model:Repetition.Monthly}" />
+                </HorizontalStackLayout>
+                <HorizontalStackLayout x:Name="InstallmentPanel" IsVisible="{Binding InstallmentPanelIsVisible}">
+                    <Label Text="Parcelas de" VerticalOptions="Center" Margin="0,0,10,0" />
+                    <Components:NumericEntry Text="{Binding InitialInstallments}" VerticalOptions="Center"/>
+                    <Label Text="até" VerticalOptions="Center" Margin="10,0" />
+                    <Components:NumericEntry Text="{Binding NumberOfInstallments}"  VerticalOptions="Center" />
+                    <Label Text="Total restante:" VerticalOptions="Center" Margin="10,0"></Label>
+                    <Label Text="{Binding TotalAmountInstallments}" VerticalOptions="Center" FontAttributes="Bold"></Label>
+                </HorizontalStackLayout>
+                <Label Text="Notas" Padding="0,10,0,0" />
+                <Editor Text="{Binding Note}" HeightRequest="100" />
+            </VerticalStackLayout>
+        </ScrollView>
+        <Button x:Name="CreateTransaction" Style="{StaticResource SuccessButton}"
+                ContentLayout="Left, 10"
+                VerticalOptions="End"
+                Margin="0,0,10,10"
+                CornerRadius="5"
+                Text="Adicionar"
+                HorizontalOptions="End"
+                Command="{Binding SaveTransactionCommand}" >
+            <Button.ImageSource>
+                <FontImageSource FontFamily="Icons"
+                                 Color="#121b27"
+                                 Glyph="{x:Static Icons:IconFont.Plus}"
+                                 />
+            </Button.ImageSource>
+        </Button>
+    </Grid>
 </ContentPage>

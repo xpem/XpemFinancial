@@ -11,7 +11,7 @@ using XpemFinancial.Views;
 
 namespace XpemFinancial.VMs
 {
-    public partial class TransactionEditVM(IUserSessionService userSessionService, ITransactionService transactionService) : ObservableObject, IQueryAttributable
+    public partial class TransactionEditVM(IUserSessionService userSessionService, ITransactionService transactionService,IAccountService accountService) : ObservableObject, IQueryAttributable
     {
         [ObservableProperty]
         private string transactionTypeColor;
@@ -26,12 +26,12 @@ namespace XpemFinancial.VMs
         private string amount;
 
         [ObservableProperty]
-        private Category selectedCategory;
+        private CategoryDTO selectedCategory;
 
         [ObservableProperty]
         private List<string> categories;
 
-        public ObservableCollection<Category> FlattenedCategories { get; set; } = new();
+        public ObservableCollection<CategoryDTO> FlattenedCategories { get; set; } = new();
 
         // Esta propriedade apenas facilita a exibição no botão/label da View
         // Ela será atualizada sempre que a SelectedCategory mudar
@@ -62,7 +62,6 @@ namespace XpemFinancial.VMs
         [ObservableProperty]
         private string note;
 
-
         partial void OnSelectedTransactionTypeChanged(TransactionType value)
         {
             // Atualiza a cor com base no tipo de transação
@@ -89,7 +88,7 @@ namespace XpemFinancial.VMs
         // Este método é chamado automaticamente quando a navegação volta para cá
         public void ApplyQueryAttributes(IDictionary<string, object> query)
         {
-            if (query.TryGetValue("SelectedCategory", out var val) && val is Category selected)
+            if (query.TryGetValue("SelectedCategory", out var val) && val is CategoryDTO selected)
             {
                 SelectedCategory = selected; // só atualiza se vier com item
 
@@ -188,8 +187,7 @@ namespace XpemFinancial.VMs
 
             decimal amountValue = decimal.Parse(Amount, System.Globalization.NumberStyles.Currency, new System.Globalization.CultureInfo("pt-BR"));
 
-
-            if(SelectedTransactionType == TransactionType.Expense)
+            if (SelectedTransactionType == TransactionType.Expense)
             {
                 amountValue = -Math.Abs(amountValue); // Garante que o valor seja negativo para despesas
             }
@@ -198,15 +196,22 @@ namespace XpemFinancial.VMs
                 amountValue = Math.Abs(amountValue); // Garante que o valor seja positivo para receitas
             }
 
+            var user = await userSessionService.GetCurrentUserAsync();
+
+            var account = await accountService.GetAsync();
+
             var transaction = new TransactionDTO()
             {
                 Date = TransactionDate,
                 Amount = amountValue,
-                Description = Description,
+                Description = Description.Trim(),
                 Type = SelectedTransactionType,
                 Repetition = SelectedRepetition,
-                Note = Note,
+                Note =  Note?.Trim(),
                 CategoryId = SelectedCategory?.Id ?? 0,
+                UserId = user.Id,
+                CreatedAt = DateTime.UtcNow,
+                AccountId = account.Id
             };
 
             if (transaction.Repetition == Repetition.Monthly)

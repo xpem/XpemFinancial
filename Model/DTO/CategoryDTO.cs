@@ -13,5 +13,9 @@ namespace Model.DTO
         public int? ParentId { get; set; }
 
         public bool IsMainCategory { get; set; }
+
+        public int UserId { get; set; }
+
+        public UserDTO User { get; set; }
     }
 }

@@ -1,21 +1,21 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using Model.DTO;
+using Repo;
 
-namespace Model
+namespace Service
 {
-    public class Category
+    public interface ICategoryService
     {
-        public int Id { get; set; }
-        public string Name { get; set; }
-        public int? ParentId { get; set; }
-        public bool IsCategory { get; set; }
+        Task<List<CategoryDTO>> GetAllAsync();
+        Task MockCategories(int userId);
     }
 
-    public class Categories
+    public class CategoryService(ICategoryRepo categoryRepo) : ICategoryService
     {
-        public string Category { get; set; }
-        public List<string>? Subcategories { get; set; }
+        public async Task<List<Model.DTO.CategoryDTO>> GetAllAsync()
+        {
+            return await categoryRepo.GetAllAsync();
+        }
+
 
         public class TransactionCategories
         {
@@ -24,12 +24,17 @@ namespace Model
             public string Category { get; set; }
 
             public List<string>? Subcategories { get; set; }
+        }
 
-            public static List<TransactionCategories> LoadTransactionCategories()
-            {
-                return
-            [
-            new()
+        public async Task MockCategories(int userId)
+        {
+            var _list = await categoryRepo.GetAllAsync();
+
+            if (_list != null && _list.Count > 0) return;
+
+            List<TransactionCategories> list =
+                [
+                new()
                 {
                     Category = "Alimentação",
                     Subcategories = new List<string> { "Almoço", "Lanche" }
@@ -97,79 +102,33 @@ namespace Model
                 },
                ];
 
+            foreach (var item in list)
+            {
+                CategoryDTO categoryDTO = new()
+                {
+                    Name = item.Category,
+                    CreatedAt = DateTime.UtcNow,
+                    IsMainCategory = true,
+                    UserId = userId
+                };
 
-                //categories = new List<string> {
-                //    "Alimentação/Almoço",
-                //    "Alimentação/Lanche",
-                //    "Supermercado",
-                //    "Carro",
-                //    "Casa/Aluguel" ,
-                //    "Casa/Condomínio",
-                //    "Casa/Internet",
-                //    "Casa/Energia",
-                //    "Casa/Manutenção",
-                //    "Casa/Limpeza",
-                //    "Casa/Móveis",
-                //    "Casa/Utensílios",
-                //    "Educação/Cursos",
-                //    "Educação/Livros",
-                //    "Educação/Pós-Graduação",
-                //    "Doações",
-                //    "Eletrônicos",
-                //    "Presentes",
-                //    "Pessoais/Academia",
-                //    "Pessoais/Assessório",
-                //    "Pessoais/Celular",
-                //    "Pessoais/Cosmético",
-                //    "Pessoais/Roupa",
-                //    "Pessoais/Calçado",
-                //    //pessoal
-                //    "Pessoais/Servidor",
+                await categoryRepo.AddAsync(categoryDTO);
 
-                //    "Impostos/IR",
-                //    "Impostos/IPTU",
-                //    "Impostos/IPVA",
-                //    "Impostos/FGTS",
+                foreach (var sub in item.Subcategories ?? [])
+                {
+                    CategoryDTO subCategoryDTO = new()
+                    {
+                        Name = sub,
+                        CreatedAt = DateTime.UtcNow,
+                        IsMainCategory = false,
+                        ParentId = categoryDTO.Id,
+                        UserId = userId
+                    };
 
-                //    "Lazer/Streaming",
-                //    "Lazer/Bar",
-                //    "Lazer/Cinema",
-                //    "Lazer/Show",
-                //    "Lazer/Jogo",
-                //    "Lazer/Viagem",
-
-                //    "Outros",
-
-                //    "Receita/13°",
-                //    "Receita/Bonificação",
-                //    "Receita/Comissão",
-                //    "Receita/Estorno",
-                //    "Receita/Férias",
-                //    "Receita/Juros",
-                //    "Receita/Reembolso",
-                //    "Receita/Salário",
-                //    "Receita/Outra",
-
-                //    "Saúde/Plano de Saúde",
-                //    "Saúde/Dentista",
-                //    "Saúde/Enxame",
-                //    "Saúde/Farmácia",
-                //    "Saúde/Médico",
-
-                //    "Seguro/Carro",
-                //    "Seguro/Moto",
-                //    "Seguro/Vida",
-                //    "Seguro/Residencial",
-
-                //    "Transporte/Combustível",
-                //    "Transporte/Estacionamento",
-                //    "Transporte/Lavagem",
-                //    "Transporte/Metrô",
-                //    "Transporte/Multas",
-                //    "Transporte/Pedágio",
-                //    "Transporte/Transporte por app",
-                //};
+                    await categoryRepo.AddAsync(subCategoryDTO);
+                }
             }
+
         }
     }
 }

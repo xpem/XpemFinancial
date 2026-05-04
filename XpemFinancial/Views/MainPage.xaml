@@ -19,16 +19,6 @@
             <!--<Setter Property="" Value="" />-->
 
         </Style>
-        <Style x:Key="btnPrimary" TargetType="Button">
-            <Setter Property="CornerRadius" Value="0" />
-            <Setter Property="HeightRequest" Value="20" />
-            <Setter Property="BackgroundColor" Value="{StaticResource Income}" />
-            <Setter Property="TextColor" Value="#121b27" />
-            <Setter Property="FontSize" Value="15" />
-            <Setter Property="FontAttributes" Value="Bold" />
-            <!--<Setter Property="" Value="" />-->
-
-        </Style>
     </ContentPage.Resources>
     <ScrollView Margin="10">
         <VerticalStackLayout Padding="5">
@@ -60,7 +50,8 @@
                                        Glyph="{x:Static Icons:IconFont.CaretRight}"/>
                     </Button.ImageSource>
                 </Button>
-                <Button x:Name="CreateTransaction" Style="{StaticResource btnPrimary}"
+                <Button x:Name="CreateTransaction" Style="{StaticResource SuccessButton}"
+                        IsEnabled="{Binding IsNotNullAccount}"
                         ContentLayout="Left, 10"
                         Command="{Binding GoToTransactionEditCommand}">
                     <Button.ImageSource>

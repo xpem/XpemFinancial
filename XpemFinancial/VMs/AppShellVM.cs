@@ -1,9 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using Model.DTO;
-using Service;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace XpemFinancial.VMs
 {

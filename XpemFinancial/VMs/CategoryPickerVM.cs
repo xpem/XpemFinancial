@@ -1,36 +1,60 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Model;
+using Model.DTO;
+using Service;
 using System.Collections.ObjectModel;
 using XpemFinancial.Views;
 
 namespace XpemFinancial.VMs
 {
-    public partial class CategoryPickerVM : VMBase
+    public partial class CategoryPickerVM(ICategoryService categoryService, IUserSessionService userSessionService) : VMBase
     {
-        private static readonly List<Category> _cachedCategories = BuildCategories();
+        private static List<CategoryDTO> _cachedCategories;
         private const int BatchSize = 20;
-        private List<Category> _currentSource = [];
+        private List<CategoryDTO> _currentSource = [];
         private int _loadedCount = 0;
 
         [ObservableProperty]
-        private ObservableCollection<Category> categories = new();
+        private ObservableCollection<CategoryDTO> categories = new();
 
         [ObservableProperty]
-        private Category selectedItem;
+        private CategoryDTO selectedItem;
 
         [ObservableProperty]
         private string searchText;
 
-        public CategoryPickerVM() { }
+        /// <summary>
+        /// filtra a lista de categorias conforme o texto de busca é alterado, utilizando o valor antigo para evitar buscas desnecessárias quando o texto é modificado para o mesmo valor ou para null/empty.
+        /// </summary>
+        /// <param name="oldValue"></param>
+        /// <param name="newValue"></param>
+        partial void OnSearchTextChanged(string? oldValue, string newValue)
+        {
+            if ((newValue != null) && (oldValue != newValue))
+            {
+                var filtered = string.IsNullOrWhiteSpace(newValue)
+                    ? _cachedCategories
+                    : _cachedCategories.Where(x => x.Name.Contains(newValue, StringComparison.OrdinalIgnoreCase)).ToList();
+
+                _ = ReloadSourceAsync(filtered);
+            }
+        }
+
 
         public async Task InitializeAsync()
         {
+            var user = await userSessionService.GetCurrentUserAsync();
+
+            if (_cachedCategories == null)
+                _cachedCategories = await categoryService.GetAllAsync();
+
             if (Categories.Count > 0) return;
+
             await ReloadSourceAsync(_cachedCategories);
         }
 
-        private async Task ReloadSourceAsync(List<Category> source)
+        private async Task ReloadSourceAsync(List<CategoryDTO> source)
         {
             _currentSource = source;
             _loadedCount = 0;
@@ -57,19 +81,6 @@ namespace XpemFinancial.VMs
             await Task.Yield();
         }
 
-        private static List<Category> BuildCategories()
-        {
-            var result = new List<Category>();
-            foreach (var cat in Model.Categories.TransactionCategories.LoadTransactionCategories())
-            {
-                result.Add(new Category { Name = cat.Category, IsCategory = true });
-                if (cat.Subcategories != null)
-                    foreach (var sub in cat.Subcategories)
-                        result.Add(new Category { Name = sub, ParentId = cat.Id, IsCategory = false });
-            }
-            return result;
-        }
-
         partial void OnSearchTextChanged(string value)
         {
             var filtered = string.IsNullOrWhiteSpace(value)
@@ -80,7 +91,7 @@ namespace XpemFinancial.VMs
         }
 
         [RelayCommand]
-        private async Task SelectItem(Category item)
+        private async Task SelectItem(CategoryDTO item)
         {
             if (item == null) return;
             var navigationParameter = new Dictionary<string, object> { { "SelectedCategory", item } };
@@ -89,7 +100,7 @@ namespace XpemFinancial.VMs
 
         public void ApplyQueryAttributes(IDictionary<string, object> query)
         {
-            if (query.TryGetValue("SelectedCategory", out var val) && val is Category selected)
+            if (query.TryGetValue("SelectedCategory", out var val) && val is CategoryDTO selected)
             {
                 SelectedItem = selected;
                 query.Clear();

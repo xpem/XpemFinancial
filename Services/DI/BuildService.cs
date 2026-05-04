@@ -9,8 +9,10 @@ namespace Service.DI
             services.AddScoped<IBuildDbService, BuildDbService>();
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IAccountService, AccountService>();
-            services.AddSingleton<IUserService, UserService>();
-            services.AddSingleton<IUserSessionService, UserSessionService>();
+            services.AddScoped<ICategoryService, CategoryService>();
+            services.AddScoped<IUserService, UserService>();
+            services.AddScoped<ITransactionService, TransactionService>();
+            services.AddScoped<IUserSessionService, UserSessionService>();
         }
     }
 }
