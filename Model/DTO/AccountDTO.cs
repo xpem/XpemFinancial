@@ -11,7 +11,7 @@ namespace Model.DTO
 
         //public string Name { get; set; }
 
-        public decimal Balance { get; set; }
+        //public decimal Balance { get; set; }
 
         public required int UserId { get; set; }
 

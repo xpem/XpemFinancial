@@ -11,8 +11,12 @@ using XpemFinancial.Views;
 
 namespace XpemFinancial.VMs
 {
-    public partial class TransactionEditVM(IUserSessionService userSessionService, ITransactionService transactionService,IAccountService accountService) : ObservableObject, IQueryAttributable
+    public partial class TransactionEditVM(IUserSessionService userSessionService, ITransactionService transactionService, IAccountService accountService) : ObservableObject, IQueryAttributable
     {
+        #region Campos e Propriedades
+
+        private int TransactionId { get; set; }
+
         [ObservableProperty]
         private string transactionTypeColor;
 
@@ -35,10 +39,13 @@ namespace XpemFinancial.VMs
 
         // Esta propriedade apenas facilita a exibição no botão/label da View
         // Ela será atualizada sempre que a SelectedCategory mudar
-        public string CategoryDisplayName => selectedCategory?.Name ?? "Selecionar Categoria";
+        public string CategoryDisplayName => selectedCategory?.Name ?? "Sem Categoria";
 
         [ObservableProperty]
         private string selectedCategoryName;
+
+        [ObservableProperty]
+        public bool isRequired;
 
         [ObservableProperty]
         private Repetition selectedRepetition;
@@ -61,6 +68,8 @@ namespace XpemFinancial.VMs
 
         [ObservableProperty]
         private string note;
+
+        #endregion
 
         partial void OnSelectedTransactionTypeChanged(TransactionType value)
         {
@@ -88,7 +97,28 @@ namespace XpemFinancial.VMs
         // Este método é chamado automaticamente quando a navegação volta para cá
         public void ApplyQueryAttributes(IDictionary<string, object> query)
         {
-            if (query.TryGetValue("SelectedCategory", out var val) && val is CategoryDTO selected)
+            if (query.TryGetValue("TransactionId", out var valTransactionId) && valTransactionId is int transactionId and > 0)
+            {
+                // Carrega a transação para edição
+                var transaction = transactionService.GetByIdAsync(transactionId).Result;
+
+                if (transaction != null)
+                {
+                    TransactionId = transactionId;
+                    TransactionDate = transaction.Date;
+                    Description = transaction.Description;
+                    Amount = transaction.Amount.ToString("C", new System.Globalization.CultureInfo("pt-BR"));
+                    SelectedTransactionType = transaction.Type;
+                    SelectedRepetition = transaction.Repetition;
+                    Note = transaction.Note ?? string.Empty;
+                    NumberOfInstallments = transaction.TotalInstallments ?? 0;
+                    InitialInstallments = transaction.Installment ?? 0;
+                    SelectedCategory = transaction.Category ?? new CategoryDTO { Id = 1, Name = "Sem Categoria" };
+                    SelectedCategoryName = SelectedCategory.Name;
+                }
+            }
+
+            if (query.TryGetValue("SelectedCategory", out var valSelectedCategory) && valSelectedCategory is CategoryDTO selected)
             {
                 SelectedCategory = selected; // só atualiza se vier com item
 
@@ -132,7 +162,7 @@ namespace XpemFinancial.VMs
 
             if (NumberOfInstallments > 0 && decimal.TryParse(Amount, System.Globalization.NumberStyles.Currency, new System.Globalization.CultureInfo("pt-BR"), out decimal totalAmount))
             {
-                int installmentsToCalculate = NumberOfInstallments - InitialInstallments;
+                int installmentsToCalculate = (NumberOfInstallments + 1) - InitialInstallments;
                 decimal _totalAmountInstallments = totalAmount * installmentsToCalculate;
                 TotalAmountInstallments = _totalAmountInstallments.ToString("C", new System.Globalization.CultureInfo("pt-BR"));
             }
@@ -154,28 +184,17 @@ namespace XpemFinancial.VMs
             if (string.IsNullOrWhiteSpace(Description))
             {
                 isValid = false;
-                await Application.Current.Windows[0].Page.DisplayAlertAsync("Erro", "A descrição é obrigatória.", "Ok");
             }
             else if (string.IsNullOrWhiteSpace(Amount) || !decimal.TryParse(Amount, System.Globalization.NumberStyles.Currency, new System.Globalization.CultureInfo("pt-BR"), out _))
             {
                 isValid = false;
-                await Application.Current.Windows[0].Page.DisplayAlertAsync("Erro", "O valor é inválido.", "Ok");
             }
             else if (!decimal.TryParse(Amount, System.Globalization.NumberStyles.Currency, new System.Globalization.CultureInfo("pt-BR"), out decimal _amount))
             {
                 isValid = false;
-                await Application.Current.Windows[0].Page.DisplayAlertAsync("Erro", "O valor é inválido.", "Ok");
             }
-            //else if (_amount <= 0)
-            //{
-            //    isValid = false;
-            //    await Application.Current.Windows[0].Page.DisplayAlertAsync("Erro", "O valor deve ser maior que zero.", "Ok");
-            //}
-            //else if(SelectedCategory == null)
-            //{
-            //    isValid = false;
-            //    await Application.Current.Windows[0].Page.DisplayAlertAsync("Erro", "A categoria é obrigatória.", "Ok");
-            //}
+
+            IsRequired = true;
 
             return isValid;
         }
@@ -207,8 +226,8 @@ namespace XpemFinancial.VMs
                 Description = Description.Trim(),
                 Type = SelectedTransactionType,
                 Repetition = SelectedRepetition,
-                Note =  Note?.Trim(),
-                CategoryId = SelectedCategory?.Id ?? 0,
+                Note = Note?.Trim(),
+                CategoryId = SelectedCategory?.Id ?? 1,
                 UserId = user.Id,
                 CreatedAt = DateTime.UtcNow,
                 AccountId = account.Id

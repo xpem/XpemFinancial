@@ -1,47 +1,34 @@
-﻿using Model.DTO;
+﻿using Microsoft.EntityFrameworkCore.Storage;
+using Model.DTO;
 using Repo;
 
 namespace Service
 {
     public interface IAccountService
     {
-        Task AdjustAccountBalanceAsync(AccountDTO account);
-
+        Task AdjustAccountBalanceAsync(AccountDTO account, decimal oldbalance, decimal newbalance);
         Task<AccountDTO?> GetAsync();
         Task MockAccount(int userId);
     }
 
     public class AccountService(IAccountRepo accountRepo, ITransactionRepo transactionRepo) : IAccountService
     {
-        public async Task<AccountDTO?> GetAsync()
-        {
-            return await accountRepo.GetAsync();
-        }
+        public async Task<AccountDTO?> GetAsync() =>
+            await accountRepo.GetAsync();
 
-        public async Task AdjustAccountBalanceAsync(Model.DTO.AccountDTO account)
+        public async Task AdjustAccountBalanceAsync(AccountDTO account, decimal oldbalance, decimal newbalance)
         {
             var existingAccount = await accountRepo.GetAsync();
 
             if (existingAccount == null)
             {
                 await accountRepo.Add(account);
-                return;
+                existingAccount = account;
             }
 
-            //atualização de conta. deve lançar uma transação de transferencia ajustando o valor da conta sem impactar nos gráficos.
-            var transaction = new Model.DTO.TransactionDTO
-            {
-                Amount = account.Balance - existingAccount.Balance,
-                Date = DateTime.Now,
-                Description = "Ajuste de saldo",
-                AccountId = existingAccount.Id,
-                Type = TransactionType.Transfer,
-                CreatedAt = DateTime.Now,
-                Repetition = Repetition.None,
-            };
+            var adjustmentTransaction = BuildAdjustmentTransaction(account.UserId, oldbalance, newbalance, existingAccount.Id);
 
-            await transactionRepo.Add(transaction);
-
+            await transactionRepo.Add(adjustmentTransaction);
             await accountRepo.Update(account);
         }
 
@@ -50,14 +37,27 @@ namespace Service
             if (await accountRepo.GetAsync() != null)
                 return;
 
-            var mockAccount = new Model.DTO.AccountDTO
+            var mockAccount = new AccountDTO
             {
-                Balance = 1000,
                 CreatedAt = DateTime.UtcNow,
                 UserId = userId,
             };
 
-            await accountRepo.Add(mockAccount);
+            await AdjustAccountBalanceAsync(mockAccount, 0, 1000);
         }
+
+        private static TransactionDTO BuildAdjustmentTransaction(int userId, decimal oldbalance, decimal newbalance, int accountId) =>
+            new()
+            {
+                UserId = userId,
+                Amount = newbalance - oldbalance,
+                Date = DateTime.MinValue,
+                Description = "Ajuste de saldo",
+                AccountId = accountId,
+                Type = TransactionType.Adjustment,
+                CreatedAt = DateTime.Now,
+                Repetition = Repetition.None,
+                CategoryId = 1,
+            };
     }
 }

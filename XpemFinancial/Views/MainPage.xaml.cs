@@ -5,11 +5,11 @@ namespace XpemFinancial.Views
 {
     public partial class MainPage : ContentPage
     {
-        public MainPage(IAccountService accountService)
+        public MainPage(IAccountService accountService, ITransactionService transactionService)
         {
             InitializeComponent();
 
-            BindingContext = new VMs.MainVM(accountService);
+            BindingContext = new VMs.MainVM(accountService, transactionService);
         }
 
         private void TapGestureRecognizer_Tapped(object sender, TappedEventArgs e)

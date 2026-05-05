@@ -10,63 +10,56 @@ using Model.DTO;
 
 namespace XpemFinancial.VMs
 {
-    public partial class MainVM(IAccountService accountService) : VMBase
+    public partial class MainVM(IAccountService accountService, ITransactionService transactionService) : VMBase
     {
-        [ObservableProperty]
-        private ObservableCollection<TransactionDTO> transactions;
+        [ObservableProperty] private ObservableCollection<TransactionDTO> transactions;
+        [ObservableProperty] private TransactionDTO selectedTransaction;
+        [ObservableProperty] private bool includePreviousBalance;
+        [ObservableProperty] private decimal previousBalance;
+        [ObservableProperty] private decimal income;
+        [ObservableProperty] private decimal expense;
+        [ObservableProperty] private decimal total;
+        [ObservableProperty] private bool isNullAccount = false;
+        [ObservableProperty] private bool isNotNullAccount = false;
+        [ObservableProperty] private string monthYearDisplay;
 
-        [ObservableProperty]
-        private bool includePreviousBalance;
+        private DateTime SelectedDate { get; set; }
 
-        [ObservableProperty]
-        private decimal previousBalance;
+        partial void OnIsNullAccountChanged(bool value) => IsNotNullAccount = !value;
 
-        [ObservableProperty]
-        private decimal income;
-
-        [ObservableProperty]
-        private decimal expense;
-
-        [ObservableProperty]
-        private decimal total;
-
-        [ObservableProperty]
-        private bool isNullAccount = false;
-
-        [ObservableProperty]
-        private bool isNotNullAccount = false;
-        
-        partial void OnIsNullAccountChanged(bool value)
+        partial void OnSelectedTransactionChanged(TransactionDTO? oldValue, TransactionDTO? newValue)
         {
-            IsNotNullAccount = !value;
+            if (newValue == null)
+                return;
+
+            GoToTransactionEditCommand.Execute(newValue.Id);
         }
 
         public async Task InitializeAsync()
         {
+            MonthYearDisplay = DateTime.Now.ToString("MMMM/yyyy");
+            SelectedDate = DateTime.Now;
+
             var existingAccount = await accountService.GetAsync();
-
-            if (existingAccount == null)
-            {
-                IsNullAccount = true;
-            }
-            else
-                IsNullAccount = false;
-
+            IsNullAccount = existingAccount == null;
             IsNotNullAccount = !IsNullAccount;
-
             IncludePreviousBalance = true;
-
-            //saldo anterior será o saldo da conta menos as transações do mes até o dia de hoje.
-            PreviousBalance = existingAccount?.Balance ?? 0;
-
-            Income = 0;
-            Expense = 0;
-
-            //saldo anterior será o saldo da conta mais  as transações do mes incluindo as futuras.
-            Total = PreviousBalance + Income - Expense;
-
-            // Criando a lista de Mock
+            PreviousBalance = await transactionService.GetPreviousBalanceAsync(SelectedDate);
             Transactions = [];
+
+            var transactionsFromService = await transactionService.GetByMonthYear(DateTime.Now);
+
+            foreach (var transaction in transactionsFromService)
+            {
+                if (transaction.Type == TransactionType.Income)
+                    Income += transaction.Amount;
+                else
+                    Expense += transaction.Amount;
+
+                Transactions.Add(transaction);
+            }
+
+            Total = PreviousBalance + Income - Expense;
         }
 
         [RelayCommand]
@@ -75,27 +68,19 @@ namespace XpemFinancial.VMs
         [RelayCommand]
         private async Task ToggleIncludePreviousBalance()
         {
-            // 1. Toggle the state
             IncludePreviousBalance = !IncludePreviousBalance;
-
-            // 2. Perform the conditional calculation
-            if (IncludePreviousBalance)
-            {
-                Total = PreviousBalance + Income - Expense;
-            }
-            else
-            {
-                Total = Income - Expense;
-            }
-
-            // 3. Force the UI to refresh the Totals object
-            // Note: It's better if the Totals class inherits from ObservableObject,
-            // but this manual trigger works if Totals is a POCO.
+            Total = IncludePreviousBalance ? PreviousBalance + Income - Expense : Income - Expense;
             OnPropertyChanged(nameof(Totals));
         }
 
         [RelayCommand]
-        private async Task GoToTransactionEdit() => await Shell.Current.GoToAsync($"{nameof(Views.TransactionEdit)}");
+        private async Task GoToTransactionEdit(int? transactionId = null)
+        {
+            var route = transactionId is not null
+                ? $"{nameof(Views.TransactionEdit)}?TransactionId={transactionId}"
+                : nameof(Views.TransactionEdit);
 
+            await Shell.Current.GoToAsync(route);
+        }
     }
 }

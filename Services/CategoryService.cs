@@ -36,6 +36,11 @@ namespace Service
                 [
                 new()
                 {
+                    Category = "Sem categoria",
+                    Subcategories = null,
+                },
+                new()
+                {
                     Category = "Alimentação",
                     Subcategories = new List<string> { "Almoço", "Lanche" }
                 },

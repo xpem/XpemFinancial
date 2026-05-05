@@ -10,7 +10,7 @@ using System.Text;
 
 namespace XpemFinancial.VMs
 {
-    public partial class AccountVM(IAccountService accountService, IUserSessionService userSessionService) : VMBase
+    public partial class AccountVM(IAccountService accountService, IUserSessionService userSessionService, ITransactionService transactionService) : VMBase
     {
         [ObservableProperty]
         private string currentBalance;
@@ -23,6 +23,8 @@ namespace XpemFinancial.VMs
 
         private AccountDTO Account { get; set; }
 
+        private decimal OriginalBalance { get; set; }
+
         partial void OnIsEditingBalanceChanged(bool value)
         {
             IsNotEditingBalance = !value;
@@ -31,15 +33,15 @@ namespace XpemFinancial.VMs
         [RelayCommand]
         private async Task SaveBalance()
         {
-            if (CurrentBalance == Account.Balance.ToString("C"))
+            if (CurrentBalance == OriginalBalance.ToString("C"))
             {
                 IsEditingBalance = false;
                 return;
             }
 
-            Account.Balance = decimal.Parse(CurrentBalance, System.Globalization.NumberStyles.Currency);
+            decimal newBalance = decimal.Parse(CurrentBalance, System.Globalization.NumberStyles.Currency);
 
-            await accountService.AdjustAccountBalanceAsync(Account);
+            await accountService.AdjustAccountBalanceAsync(Account, OriginalBalance, newBalance);
 
             if (DeviceInfo.Platform == DevicePlatform.iOS || DeviceInfo.Platform == DevicePlatform.Android)
             {
@@ -73,14 +75,15 @@ namespace XpemFinancial.VMs
             if (existingAccount == null)
             {
                 var currentUser = await userSessionService.GetCurrentUserAsync();
-                Account = new AccountDTO { Balance = 0, UserId = currentUser?.Id ?? 0 };
+                Account = new AccountDTO { UserId = currentUser?.Id ?? 0 };
             }
             else
             {
                 Account = existingAccount;
             }
 
-            CurrentBalance = Account.Balance.ToString("C");
+            OriginalBalance = await transactionService.GetBalanceAsync(Account.Id) ?? 0;
+            CurrentBalance = OriginalBalance.ToString("C");
         }
     }
 }

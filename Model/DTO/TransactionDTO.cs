@@ -34,7 +34,7 @@ namespace Model.DTO
 
         public AccountDTO? Account { get; set; }
 
-        public int UserId { get; set; }
+        public required int UserId { get; set; }
 
         public UserDTO User { get; set; }
     }
@@ -42,7 +42,8 @@ namespace Model.DTO
     {
         Income,
         Expense,
-        Transfer
+        Transfer,
+        Adjustment,
     }
 
     public enum Repetition
