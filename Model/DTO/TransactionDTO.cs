@@ -20,6 +20,8 @@ namespace Model.DTO
 
         public int? TotalInstallments { get; set; }
 
+        public Guid? InstallmentId { get; set; }
+
         public int? Installment { get; set; }
 
         public int CategoryId { get; set; }

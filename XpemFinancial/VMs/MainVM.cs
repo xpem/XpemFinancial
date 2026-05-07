@@ -1,16 +1,19 @@
-﻿using System;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using Model;
+using Model.DTO;
+using Service;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Text;
-using Model;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
-using Service;
-using Model.DTO;
+using XpemFinancial.Views;
 
 namespace XpemFinancial.VMs
 {
-    public partial class MainVM(IAccountService accountService, ITransactionService transactionService) : VMBase
+    public partial class MainVM(IAccountService accountService,
+        ITransactionService transactionService,
+        IUserSessionService userSessionService) : VMBase
     {
         [ObservableProperty] private ObservableCollection<TransactionDTO> transactions;
         [ObservableProperty] private TransactionDTO selectedTransaction;
@@ -22,6 +25,7 @@ namespace XpemFinancial.VMs
         [ObservableProperty] private bool isNullAccount = false;
         [ObservableProperty] private bool isNotNullAccount = false;
         [ObservableProperty] private string monthYearDisplay;
+        [ObservableProperty] private bool isRequired;
 
         private DateTime SelectedDate { get; set; }
 
@@ -37,6 +41,13 @@ namespace XpemFinancial.VMs
 
         public async Task InitializeAsync()
         {
+            var user = await userSessionService.GetCurrentUserAsync();
+            if (user == null)
+            {
+                _ = Shell.Current.GoToAsync($"{nameof(SignInPage)}");
+                return;
+            }
+
             MonthYearDisplay = DateTime.Now.ToString("MMMM/yyyy");
             SelectedDate = DateTime.Now;
 
@@ -46,7 +57,7 @@ namespace XpemFinancial.VMs
             IncludePreviousBalance = true;
             PreviousBalance = await transactionService.GetPreviousBalanceAsync(SelectedDate);
             Transactions = [];
-
+            Expense = Income = 0;
             var transactionsFromService = await transactionService.GetByMonthYear(DateTime.Now);
 
             foreach (var transaction in transactionsFromService)
@@ -59,7 +70,7 @@ namespace XpemFinancial.VMs
                 Transactions.Add(transaction);
             }
 
-            Total = PreviousBalance + Income - Expense;
+            Total = (PreviousBalance + Income) + Expense;
         }
 
         [RelayCommand]

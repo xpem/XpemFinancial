@@ -443,7 +443,6 @@
 
                     <VisualState Name="Pressed">
                         <VisualState.Setters>
-                            <Setter Property="BackgroundColor" Value="{StaticResource Income}" />
                             <Setter Property="Opacity" Value="0.8" />
                             <Setter Property="Scale" Value="0.95" />
                         </VisualState.Setters>

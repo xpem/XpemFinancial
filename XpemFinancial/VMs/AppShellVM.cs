@@ -1,9 +1,11 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using Model.DTO;
+using Service;
 
 namespace XpemFinancial.VMs
 {
-    public partial class AppShellVM(Service.IUserSessionService userSessionService) : ObservableObject
+    public partial class AppShellVM(Service.IUserSessionService userSessionService, IBuildDbService buildDbService) : ObservableObject
     {
         [ObservableProperty]
         private string email;
@@ -19,6 +21,26 @@ namespace XpemFinancial.VMs
             {
                 Name = user.Name;
                 Email = user.Email;
+            }
+        }
+
+        [RelayCommand]
+        private async Task SignOut()
+        {
+            bool resp = await Application.Current.Windows[0].Page.DisplayAlertAsync("Confirmação", "Deseja sair e retornar a tela inicial?", "Sim", "Cancelar");
+
+            if (resp)
+            {
+                //finalize sync thread process
+                //syncService.ThreadIsRunning = false;
+
+                //syncService.Timer?.Dispose();
+
+                userSessionService.Invalidate ();
+
+                await buildDbService.CleanLocalDatabaseAsync();
+
+                _ = Shell.Current.GoToAsync($"//{nameof(SignInVM)}");
             }
         }
     }

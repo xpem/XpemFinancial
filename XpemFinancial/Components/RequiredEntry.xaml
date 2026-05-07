@@ -15,7 +15,11 @@
             BackgroundColor="Transparent"
             HorizontalOptions="Fill"
             VerticalOptions="Fill">
-            <Entry Text="{Binding Source={x:Reference this}, Path=EntryValue}" IsTextPredictionEnabled="{Binding Source={x:Reference this}, Path=IsTextPredictionEnabled}"/>
+            <Entry
+                Text="{Binding Source={x:Reference this}, Path=EntryValue}"
+                IsPassword="{Binding Source={x:Reference this}, Path=IsPassword}"
+                IsTextPredictionEnabled="{Binding Source={x:Reference this}, Path=IsTextPredictionEnabled}"
+                />
         </Border>
         <Label 
             IsVisible="{Binding Source={x:Reference this}, Path=IsRequired}"

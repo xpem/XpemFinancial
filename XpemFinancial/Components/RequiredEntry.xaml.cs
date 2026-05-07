@@ -74,7 +74,8 @@ public partial class RequiredEntry : ContentView
         defaultValue: true,
         defaultBindingMode: BindingMode.TwoWay);
 
-    public bool IsTextPredictionEnabled {
+    public bool IsTextPredictionEnabled
+    {
         get => (bool)GetValue(IsTextPredictionEnabledProperty);
         set => SetValue(IsTextPredictionEnabledProperty, value);
     }
@@ -87,11 +88,15 @@ public partial class RequiredEntry : ContentView
         defaultValue: 0,
         defaultBindingMode: BindingMode.OneWay);
 
-    public int RequiredStrokeThickness { 
+    public int RequiredStrokeThickness
+    {
         get => (int)GetValue(RequiredStrokeThicknessProperty);
         set => SetValue(RequiredStrokeThicknessProperty, value);
     }
 
+    public bool IsPassword { get => (bool)GetValue(IsPasswordProperty); set { SetValue(IsPasswordProperty, value); } }
 
+    public static readonly BindableProperty IsPasswordProperty = BindableProperty.Create(propertyName: nameof(IsPassword),
+        returnType: typeof(bool), declaringType: typeof(RequiredEntry), defaultValue: false, defaultBindingMode: BindingMode.OneWay);
 
 }

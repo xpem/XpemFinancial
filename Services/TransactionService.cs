@@ -22,7 +22,48 @@ namespace Service
     {
         public async Task AddAsync(TransactionDTO transaction)
         {
-            await transactionRepo.Add(transaction);
+            if (transaction.Repetition == Repetition.Monthly)
+            {
+                if (transaction.TotalInstallments == null || transaction.TotalInstallments <= 0)
+                {
+                    throw new ArgumentException("TotalInstallments must be greater than 0 for monthly transactions.");
+                }
+
+                if(transaction.Installment != null && transaction.Installment > transaction.TotalInstallments)
+                {
+                    throw new ArgumentException("Installment number cannot be greater than TotalInstallments.");
+                }
+
+                if (transaction.InstallmentId == null)
+                {
+                    transaction.InstallmentId = Guid.NewGuid();
+                }
+
+                for (int i = transaction.Installment!.Value; i <= transaction.TotalInstallments; i++)
+                {
+                    var installmentTransaction = new TransactionDTO
+                    {
+                        Description = transaction.Description,
+                        Date = transaction.Date.AddMonths(i-1),
+                        Amount = transaction.Amount,
+                        Repetition = transaction.Repetition,
+                        TotalInstallments = transaction.TotalInstallments,
+                        InstallmentId = transaction.InstallmentId,
+                        Installment = i,
+                        CategoryId = transaction.CategoryId,
+                        Type = transaction.Type,
+                        Note = transaction.Note,
+                        AccountId = transaction.AccountId,
+                        UserId = transaction.UserId
+                    };
+
+                    await transactionRepo.Add(installmentTransaction);
+                }
+            }
+            else
+            {
+                await transactionRepo.Add(transaction);
+            }
         }
 
         public async Task<TransactionDTO> GetByIdAsync(int id)

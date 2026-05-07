@@ -45,7 +45,7 @@ namespace XpemFinancial.VMs
         private string selectedCategoryName;
 
         [ObservableProperty]
-        public bool isRequired;
+        private bool isRequired;
 
         [ObservableProperty]
         private Repetition selectedRepetition;
@@ -97,8 +97,10 @@ namespace XpemFinancial.VMs
         // Este método é chamado automaticamente quando a navegação volta para cá
         public void ApplyQueryAttributes(IDictionary<string, object> query)
         {
-            if (query.TryGetValue("TransactionId", out var valTransactionId) && valTransactionId is int transactionId and > 0)
+            if (query.TryGetValue("TransactionId", out var valTransactionId) && valTransactionId is string)
             {
+                int transactionId = Convert.ToInt32(valTransactionId);
+
                 // Carrega a transação para edição
                 var transaction = transactionService.GetByIdAsync(transactionId).Result;
 
@@ -174,7 +176,11 @@ namespace XpemFinancial.VMs
 
         partial void OnSelectedRepetitionChanged(Repetition value)
         {
-            InstallmentPanelIsVisible = value == Repetition.Monthly;
+            if (value == Repetition.Monthly)
+            {
+                InstallmentPanelIsVisible = true;
+                InitialInstallments = 1;
+            }
         }
 
         private async Task<bool> VerrifyFields()
@@ -194,7 +200,10 @@ namespace XpemFinancial.VMs
                 isValid = false;
             }
 
-            IsRequired = true;
+            if (!isValid)
+                IsRequired = true;
+            else
+                IsRequired = false;
 
             return isValid;
         }

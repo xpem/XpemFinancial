@@ -4,7 +4,8 @@
              xmlns:Icons="clr-namespace:XpemFinancial.Resources"  
              xmlns:Utils="clr-namespace:XpemFinancial.Utils"
              Shell.FlyoutBehavior="Flyout"
-             xmlns:ViewModels="clr-namespace:XpemFinancial.VMs" x:DataType="ViewModels:MainVM"
+             xmlns:ViewModels="clr-namespace:XpemFinancial.VMs"
+             x:DataType="ViewModels:MainVM"
              x:Class="XpemFinancial.Views.MainPage">
     <ContentPage.Resources>
         <ResourceDictionary>

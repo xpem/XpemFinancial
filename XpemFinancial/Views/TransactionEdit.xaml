@@ -125,17 +125,18 @@
             </VerticalStackLayout>
         </ScrollView>
         <Button x:Name="CreateTransaction" Style="{StaticResource SuccessButton}"
+                BackgroundColor="{Binding TransactionTypeColor}"
                 ContentLayout="Left, 10"
                 VerticalOptions="End"
                 Margin="0,0,10,10"
                 CornerRadius="5"
-                Text="Adicionar"
+                Text="Confirmar"
                 HorizontalOptions="End"
                 Command="{Binding SaveTransactionCommand}" >
             <Button.ImageSource>
                 <FontImageSource FontFamily="Icons"
                                  Color="#121b27"
-                                 Glyph="{x:Static Icons:IconFont.Plus}"
+                                 Glyph="{x:Static Icons:IconFont.Check}"
                                  />
             </Button.ImageSource>
         </Button>

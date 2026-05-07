@@ -37,7 +37,10 @@ namespace XpemFinancial.VMs
                     ? _cachedCategories
                     : _cachedCategories.Where(x => x.Name.Contains(newValue, StringComparison.OrdinalIgnoreCase)).ToList();
 
-                _ = ReloadSourceAsync(filtered, showBusy: false);
+                // Dispatch asynchronously to avoid mutating Categories
+                // during an active CollectionChanged notification.
+                MainThread.BeginInvokeOnMainThread(async () =>
+                    await ReloadSourceAsync(filtered, showBusy: false));
             }
         }
 

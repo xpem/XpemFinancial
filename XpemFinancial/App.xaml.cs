@@ -8,32 +8,53 @@ namespace XpemFinancial
     {
         public IUserSessionService UserSessionService { get; set; }
 
+        private readonly IUserService _userService;
+        private readonly ICategoryService _categoryService;
+        private readonly IBuildDbService _buildDbService;
+        private readonly IAccountService _accountService;
+        public readonly string Version = "@0.2.5";
+
         public App(IUserService userService, IUserSessionService userSessionService, ICategoryService categoryService,
             IBuildDbService buildDbService, IAccountService accountService)
         {
             InitializeComponent();
 
             UserSessionService = userSessionService;
+            _userService = userService;
+            _categoryService = categoryService;
+            _buildDbService = buildDbService;
+            _accountService = accountService;
 
-            Application.Current.UserAppTheme = AppTheme.Dark;
-
-            Task.Run(async () => await buildDbService.InitAsync()).Wait();
-
-            // Inicializa o banco local com o mock user ao iniciar o app
-            Task.Run(async () => await userService.GetMockUserAsync()).Wait();
-
-            Task.Run(async () => await accountService.MockAccount(1)).Wait();
-
-            Task.Run(async () => await categoryService.MockCategories(1)).Wait();
+            Application.Current!.UserAppTheme = AppTheme.Dark;
         }
 
         protected override Window CreateWindow(IActivationState? activationState)
         {
+            // Exibe loading enquanto inicializa
+            var loadingPage = new ContentPage
+            {
+                Content = new ActivityIndicator { IsRunning = true, HorizontalOptions = LayoutOptions.Center, VerticalOptions = LayoutOptions.Center }
+            };
+
+            var window = new Window(loadingPage);
+
+            _ = InitializeAndNavigateAsync(window);
+
+            return window;
+        }
+
+        private async Task InitializeAndNavigateAsync(Window window)
+        {
+            await _buildDbService.InitAsync();
+            await _userService.GetMockUserAsync();
+            await _accountService.MockAccount(1);
+            await _categoryService.MockCategories(1);
+
             var appShellVM = new AppShellVM(UserSessionService);
+            await appShellVM.UserFlyoutAsync();
 
-            _ = appShellVM.UserFlyoutAsync();
-
-            return new Window(new AppShell(appShellVM));
+            // Só navega para o Shell após tudo pronto
+            window.Page = new AppShell(appShellVM);
         }
     }
 }
