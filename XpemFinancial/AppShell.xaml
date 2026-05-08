@@ -47,9 +47,33 @@
         <ShellContent ContentTemplate="{DataTemplate local:MainPage}" />
     </FlyoutItem>
 
-
     <FlyoutItem Title="Contas" Icon="{x:Static icons:IconFont.Wallet}">
         <ShellContent ContentTemplate="{DataTemplate local:AccountPage}" />
     </FlyoutItem>
-    
+
+    <Shell.FlyoutFooterTemplate>
+        <DataTemplate>
+            <StackLayout>
+                <Button
+                  x:Name="BtnSignOut"
+                  Margin="10,10,10,10"
+                  Command="{Binding SignOutCommand}"
+                    BackgroundColor="{StaticResource DeleteAction}"
+                  ContentLayout="Left,10"
+                  FontSize="15"
+                  Style="{StaticResource DeleteButtonOutline}"
+                  Text="Sair"
+                  TextColor="{StaticResource White}">
+                    <Button.ImageSource>
+                        <FontImageSource
+                          FontFamily="Icons"
+                          Glyph="{x:Static icons:IconFont.ArrowRightFromBracket}"
+                          Size="12"
+                          Color="{StaticResource White}" />
+                    </Button.ImageSource>
+                </Button>
+            </StackLayout>
+        </DataTemplate>
+    </Shell.FlyoutFooterTemplate>
+
 </Shell>

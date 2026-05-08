@@ -8,7 +8,8 @@ namespace Service
     public interface IUserService
     {
         Task AddUserAsync(UserDTO user);
-        Task GetMockUserAsync();
+
+        //Task GetMockUserAsync();
         Task<UserDTO?> GetAsync();
     }
 
@@ -25,19 +26,19 @@ namespace Service
         }
 
         //mock user for testing purposes
-        public async Task GetMockUserAsync()
-        {
-            if(await userRepo.GetAsync() != null)
-                return;
+        //public async Task GetMockUserAsync()
+        //{
+        //    if(await userRepo.GetAsync() != null)
+        //        return;
 
-            var mockUser = new Model.DTO.UserDTO
-            {
-                Name = "Mock User",
-                Email = "emanuel.xpe@gmail.com",
-                CreatedAt = DateTime.UtcNow,
-            };
+        //    var mockUser = new Model.DTO.UserDTO
+        //    {
+        //        Name = "Mock User",
+        //        Email = "emanuel.xpe@gmail.com",
+        //        CreatedAt = DateTime.UtcNow,
+        //    };
 
-            await userRepo.AddAsync(mockUser);
-        }
+        //    await userRepo.AddAsync(mockUser);
+        //}
     }
 }

@@ -23,97 +23,92 @@
             <Setter Property="Padding" Value="0,0,0,10" />
         </Style>
     </ContentPage.Resources>
-    <VerticalStackLayout>
-        <ScrollView Margin="10">
-            <Border
-                IsEnabled="{Binding IsNotBusy}"
-                Style="{StaticResource BorderPrimary}"
-                VerticalOptions="Center">
-                <VerticalStackLayout>
-                    <Label
+    <VerticalStackLayout Margin="10">
+        <Label
                         SemanticProperties.Description="Imagem da tela inicial do sistema"
                         Style="{StaticResource Icon}"
                         Text="{x:Static Icons:IconFont.SackDollar}"
                         />
-                    
-                    <Components:RequiredEntry
+        <Components:RequiredEntry
                         LabelText="Email"
-                        EntryValue="{Binding Email}" />
-                    <Components:RequiredEntry
+                        EntryValue="{Binding Email}" IsRequired="{Binding IsRequired}" />
+        <Components:RequiredEntry
                         IsPassword="True"
                         LabelText="Senha"
-                        EntryValue="{Binding Password}" />
-                    
-                    <Button
+                        EntryValue="{Binding Password}" IsRequired="{Binding IsRequired}" />
+
+        <Button
                         Margin="0,10,0,20"
                         Command="{Binding SignInCommand}"
                         ContentLayout="Left, 10"
                         IsEnabled="{Binding BtnSignEnabled}"
                         SemanticProperties.Description="{Binding SignInText}"
                         SemanticProperties.Hint="Botão para acessar com usuário e senha"
-                        Style="{StaticResource BtnPrimary}"
+                        
+                        Style="{StaticResource SuccessButton}"
                         Text="{Binding SignInText}">
-                        <Button.ImageSource>
-                            <FontImageSource
-                                FontFamily="FontAwesome"
+            <Button.ImageSource>
+                <FontImageSource
+                                FontFamily="Icons"
                                 Glyph="{x:Static Icons:IconFont.ArrowRightToBracket}"
                                 Size="15"
                                 Color="Black" />
-                        </Button.ImageSource>
-                    </Button>
-                    <HorizontalStackLayout>
-                        <Label
+            </Button.ImageSource>
+        </Button>
+        <Label IsVisible="{Binding ErrorMessageIsVisible}" Text="{Binding ErrorMessage}" TextColor="{StaticResource DeleteAction}" />
+        <HorizontalStackLayout>
+            <Label
                             Margin="0,0,5,0"
                             Text="Não tem conta?"
                             TextColor="{StaticResource Gray100}" />
-                        <Label
+            <Label
                             HorizontalOptions="Start"
                             SemanticProperties.Description="Criar Conta"
                             SemanticProperties.Hint="Acessar criação de conta"
                             Text="Criar Conta"
-                            TextColor="{StaticResource PrimaryColor}"
+                            TextColor="{StaticResource PrimaryAction}"
                             TextDecorations="Underline">
-                            <Label.GestureRecognizers>
-                                <TapGestureRecognizer Command="{Binding CreateUserCommand}" />
-                            </Label.GestureRecognizers>
-                        </Label>
-                    </HorizontalStackLayout>
-                    <HorizontalStackLayout Margin="0,10,0,0">
-                        <Label
+                <Label.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding CreateUserCommand}" />
+                </Label.GestureRecognizers>
+            </Label>
+        </HorizontalStackLayout>
+        <HorizontalStackLayout Margin="0,10,0,0">
+            <Label
                             Margin="0,0,5,0"
                             FontFamily="EBGaramondBold"
                             Text="Esqueceu sua senha?"
                             TextColor="{StaticResource Gray100}" />
-                        <Label
+            <Label
                             FontFamily="EBGaramondBold"
                             HorizontalOptions="Start"
                             SemanticProperties.Description="Atualizar senha"
                             SemanticProperties.Hint="Acessar atualização de senha"
                             Text="Atualizar senha"
-                            TextColor="{StaticResource PrimaryColor}"
+                            TextColor="{StaticResource PrimaryAction}"
                             TextDecorations="Underline">
-                            <Label.GestureRecognizers>
-                                <TapGestureRecognizer Command="{Binding UpdatePasswordCommand}" />
-                            </Label.GestureRecognizers>
-                        </Label>
-                    </HorizontalStackLayout>
-                    <Grid
+                <Label.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding UpdatePasswordCommand}" />
+                </Label.GestureRecognizers>
+            </Label>
+        </HorizontalStackLayout>
+        <Grid
                         Margin="0,5,0,0" >
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="*" />
-                        </Grid.RowDefinitions>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-                        <Label
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Label
                             Margin="0,0,0,10"
                             FontFamily="OpenSansSemibold"
                             FontSize="12"
                             SemanticProperties.Description="Versão"
                             Text="{Binding Version}"
                             VerticalOptions="End" />
-                        <Label
+            <Label
                             Grid.Row="0"
                             Grid.Column="1"
                             Margin="0,20,0,0"
@@ -124,9 +119,6 @@
                             Text="@Emanuel Martins"
                             TextColor="{StaticResource Gray100}"
                             VerticalOptions="End" />
-                    </Grid>
-                </VerticalStackLayout>
-            </Border>
-        </ScrollView>
+        </Grid>
     </VerticalStackLayout>
 </ContentPage>

@@ -42,6 +42,7 @@ namespace XpemFinancial.VMs
         public async Task InitializeAsync()
         {
             var user = await userSessionService.GetCurrentUserAsync();
+
             if (user == null)
             {
                 _ = Shell.Current.GoToAsync($"{nameof(SignInPage)}");

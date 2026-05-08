@@ -46,11 +46,11 @@ namespace XpemFinancial
         private async Task InitializeAndNavigateAsync(Window window)
         {
             await _buildDbService.InitAsync();
-            await _userService.GetMockUserAsync();
-            await _accountService.MockAccount(1);
-            await _categoryService.MockCategories(1);
+            //await _userService.GetMockUserAsync();
+            //await _accountService.MockAccount(1);
+            //await _categoryService.MockCategories(1);
 
-            var appShellVM = new AppShellVM(UserSessionService);
+            var appShellVM = new AppShellVM(UserSessionService, _buildDbService);
             await appShellVM.UserFlyoutAsync();
 
             // Só navega para o Shell após tudo pronto

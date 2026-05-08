@@ -7,10 +7,13 @@ namespace XpemFinancial.VMs
     {
         [ObservableProperty] private string email;
         [ObservableProperty] private string password;
+        [ObservableProperty] private string errorMessage;
+        [ObservableProperty] private bool errorMessageIsVisible;
         [ObservableProperty] private string signInText = "Acessar";
         [ObservableProperty] private bool btnSignEnabled = true;
         [ObservableProperty] private string version = ((App)Application.Current)!.Version;
         [ObservableProperty] private bool isRequired;
+
 
         private async Task<bool> VerrifyFields()
         {
@@ -20,14 +23,11 @@ namespace XpemFinancial.VMs
             {
                 isValid = false;
             }
+
             if (!(Connectivity.NetworkAccess == NetworkAccess.Internet))
             {
-                await Application.Current.Windows[0].Page.DisplayAlert("Aviso", "É necessário ter acesso a internet para efetuar o primeiro acesso.", null, "Ok");
-                isValid = false;
-            }
-            if (Password.Length <= 3)
-            {
-                await Application.Current.Windows[0].Page.DisplayAlert("Aviso", "Digite sua senha", null, "Ok");
+                ErrorMessageIsVisible = true;
+                ErrorMessage = "É necessário ter acesso a internet para efetuar o primeiro acesso.";
                 isValid = false;
             }
 

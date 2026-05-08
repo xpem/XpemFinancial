@@ -16,7 +16,6 @@ namespace Service
             return await categoryRepo.GetAllAsync();
         }
 
-
         public class TransactionCategories
         {
             public int Id { get; set; } = 0;

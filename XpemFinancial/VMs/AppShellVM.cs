@@ -2,6 +2,7 @@
 using CommunityToolkit.Mvvm.Input;
 using Model.DTO;
 using Service;
+using XpemFinancial.Views;
 
 namespace XpemFinancial.VMs
 {
@@ -36,11 +37,11 @@ namespace XpemFinancial.VMs
 
                 //syncService.Timer?.Dispose();
 
-                userSessionService.Invalidate ();
+                userSessionService.Invalidate();
 
                 await buildDbService.CleanLocalDatabaseAsync();
 
-                _ = Shell.Current.GoToAsync($"//{nameof(SignInVM)}");
+                _ = Shell.Current.GoToAsync($"//{nameof(SignInPage)}");
             }
         }
     }
