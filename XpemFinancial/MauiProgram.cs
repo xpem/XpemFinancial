@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using CommunityToolkit.Maui;
-using Service.DI;
+using Service;
 
 namespace XpemFinancial
 {
@@ -29,6 +29,7 @@ namespace XpemFinancial
             builder.Services.AddDbContext();
             builder.Services.AddService();
             builder.Services.AddRepo();
+            builder.Services.AddApiRepo();
             builder.Services.ShellRoutes();
 
             return builder.Build();
@@ -45,6 +46,7 @@ namespace XpemFinancial
             services.AddTransientWithShellRoute<Views.CategoryPicker, VMs.CategoryPickerVM>(nameof(Views.CategoryPicker));
             services.AddTransientWithShellRoute<Views.AccountPage, VMs.AccountVM>(nameof(Views.AccountPage));
             services.AddTransientWithShellRoute<Views.SignInPage, VMs.SignInVM>(nameof(Views.SignInPage));
+            services.AddTransientWithShellRoute<Views.FirstSyncProcessPage, VMs.FirstSyncProcessVM>(nameof(Views.FirstSyncProcessPage));
 
             return services;
         }

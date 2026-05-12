@@ -87,7 +87,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <ProjectReference Include="..\ApiRepo\ApiRepo.csproj" />
 	  <ProjectReference Include="..\Model\Model.csproj" />
+	  <ProjectReference Include="..\Repo\Repo.csproj" />
 	  <ProjectReference Include="..\Services\Service.csproj" />
 	</ItemGroup>
 
@@ -123,6 +125,9 @@
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
 	  <MauiXaml Update="Views\CategoryPicker.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
+	  <MauiXaml Update="Views\FirstSyncProcessPage.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
 	  <MauiXaml Update="Views\SignInPage.xaml">

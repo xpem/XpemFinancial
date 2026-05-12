@@ -1,9 +1,13 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Model.DTO;
+using Model.Resp.Api;
+using Service;
+using XpemFinancial.Views;
 
 namespace XpemFinancial.VMs
 {
-    public partial class SignInVM : VMBase
+    public partial class SignInVM(IUserService userService, IUserSessionService userSessionService) : VMBase
     {
         [ObservableProperty] private string email;
         [ObservableProperty] private string password;
@@ -46,40 +50,38 @@ namespace XpemFinancial.VMs
             try
             {
                 if (!await VerrifyFields())
-                {
                     return;
-                }
 
                 SignInText = "Acessando...";
                 BtnSignEnabled = false;
 
-                //Models.Responses.BLLResponse resp = await userBLL.SignIn(Email, Password);
+                var resp = await userService.SignInAsync(Email, Password);
 
-                //if (resp.Success)
-                //{
-                //    if (resp.Content is not null and int)
-                //        ((App)App.Current).Uid = (int)resp.Content;
+                if (resp.Success)
+                {
+                    if (resp.Content is not null and UserDTO user)
+                        userSessionService.GetCurrentUserAsync().Wait();
 
-                //    await Shell.Current.GoToAsync($"{nameof(FirstSyncProcess)}", false);
+                    await Shell.Current.GoToAsync($"{nameof(FirstSyncProcessPage)}", false);
+                }
+                else
+                {
+                    string errorMessage = "";
 
-                //    //Application.Current.MainPage = new NavigationPage();
-                //    //_ = (Application.Current.MainPage.Navigation).PushAsync(navigation.ResolvePage<Main>(), true);
-                //}
-                //else
-                //{
-                //    string errorMessage = "";
+                    if (resp.Content is not null and ErrorTypes error)
+                    {
+                        if (error == ErrorTypes.WrongEmailOrPassword)
+                            errorMessage = "Wrong email/password";
+                        else if (error == ErrorTypes.ServerUnavaliable)
+                            errorMessage = "Server unavailable";
+                    }
+                    else throw new Exception("Invalid Content");
 
-                //    if (resp.Error == Models.Responses.ErrorTypes.WrongEmailOrPassword)
-                //        errorMessage = "Email/senha incorretos";
-                //    else if (resp.Error == Models.Responses.ErrorTypes.ServerUnavaliable)
-                //        errorMessage = "Servidor indisponível, favor entrar em contato com o desenvolvedor.";
-                //    else errorMessage = "Erro não mapeado, favor entrar em contato com o desenvolvedor.";
-
-                //    await Application.Current.Windows[0].Page.DisplayAlert("Aviso", errorMessage, null, "Ok");
-                //}
+                    ErrorMessageIsVisible = true;
+                    ErrorMessage = errorMessage;
+                }
 
                 BtnSignEnabled = true;
-                SignInText = "Acessar";
                 IsBusy = false;
             }
             catch { throw; }

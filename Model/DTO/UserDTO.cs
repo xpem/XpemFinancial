@@ -16,6 +16,8 @@ namespace Model.DTO
 
         public string? Token { get; set; }
 
+        public string? Password { get; set; }
+
         public DateTime LastUpdate { get; set; }
 
         //por enquanto, um usuário só tem uma conta, mas futuramente pode ter mais de uma

@@ -16,12 +16,20 @@ namespace XpemFinancial.VMs
 
         public async Task UserFlyoutAsync()
         {
-            UserDTO? user = await userSessionService.GetCurrentUserAsync();
-
-            if (user is not null)
+            try
             {
-                Name = user.Name;
-                Email = user.Email;
+                UserDTO? user = await userSessionService.GetCurrentUserAsync();
+
+                if (user is not null)
+                {
+                    Name = user.Name;
+                    Email = user.Email;
+                }
+            }
+            catch (Exception ex)
+            {
+                // Handle exceptions (e.g., log the error, show a message to the user, etc.)
+                Console.WriteLine($"Error fetching user data: {ex.Message}");
             }
         }
 
