@@ -9,4 +9,10 @@ public partial class FirstSyncProcessPage : ContentPage
 		InitializeComponent();
 		BindingContext = firstSyncProcessVM;
 	}
+
+    protected override async void OnAppearing()
+    {
+        base.OnAppearing();
+        await ((FirstSyncProcessVM)BindingContext).SynchronizingProcess();
+    }
 }

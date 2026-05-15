@@ -1,6 +1,8 @@
-﻿using Microsoft.Extensions.Logging;
-using CommunityToolkit.Maui;
+﻿using CommunityToolkit.Maui;
+using Microsoft.Extensions.Logging;
 using Service;
+using XpemFinancial.Views;
+using XpemFinancial.VMs;
 
 namespace XpemFinancial
 {
@@ -38,16 +40,16 @@ namespace XpemFinancial
         public static IServiceCollection ShellRoutes(this IServiceCollection services)
         {
             // MainPage é raiz do Shell (AppShell.xaml) — registrar só no DI, não como rota
-            services.AddTransient<Views.MainPage>();
-            services.AddTransient<VMs.MainVM>();
+            //services.AddTransient<Views.MainPage>();
+            //services.AddTransient<VMs.MainVM>();
 
             // Páginas de navegação secundária
+            services.AddTransientWithShellRoute<MainPage, MainVM>(nameof(MainPage));
             services.AddTransientWithShellRoute<Views.TransactionEdit, VMs.TransactionEditVM>(nameof(Views.TransactionEdit));
             services.AddTransientWithShellRoute<Views.CategoryPicker, VMs.CategoryPickerVM>(nameof(Views.CategoryPicker));
             services.AddTransientWithShellRoute<Views.AccountPage, VMs.AccountVM>(nameof(Views.AccountPage));
             services.AddTransientWithShellRoute<Views.SignInPage, VMs.SignInVM>(nameof(Views.SignInPage));
             services.AddTransientWithShellRoute<Views.FirstSyncProcessPage, VMs.FirstSyncProcessVM>(nameof(Views.FirstSyncProcessPage));
-
             return services;
         }
     }

@@ -2,9 +2,6 @@
 using Model.DTO;
 using Model.Resp.Api;
 using Repo;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
@@ -54,6 +51,7 @@ namespace ApiRepo
                 throw new ArgumentNullException(nameof(resp));
 
             JsonNode? jResp;
+
             try
             {
                 jResp = JsonNode.Parse(resp.Content);
