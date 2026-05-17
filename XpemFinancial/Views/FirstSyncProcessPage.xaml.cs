@@ -13,6 +13,6 @@ public partial class FirstSyncProcessPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        await ((FirstSyncProcessVM)BindingContext).SynchronizingProcess();
+        await ((FirstSyncProcessVM)BindingContext).SyncProcess();
     }
 }

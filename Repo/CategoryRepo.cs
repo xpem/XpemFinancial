@@ -10,6 +10,9 @@ namespace Repo
     {
         Task AddAsync(CategoryDTO category);
         Task<List<CategoryDTO>> GetAllAsync();
+
+        Task UpdateAsync(Model.DTO.CategoryDTO category);
+        Task<Model.DTO.CategoryDTO?> GetByExternalIdAsync(int externalId);
     }
 
     public class CategoryRepo(IDbContextFactory<DbCtx> DbCtx) : ICategoryRepo
@@ -25,6 +28,19 @@ namespace Repo
             using var db = await DbCtx.CreateDbContextAsync();
             db.Category.Add(category);
             await db.SaveChangesAsync();
+        }
+
+        public async Task UpdateAsync(Model.DTO.CategoryDTO category)
+        {
+            using var db = await DbCtx.CreateDbContextAsync();
+            db.Category.Update(category);
+            await db.SaveChangesAsync();
+        }
+
+        public async Task<Model.DTO.CategoryDTO?> GetByExternalIdAsync(int externalId)
+        {
+            using var db = await DbCtx.CreateDbContextAsync();
+            return await db.Category.FirstOrDefaultAsync(c => c.ExternalId == externalId);
         }
     }
 }

@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Repo;
+using Service.Category;
 
 namespace Service
 {
@@ -23,20 +24,25 @@ namespace Service
             services.AddScoped<ICategoryRepo, CategoryRepo>();
         }
 
+
         public static void AddService(this IServiceCollection services)
         {
             services.AddScoped<IBuildDbService, BuildDbService>();
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IAccountService, AccountService>();
-            services.AddScoped<ICategoryService, CategoryService>();
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<ITransactionService, TransactionService>();
             services.AddScoped<IUserSessionService, UserSessionService>();
+
+            services.AddScoped<ICategoryService, CategoryService>();
+            services.AddScoped<ICategorySyncService, CategorySyncService>();
+            services.AddScoped<ICategoryApiService, CategoryApiService>();
         }
 
         public static void AddApiRepo(this IServiceCollection services)
         {
             services.AddScoped<IUserApiRepo, UserApiRepo>();
+            services.AddScoped<ICategoryApiRepo, CategoryApiRepo>();
         }
         }
 }

@@ -11,6 +11,9 @@ public partial class CategoryPicker : ContentPage
         InitializeComponent();
         _viewModel = viewModel;
         BindingContext = viewModel;
+
+        _viewModel.ScrollToItemRequested += item =>
+            categoriesView.ScrollTo(item, position: ScrollToPosition.End, animate: false);
     }
 
     protected override async void OnNavigatedTo(NavigatedToEventArgs args)

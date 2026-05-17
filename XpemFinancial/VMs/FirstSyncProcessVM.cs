@@ -1,18 +1,21 @@
 ﻿using ApiRepo;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Messaging;
 using Service;
+using Service.Category;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using XpemFinancial.Messages;
 using XpemFinancial.Views;
 
 namespace XpemFinancial.VMs
 {
-    public partial class FirstSyncProcessVM(IUserApiRepo userApiRepo,IUserSessionService userSessionService) : VMBase
+    public partial class FirstSyncProcessVM(IUserApiRepo userApiRepo,IUserSessionService userSessionService,ICategorySyncService categorySyncService) : VMBase
     {
         [ObservableProperty] private decimal progress;
 
-        public async Task SynchronizingProcess()
+        public async Task SyncProcess()
         {
             try
             {
@@ -22,7 +25,7 @@ namespace XpemFinancial.VMs
                 {
                     if (Connectivity.NetworkAccess == NetworkAccess.Internet)
                     {
-                        //await BooksSyncBLL.ApiToLocalSync(user.Id, user.LastUpdate);
+                        await categorySyncService.PullAsync(user.Id);
 
                         Progress = 0.25M;
 
@@ -43,6 +46,8 @@ namespace XpemFinancial.VMs
                         //_ = AppShellVM.AtualizaUserShowData();
 
                         _ = Shell.Current.GoToAsync($"//{nameof(MainPage)}");
+
+                        WeakReferenceMessenger.Default.Send(new UserLoggedInMessage());
 
                     }
                 }

@@ -1,7 +1,9 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using Model.DTO;
 using Service;
+using XpemFinancial.Messages;
 using XpemFinancial.Views;
 
 namespace XpemFinancial.VMs
@@ -9,10 +11,10 @@ namespace XpemFinancial.VMs
     public partial class AppShellVM(Service.IUserSessionService userSessionService, IBuildDbService buildDbService) : ObservableObject
     {
         [ObservableProperty]
-        private string email;
+        private string? email;
 
         [ObservableProperty]
-        private string name;
+        private string? name;
 
         public async Task UserFlyoutAsync()
         {
@@ -51,6 +53,14 @@ namespace XpemFinancial.VMs
 
                 _ = Shell.Current.GoToAsync($"//{nameof(SignInPage)}");
             }
+        }
+
+        public void Init()
+        {            
+            WeakReferenceMessenger.Default.Register<UserLoggedInMessage>(this, async (r, m) =>
+            {
+                await UserFlyoutAsync();
+            });
         }
     }
 }

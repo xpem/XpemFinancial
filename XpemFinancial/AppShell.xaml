@@ -39,9 +39,6 @@
         <Components:FlyoutHeader Name="{Binding Name}" Email="{Binding Email}" />
     </Shell.FlyoutHeader>
 
-    <ShellItem FlyoutItemIsVisible="False" Route="SignInPage">
-        <ShellContent ContentTemplate="{DataTemplate local:SignInPage}" />
-    </ShellItem>
 
     <FlyoutItem
         Title="Principal"
@@ -49,6 +46,12 @@
         Route="MainPage">
         <ShellContent ContentTemplate="{DataTemplate local:MainPage}" />
     </FlyoutItem>
+
+
+
+    <ShellItem FlyoutItemIsVisible="False" Route="SignInPage">
+        <ShellContent ContentTemplate="{DataTemplate local:SignInPage}" />
+    </ShellItem>
 
     <FlyoutItem Title="Contas" Icon="{x:Static icons:IconFont.Wallet}">
         <ShellContent ContentTemplate="{DataTemplate local:AccountPage}" />

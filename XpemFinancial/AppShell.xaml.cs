@@ -15,5 +15,11 @@ namespace XpemFinancial
                 flyoutHeader.BindingContext = appShellVM;
             }
         }
+
+        protected override async void OnAppearing()
+        {
+            base.OnAppearing();
+            ((AppShellVM)BindingContext).Init();
+        }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Service;
+using Service.Category;
 using XpemFinancial.VMs;
 
 namespace XpemFinancial
