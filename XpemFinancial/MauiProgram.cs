@@ -28,6 +28,7 @@ namespace XpemFinancial
 #if DEBUG
             builder.Logging.AddDebug();
 #endif
+
             builder.Services.AddDbContext();
             builder.Services.AddService();
             builder.Services.AddRepo();

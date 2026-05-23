@@ -1,22 +1,22 @@
-﻿using Microsoft.EntityFrameworkCore.Storage;
+﻿using ApiRepo;
 using Model.DTO;
+using Model.Req;
 using Repo;
 
 namespace Service
 {
     public interface IAccountService
     {
-        Task AdjustAccountBalanceAsync(AccountDTO account, decimal oldbalance, decimal newbalance);
+        Task AdjustAccountBalanceAsync(AccountDTO account, decimal oldbalance, decimal newbalance, bool isON);
         Task<AccountDTO?> GetAsync();
-        Task MockAccount(int userId);
     }
 
-    public class AccountService(IAccountRepo accountRepo, ITransactionRepo transactionRepo) : IAccountService
+    public class AccountService(IAccountRepo accountRepo, ITransactionRepo transactionRepo, IAccountApiRepo accountApiRepo) : IAccountService
     {
         public async Task<AccountDTO?> GetAsync() =>
             await accountRepo.GetAsync();
 
-        public async Task AdjustAccountBalanceAsync(AccountDTO account, decimal oldbalance, decimal newbalance)
+        public async Task AdjustAccountBalanceAsync(AccountDTO account, decimal oldbalance, decimal newbalance, bool isON)
         {
             var existingAccount = await accountRepo.GetAsync();
 
@@ -26,24 +26,34 @@ namespace Service
                 existingAccount = account;
             }
 
-            var adjustmentTransaction = BuildAdjustmentTransaction(account.UserId, oldbalance, newbalance, existingAccount.Id);
+            TransactionDTO adjustmentTransaction = BuildAdjustmentTransaction(account.UserId, oldbalance, newbalance, existingAccount.Id);
 
             await transactionRepo.Add(adjustmentTransaction);
             await accountRepo.Update(account);
         }
 
-        public async Task MockAccount(int userId)
+        public async Task PostAdjustAccountBalanceAsync(AccountDTO accountDTO, TransactionDTO adjustmentTransaction)
         {
-            if (await accountRepo.GetAsync() != null)
-                return;
-
-            var mockAccount = new AccountDTO
+            AdjustAccountBalanceReq adjustAccountBalanceReq = new AdjustAccountBalanceReq
             {
-                CreatedAt = DateTime.UtcNow,
-                UserId = userId,
+                UpdatedAt = DateTime.UtcNow,
+                Inactive = accountDTO.Inactive,
+                Transaction = new TransactionReq
+                {
+                    Description = adjustmentTransaction.Description,
+                    Date = adjustmentTransaction.Date,
+                    Amount = adjustmentTransaction.Amount,
+                    Repetition = adjustmentTransaction.Repetition,
+                    TotalInstallments = adjustmentTransaction.TotalInstallments,
+                    InstallmentId = adjustmentTransaction.InstallmentId,
+                    Installment = adjustmentTransaction.Installment,
+                    CategoryId = adjustmentTransaction.CategoryId,
+                    Type = adjustmentTransaction.Type,
+                    Note = adjustmentTransaction.Note,
+                }
             };
 
-            await AdjustAccountBalanceAsync(mockAccount, 0, 1000);
+            await accountApiRepo.PostAdjustAccountBalance(adjustAccountBalanceReq);
         }
 
         private static TransactionDTO BuildAdjustmentTransaction(int userId, decimal oldbalance, decimal newbalance, int accountId) =>

@@ -5,7 +5,7 @@ namespace Model.DTO
     [Table("Category")]
     public class CategoryDTO : BaseDTO
     {
-        public int ExternalId { get; set; }
+        public int? ExternalId { get; set; }
 
         public string Name { get; set; }
 

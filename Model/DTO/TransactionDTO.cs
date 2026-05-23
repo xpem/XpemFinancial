@@ -32,14 +32,17 @@ namespace Model.DTO
 
         public string? Note { get; set; }
 
-        public int AccountId { get; set; }
+        public int? AccountId { get; set; }
 
         public AccountDTO? Account { get; set; }
 
         public required int UserId { get; set; }
 
         public UserDTO User { get; set; }
+
+        public int? ExternalId { get; set; }
     }
+
     public enum TransactionType
     {
         Income,
@@ -54,6 +57,4 @@ namespace Model.DTO
         Monthly,
         //Advanced
     }
-
-
 }
