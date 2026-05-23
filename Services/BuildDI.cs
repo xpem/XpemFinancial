@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Repo;
+using Service.Account;
 using Service.Category;
 
 namespace Service
@@ -16,33 +17,41 @@ namespace Service
             .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
         }
 
-        public static void AddRepo(this IServiceCollection services)
-        {
-            services.AddScoped<IUserRepo, UserRepo>();
-            services.AddScoped<IAccountRepo, AccountRepo>();
-            services.AddScoped<ITransactionRepo, TransactionRepo>();
-            services.AddScoped<ICategoryRepo, CategoryRepo>();
-        }
-
-
         public static void AddService(this IServiceCollection services)
         {
-            services.AddScoped<IBuildDbService, BuildDbService>();
-            services.AddScoped<IUserService, UserService>();
-            services.AddScoped<IAccountService, AccountService>();
-            services.AddScoped<IUserService, UserService>();
-            services.AddScoped<ITransactionService, TransactionService>();
-            services.AddScoped<IUserSessionService, UserSessionService>();
+            // core
+            services.AddTransient<IBuildDbService, BuildDbService>();
+            services.AddTransient<IUserSessionService, UserSessionService>();
 
-            services.AddScoped<ICategoryService, CategoryService>();
-            services.AddScoped<ICategorySyncService, CategorySyncService>();
-            services.AddScoped<ICategoryApiService, CategoryApiService>();
+            // user
+            services.AddTransient<IUserService, UserService>();
+
+            // account
+            services.AddTransient<IAccountService, AccountService>();
+            services.AddTransient<IAccountSyncService, AccountSyncService>();
+
+            // transaction
+            services.AddTransient<ITransactionService, TransactionService>();
+
+            // category
+            services.AddTransient<ICategoryService, CategoryService>();
+            services.AddTransient<ICategorySyncService, CategorySyncService>();
+            services.AddTransient<ICategoryApiService, CategoryApiService>();
+        }
+
+        public static void AddRepo(this IServiceCollection services)
+        {
+            services.AddTransient<IUserRepo, UserRepo>();
+            services.AddTransient<IAccountRepo, AccountRepo>();
+            services.AddTransient<ITransactionRepo, TransactionRepo>();
+            services.AddTransient<ICategoryRepo, CategoryRepo>();
         }
 
         public static void AddApiRepo(this IServiceCollection services)
         {
-            services.AddScoped<IUserApiRepo, UserApiRepo>();
-            services.AddScoped<ICategoryApiRepo, CategoryApiRepo>();
+            services.AddTransient<IUserApiRepo, UserApiRepo>();
+            services.AddTransient<ICategoryApiRepo, CategoryApiRepo>();
+            services.AddTransient<IAccountApiRepo, AccountApiRepo>();
         }
-        }
+    }
 }

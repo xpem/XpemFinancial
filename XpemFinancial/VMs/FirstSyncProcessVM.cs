@@ -11,7 +11,7 @@ using XpemFinancial.Views;
 
 namespace XpemFinancial.VMs
 {
-    public partial class FirstSyncProcessVM(IUserApiRepo userApiRepo,IUserSessionService userSessionService,ICategorySyncService categorySyncService) : VMBase
+    public partial class FirstSyncProcessVM(IUserApiRepo userApiRepo, IUserSessionService userSessionService, ICategorySyncService categorySyncService) : VMBase
     {
         [ObservableProperty] private decimal progress;
 

@@ -12,6 +12,8 @@ namespace XpemFinancial.VMs
 
         public bool IsNotBusy => !IsBusy;
 
+        protected static bool IsOn => Connectivity.NetworkAccess == NetworkAccess.Internet;
+
         public static async Task ShowMessage(string message, string title)
         {
             if (DeviceInfo.Platform == DevicePlatform.iOS || DeviceInfo.Platform == DevicePlatform.Android)

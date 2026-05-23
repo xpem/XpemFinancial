@@ -31,7 +31,7 @@ namespace Service.Category
 
         public async Task UpsertAsync(CategoryDTO category)
         {
-            var existingCategory = await categoryRepo.GetByExternalIdAsync(category.ExternalId);
+            var existingCategory = await categoryRepo.GetByExternalIdAsync(category.ExternalId.Value);
 
             if (existingCategory != null)
             {

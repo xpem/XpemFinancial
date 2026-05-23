@@ -4,9 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Model.DTO;
 using Service;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using Service.Account;
 
 namespace XpemFinancial.VMs
 {
@@ -41,7 +39,7 @@ namespace XpemFinancial.VMs
 
             decimal newBalance = decimal.Parse(CurrentBalance, System.Globalization.NumberStyles.Currency);
 
-            await accountService.AdjustAccountBalanceAsync(Account, OriginalBalance, newBalance);
+            await accountService.AdjustAccountBalanceAsync(Account, OriginalBalance, newBalance, IsOn);
 
             if (DeviceInfo.Platform == DevicePlatform.iOS || DeviceInfo.Platform == DevicePlatform.Android)
             {

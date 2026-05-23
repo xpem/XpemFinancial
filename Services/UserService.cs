@@ -10,8 +10,12 @@ namespace Service
     public interface IUserService
     {
         Task AddUserAsync(UserDTO user);
+
         Task<UserDTO?> GetAsync();
+
         Task<ServiceResp> SignInAsync(string email, string password);
+
+        Task UpdateLastUpdate(int uid);
     }
 
     public class UserService(Repo.IUserRepo userRepo, IUserApiRepo userApiRepo, IBuildDbService buildDbService) : IUserService
@@ -80,5 +84,7 @@ namespace Service
             }
             catch { throw; }
         }
+
+        public async Task UpdateLastUpdate(int uid) => await userRepo.UpdateLastUpdateAsync(DateTime.Now, uid);
     }
 }

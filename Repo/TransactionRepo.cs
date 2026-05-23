@@ -6,12 +6,10 @@ namespace Repo
     public interface ITransactionRepo
     {
         Task Add(TransactionDTO transaction);
+        Task Update(TransactionDTO transaction);
         Task<IEnumerable<TransactionDTO>> GetByMonthYear(DateTime monthYear);
-
         Task<decimal> GetPreviousBalanceAsync(DateTime monthYear);
-
         Task<decimal?> GetBalanceAsync(int accountId);
-
         Task<TransactionDTO> GetByIdAsync(int transactionId);
     }
 
@@ -21,6 +19,13 @@ namespace Repo
         {
             using var db = await DbCtx.CreateDbContextAsync();
             db.Transaction.Add(transaction);
+            await db.SaveChangesAsync();
+        }
+
+        public async Task Update(TransactionDTO transaction)
+        {
+            using var db = await DbCtx.CreateDbContextAsync();
+            db.Transaction.Update(transaction);
             await db.SaveChangesAsync();
         }
 
