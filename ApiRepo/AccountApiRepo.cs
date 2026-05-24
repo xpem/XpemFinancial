@@ -8,6 +8,7 @@ namespace ApiRepo
     public interface IAccountApiRepo
     {
         Task<AdjustAccountBalanceReq> PostAdjustAccountBalance(AdjustAccountBalanceReq req);
+        Task<AccountApiRes?> GetAccountAsync(DateTime updatedAt);
     }
 
     public class AccountApiRepo(IUserApiRepo userApiRepo) : IAccountApiRepo
@@ -28,6 +29,18 @@ namespace ApiRepo
 
             return JsonSerializer.Deserialize<AdjustAccountBalanceReq>(resp.Content, _jsonOptions)
                 ?? throw new Exception("Resposta inválida ao ajustar balanço na API.");
+        }
+
+        public async Task<AccountApiRes?> GetAccountAsync(DateTime updatedAt)
+        {
+            ApiResp resp = await userApiRepo.AuthRequestAsync(
+                RequestsTypes.Get,
+                ApiKeys.ApiAddress + $"/financial/account?updatedAt={updatedAt:yyyy-MM-ddTHH:mm:ss.fff}");
+
+            if (resp.Success && resp.Content is not null)
+                return JsonSerializer.Deserialize<AccountApiRes>(resp.Content, _jsonOptions);
+
+            return null;
         }
     }
 }

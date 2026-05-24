@@ -1,58 +1,72 @@
-﻿using ApiRepo;
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
 using Service;
+using Service.Account;
 using Service.Category;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using Service.Transaction;
 using XpemFinancial.Messages;
 using XpemFinancial.Views;
 
 namespace XpemFinancial.VMs
 {
-    public partial class FirstSyncProcessVM(IUserApiRepo userApiRepo, IUserSessionService userSessionService, ICategorySyncService categorySyncService) : VMBase
+    public partial class FirstSyncProcessVM(
+        IUserSessionService userSessionService,
+        ICategoryService categoryService,
+        IAccountService accountService,
+        ITransactionService transactionService) : VMBase
     {
-        [ObservableProperty] private decimal progress;
+        [ObservableProperty] private double progress;
 
         public async Task SyncProcess()
         {
+            if (IsBusy) return;
+
+            IsBusy = true;
+
             try
             {
                 var user = await userSessionService.GetCurrentUserAsync();
 
-                if (user != null)
+                if (user == null)
                 {
-                    if (Connectivity.NetworkAccess == NetworkAccess.Internet)
-                    {
-                        await categorySyncService.PullAsync(user.Id);
-
-                        Progress = 0.25M;
-
-                        //await BooksSyncBLL.LocalToApiSync();
-
-                        Progress = 0.5M;
-
-                        //await BookHistoricSyncBLL.ApiToLocalSync(user.Id, user.LastUpdate);
-
-                        Progress = 0.75M;
-
-                        //UserBLL.UpdateLocalUserLastUpdate(user.Id);
-
-                        Progress = 1;
-
-                        //_ = Task.Run(() => { Task.Delay(5000); SyncServices.StartThread(); });
-
-                        //_ = AppShellVM.AtualizaUserShowData();
-
-                        _ = Shell.Current.GoToAsync($"//{nameof(MainPage)}");
-
-                        WeakReferenceMessenger.Default.Send(new UserLoggedInMessage());
-
-                    }
+                    await ShowMessage("Usuário não encontrado. Faça login novamente.", "Erro");
+                    return;
                 }
+
+                if (Connectivity.NetworkAccess != NetworkAccess.Internet)
+                {
+                    await ShowMessage("Sem conexão com a internet.", "Erro");
+                    return;
+                }
+
+                await categoryService.PullAsync(user.Id);
+                Progress = 0.25;
+
+                await accountService.PullAsync(user.Id);
+                Progress = 0.5;
+
+                await transactionService.PullAsync(user.Id);
+                Progress = 0.75;
+
+                // await BookHistoricSyncBLL.ApiToLocalSync(user.Id, user.LastUpdate);
+                Progress = 1;
+
+                WeakReferenceMessenger.Default.Send(new UserLoggedInMessage());
+                await Shell.Current.GoToAsync($"//{nameof(MainPage)}");
             }
-            catch (Exception ex) { throw ex; }
+            catch (UnauthorizedAccessException)
+            {
+                await ShowMessage("Sessão expirada. Faça login novamente.", "Sessão expirada");
+                await Shell.Current.GoToAsync($"//{nameof(SignInPage)}");
+            }
+            catch (Exception ex)
+            {
+                await ShowMessage($"Erro ao sincronizar: {ex.Message}", "Erro");
+            }
+            finally
+            {
+                IsBusy = false;
+            }
         }
     }
 }

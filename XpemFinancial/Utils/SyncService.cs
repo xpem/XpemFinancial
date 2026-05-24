@@ -7,7 +7,7 @@ using System.Text;
 
 namespace XpemFinancial.Utils
 {
-    public class SyncService(IUserSessionService userSessionService, IUserService userService, IAccountSyncService accountSyncService)
+    public class SyncService(IUserSessionService userSessionService, IUserService userService)
     {
         public static SyncStatus Synchronizing { get; set; }
 

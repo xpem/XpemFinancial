@@ -7,18 +7,90 @@ namespace Service.Account
 {
     public interface IAccountService
     {
-        Task AdjustAccountBalanceAsync(AccountDTO account, decimal oldbalance, decimal newbalance, bool isON);
         Task<AccountDTO?> GetAsync();
+        Task<DateTime> GetLastUpdatedAtAsync();
+        Task PullAsync(int uid);
+        Task UpsertFromApiAsync(int uid, int externalId, DateTime updatedAt, bool inactive);
+        Task AdjustAccountBalanceAsync(AccountDTO account, decimal oldbalance, decimal newbalance, bool isOnline);
+        Task UpdateExternalIdsAsync(int localAccountId, int serverAccountId, int localTransactionId, int serverTransactionId);
     }
 
     public class AccountService(
         IAccountRepo accountRepo,
         ITransactionRepo transactionRepo,
-        IAccountSyncService accountSyncService) : IAccountService
+        IAccountApiRepo accountApiRepo) : IAccountService
     {
         public async Task<AccountDTO?> GetAsync() => await accountRepo.GetAsync();
 
-        public async Task AdjustAccountBalanceAsync(AccountDTO account, decimal oldbalance, decimal newbalance, bool isON)
+        public async Task<DateTime> GetLastUpdatedAtAsync()
+        {
+            var account = await accountRepo.GetAsync();
+            return account?.UpdatedAt ?? DateTime.MinValue;
+        }
+
+        public async Task PullAsync(int uid)
+        {
+            DateTime lastUpdatedAt = await GetLastUpdatedAtAsync();
+            var apiAccount = await accountApiRepo.GetAccountAsync(lastUpdatedAt);
+
+            if (apiAccount is null) return;
+
+            await UpsertFromApiAsync(uid, apiAccount.Id, apiAccount.UpdatedAt, apiAccount.Inactive);
+        }
+
+        public async Task UpsertFromApiAsync(int uid, int externalId, DateTime updatedAt, bool inactive)
+        {
+            var localAccount = await accountRepo.GetAsync();
+
+            if (localAccount is null)
+            {
+                await accountRepo.Add(new AccountDTO
+                {
+                    UserId = uid,
+                    ExternalId = externalId,
+                    Inactive = inactive,
+                    UpdatedAt = updatedAt,
+                    CreatedAt = DateTime.Now,
+                });
+            }
+            else if (localAccount.ExternalId != externalId)
+            {
+                localAccount.ExternalId = externalId;
+                localAccount.UpdatedAt = updatedAt;
+                await accountRepo.Update(localAccount);
+            }
+        }
+
+        public async Task AdjustAccountBalanceAsync(AccountDTO account, decimal oldbalance, decimal newbalance, bool isOnline)
+        {
+            (int localAccountId, int localTransactionId) = await AdjustBalanceLocalAsync(account, oldbalance, newbalance);
+
+            if (!isOnline) return;
+
+            AdjustAccountBalanceReq req = new()
+            {
+                UpdatedAt = DateTime.UtcNow,
+                Inactive = account.Inactive,
+                Transaction = new TransactionReq
+                {
+                    Description = "Ajuste de saldo",
+                    Date = DateTime.MinValue,
+                    Amount = newbalance - oldbalance,
+                    Repetition = Repetition.None,
+                    CategoryId = 1,
+                    Type = TransactionType.Adjustment,
+                }
+            };
+
+            var result = await accountApiRepo.PostAdjustAccountBalance(req);
+
+            int serverAccountId = result.Id ?? throw new Exception("API não retornou o Id da conta.");
+            int serverTransactionId = result.Transaction.Id ?? throw new Exception("API não retornou o Id da transação.");
+
+            await UpdateExternalIdsAsync(localAccountId, serverAccountId, localTransactionId, serverTransactionId);
+        }
+
+        private async Task<(int localAccountId, int localTransactionId)> AdjustBalanceLocalAsync(AccountDTO account, decimal oldbalance, decimal newbalance)
         {
             var existingAccount = await accountRepo.GetAsync();
 
@@ -28,24 +100,28 @@ namespace Service.Account
                 existingAccount = account;
             }
 
-            // Garante que account tem o Id correto antes do update
             account.Id = existingAccount.Id;
 
             TransactionDTO adjustmentTransaction = BuildAdjustmentTransaction(account.UserId, oldbalance, newbalance, existingAccount.Id);
 
             await transactionRepo.Add(adjustmentTransaction);
+            await accountRepo.Update(account);
 
-            if (isON)
+            return (account.Id, adjustmentTransaction.Id);
+        }
+
+        public async Task UpdateExternalIdsAsync(int localAccountId, int serverAccountId, int localTransactionId, int serverTransactionId)
+        {
+            var account = await accountRepo.GetAsync();
+            if (account is not null && account.Id == localAccountId)
             {
-                // Sincroniza com o servidor e atualiza os IDs gerados remotamente
-                (int serverAccountId, int serverTransactionId) = await accountSyncService.PushAdjustAccountBalanceAsync(account, adjustmentTransaction);
-
                 account.ExternalId = serverAccountId;
-                adjustmentTransaction.ExternalId = serverTransactionId;
-
                 await accountRepo.Update(account);
-                await transactionRepo.Update(adjustmentTransaction);
             }
+
+            var transaction = await transactionRepo.GetByIdAsync(localTransactionId);
+            transaction.ExternalId = serverTransactionId;
+            await transactionRepo.Update(transaction);
         }
 
         private static TransactionDTO BuildAdjustmentTransaction(int userId, decimal oldbalance, decimal newbalance, int accountId) =>
@@ -53,7 +129,7 @@ namespace Service.Account
             {
                 UserId = userId,
                 Amount = newbalance - oldbalance,
-                Date = DateTime.UtcNow,
+                Date = DateTime.MinValue,
                 Description = "Ajuste de saldo",
                 AccountId = accountId,
                 Type = TransactionType.Adjustment,

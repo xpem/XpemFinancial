@@ -7,6 +7,8 @@ namespace Repo
     {
         Task Add(TransactionDTO transaction);
         Task Update(TransactionDTO transaction);
+        Task<TransactionDTO?> GetByExternalIdAsync(int externalId);
+        Task<DateTime> GetMaxUpdatedAtAsync();
         Task<IEnumerable<TransactionDTO>> GetByMonthYear(DateTime monthYear);
         Task<decimal> GetPreviousBalanceAsync(DateTime monthYear);
         Task<decimal?> GetBalanceAsync(int accountId);
@@ -33,7 +35,10 @@ namespace Repo
         {
             using var db = await DbCtx.CreateDbContextAsync();
             return await db.Transaction
-                .Where(t => t.Date.Month == monthYear.Month && t.Date.Year == monthYear.Year).OrderByDescending(t => t.Date)
+                .Where(t => t.Date.Month == monthYear.Month
+                         && t.Date.Year == monthYear.Year
+                         && t.Type != TransactionType.Adjustment)
+                .OrderByDescending(t => t.Date)
                 .ToListAsync();
         }
 
@@ -50,6 +55,19 @@ namespace Repo
             using var db = await DbCtx.CreateDbContextAsync();
             var transactions = await db.Transaction.Where(t => t.AccountId == accountId).ToListAsync();
             return transactions.Sum(t => t.Amount);
+        }
+
+        public async Task<TransactionDTO?> GetByExternalIdAsync(int externalId)
+        {
+            using var db = await DbCtx.CreateDbContextAsync();
+            return await db.Transaction.FirstOrDefaultAsync(t => t.ExternalId == externalId);
+        }
+
+        public async Task<DateTime> GetMaxUpdatedAtAsync()
+        {
+            using var db = await DbCtx.CreateDbContextAsync();
+            if (!await db.Transaction.AnyAsync()) return DateTime.MinValue;
+            return await db.Transaction.MaxAsync(t => t.UpdatedAt);
         }
 
         public async Task<TransactionDTO> GetByIdAsync(int transactionId)

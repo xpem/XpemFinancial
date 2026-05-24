@@ -1,25 +1,50 @@
-﻿using Model.DTO;
+﻿using ApiRepo;
+using Model.DTO;
+using Model.Resp.Api;
 using Repo;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Service
+namespace Service.Transaction
 {
     public interface ITransactionService
     {
         Task AddAsync(TransactionDTO transaction);
+        Task UpsertAsync(TransactionDTO transaction);
+        Task<DateTime> GetLastUpdatedAtAsync();
         Task<IEnumerable<TransactionDTO>> GetByMonthYear(DateTime monthYear);
-
         Task<decimal> GetPreviousBalanceAsync(DateTime monthYear);
-
         Task<decimal?> GetBalanceAsync(int accountId);
-
         Task<TransactionDTO> GetByIdAsync(int id);
+
+        Task PullAsync(int uid);
     }
 
-    public class TransactionService(ITransactionRepo transactionRepo) : ITransactionService
+    public class TransactionService(ITransactionRepo transactionRepo, ITransactionApiRepo transactionApiRepo) : ITransactionService
     {
+        public async Task<DateTime> GetLastUpdatedAtAsync()
+        {
+            return await transactionRepo.GetMaxUpdatedAtAsync();
+        }
+
+        public async Task UpsertAsync(TransactionDTO transaction)
+        {
+            var existing = await transactionRepo.GetByExternalIdAsync(transaction.ExternalId!.Value);
+
+            if (existing is not null)
+            {
+                if (existing.UpdatedAt < transaction.UpdatedAt)
+                {
+                    transaction.Id = existing.Id;
+                    await transactionRepo.Update(transaction);
+                }
+            }
+            else
+            {
+                await transactionRepo.Add(transaction);
+            }
+        }
         public async Task AddAsync(TransactionDTO transaction)
         {
             if (transaction.Repetition == Repetition.Monthly)
@@ -86,6 +111,40 @@ namespace Service
         public async Task<decimal?> GetBalanceAsync(int accountId)
         {
             return await transactionRepo.GetBalanceAsync(accountId);
+        }
+
+        public async Task PullAsync(int uid)
+        {
+            DateTime lastUpdatedAt = await GetLastUpdatedAtAsync();
+
+            List<TransactionApiRes>? apiTransactions = await transactionApiRepo.GetByUpdatedAtAsync(lastUpdatedAt);
+
+            if (apiTransactions is null || apiTransactions.Count == 0) return;
+
+            foreach (var t in apiTransactions)
+            {
+                TransactionDTO dto = new()
+                {
+                    ExternalId = t.Id,
+                    Description = t.Description,
+                    Date = t.Date,
+                    Amount = t.Amount,
+                    Repetition = (Repetition)t.Repetition,
+                    TotalInstallments = t.TotalInstallments,
+                    InstallmentId = t.InstallmentId,
+                    Installment = t.Installment,
+                    CategoryId = t.CategoryId,
+                    Type = (TransactionType)t.Type,
+                    Note = t.Note,
+                    AccountId = t.AccountId,
+                    Inactive = t.Inactive,
+                    CreatedAt = t.CreatedAt,
+                    UpdatedAt = t.UpdatedAt,
+                    UserId = uid,
+                };
+
+                await UpsertAsync(dto);
+            }
         }
     }
 }

@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Repo;
 using Service.Account;
 using Service.Category;
+using Service.Transaction;
 
 namespace Service
 {
@@ -28,15 +29,12 @@ namespace Service
 
             // account
             services.AddTransient<IAccountService, AccountService>();
-            services.AddTransient<IAccountSyncService, AccountSyncService>();
 
             // transaction
             services.AddTransient<ITransactionService, TransactionService>();
 
             // category
             services.AddTransient<ICategoryService, CategoryService>();
-            services.AddTransient<ICategorySyncService, CategorySyncService>();
-            services.AddTransient<ICategoryApiService, CategoryApiService>();
         }
 
         public static void AddRepo(this IServiceCollection services)
@@ -52,6 +50,7 @@ namespace Service
             services.AddTransient<IUserApiRepo, UserApiRepo>();
             services.AddTransient<ICategoryApiRepo, CategoryApiRepo>();
             services.AddTransient<IAccountApiRepo, AccountApiRepo>();
+            services.AddTransient<ITransactionApiRepo, TransactionApiRepo>();
         }
     }
 }

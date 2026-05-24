@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using Model.DTO;
 using Service;
 using Service.Account;
+using Service.Transaction;
 
 namespace XpemFinancial.VMs
 {
