@@ -26,6 +26,9 @@ namespace Model.DTO
 
         public int CategoryId { get; set; }
 
+        [NotMapped]
+        public int? CategoryExternalId { get; set; }
+
         public CategoryDTO? Category { get; set; }
 
         public TransactionType Type { get; set; }

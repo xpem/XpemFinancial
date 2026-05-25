@@ -1,5 +1,6 @@
 ﻿using ApiRepo;
 using Model.DTO;
+using Model.Req;
 using Model.Resp.Api;
 using Repo;
 using System;
@@ -10,18 +11,17 @@ namespace Service.Transaction
 {
     public interface ITransactionService
     {
-        Task AddAsync(TransactionDTO transaction);
+        Task AddAsync(TransactionDTO transaction, bool isOnline);
         Task UpsertAsync(TransactionDTO transaction);
         Task<DateTime> GetLastUpdatedAtAsync();
         Task<IEnumerable<TransactionDTO>> GetByMonthYear(DateTime monthYear);
         Task<decimal> GetPreviousBalanceAsync(DateTime monthYear);
         Task<decimal?> GetBalanceAsync(int accountId);
         Task<TransactionDTO> GetByIdAsync(int id);
-
         Task PullAsync(int uid);
     }
 
-    public class TransactionService(ITransactionRepo transactionRepo, ITransactionApiRepo transactionApiRepo) : ITransactionService
+    public class TransactionService(ITransactionRepo transactionRepo, ITransactionApiRepo transactionApiRepo, ICategoryRepo categoryRepo) : ITransactionService
     {
         public async Task<DateTime> GetLastUpdatedAtAsync()
         {
@@ -45,31 +45,25 @@ namespace Service.Transaction
                 await transactionRepo.Add(transaction);
             }
         }
-        public async Task AddAsync(TransactionDTO transaction)
+        public async Task AddAsync(TransactionDTO transaction, bool isOnline)
         {
             if (transaction.Repetition == Repetition.Monthly)
             {
                 if (transaction.TotalInstallments == null || transaction.TotalInstallments <= 0)
-                {
                     throw new ArgumentException("TotalInstallments must be greater than 0 for monthly transactions.");
-                }
 
-                if(transaction.Installment != null && transaction.Installment > transaction.TotalInstallments)
-                {
+                if (transaction.Installment != null && transaction.Installment > transaction.TotalInstallments)
                     throw new ArgumentException("Installment number cannot be greater than TotalInstallments.");
-                }
 
                 if (transaction.InstallmentId == null)
-                {
                     transaction.InstallmentId = Guid.NewGuid();
-                }
 
                 for (int i = transaction.Installment!.Value; i <= transaction.TotalInstallments; i++)
                 {
-                    var installmentTransaction = new TransactionDTO
+                    var installment = new TransactionDTO
                     {
                         Description = transaction.Description,
-                        Date = transaction.Date.AddMonths(i-1),
+                        Date = transaction.Date.AddMonths(i - 1),
                         Amount = transaction.Amount,
                         Repetition = transaction.Repetition,
                         TotalInstallments = transaction.TotalInstallments,
@@ -79,16 +73,52 @@ namespace Service.Transaction
                         Type = transaction.Type,
                         Note = transaction.Note,
                         AccountId = transaction.AccountId,
-                        UserId = transaction.UserId
+                        UserId = transaction.UserId,
+                        CreatedAt = DateTime.Now,
+                        UpdatedAt = DateTime.Now,
                     };
 
-                    await transactionRepo.Add(installmentTransaction);
+                    await transactionRepo.Add(installment);
+
+                    if (isOnline)
+                        await PushAsync(installment);
                 }
             }
             else
             {
+                transaction.CreatedAt = DateTime.Now;
+                transaction.UpdatedAt = DateTime.Now;
+
                 await transactionRepo.Add(transaction);
+
+                if (isOnline)
+                    await PushAsync(transaction);
             }
+        }
+
+        private async Task PushAsync(TransactionDTO transaction)
+        {
+            TransactionReq req = new()
+            {
+                UpdatedAt = transaction.UpdatedAt,
+                Inactive = transaction.Inactive,
+                Description = transaction.Description,
+                Date = transaction.Date,
+                Amount = transaction.Amount,
+                Repetition = transaction.Repetition,
+                TotalInstallments = transaction.TotalInstallments,
+                InstallmentId = transaction.InstallmentId,
+                Installment = transaction.Installment,
+                CategoryId = transaction.CategoryExternalId,
+                Type = transaction.Type,
+                Note = transaction.Note,
+                AccountId = transaction.AccountId ?? 0,
+            };
+
+            int serverId = await transactionApiRepo.PostAsync(req);
+
+            transaction.ExternalId = serverId;
+            await transactionRepo.Update(transaction);
         }
 
         public async Task<TransactionDTO> GetByIdAsync(int id)
@@ -123,6 +153,14 @@ namespace Service.Transaction
 
             foreach (var t in apiTransactions)
             {
+                // Resolve o CategoryId local a partir do ExternalId da categoria
+                int? localCategoryId = null;
+                if (t.CategoryId.HasValue)
+                {
+                    var localCategory = await categoryRepo.GetByExternalIdAsync(t.CategoryId.Value);
+                    localCategoryId = localCategory?.Id;
+                }
+
                 TransactionDTO dto = new()
                 {
                     ExternalId = t.Id,
@@ -133,7 +171,7 @@ namespace Service.Transaction
                     TotalInstallments = t.TotalInstallments,
                     InstallmentId = t.InstallmentId,
                     Installment = t.Installment,
-                    CategoryId = t.CategoryId,
+                    CategoryId = localCategoryId ?? 0,
                     Type = (TransactionType)t.Type,
                     Note = t.Note,
                     AccountId = t.AccountId,

@@ -13,7 +13,7 @@ using XpemFinancial.Views;
 
 namespace XpemFinancial.VMs
 {
-    public partial class TransactionEditVM(IUserSessionService userSessionService, ITransactionService transactionService, IAccountService accountService) : ObservableObject, IQueryAttributable
+    public partial class TransactionEditVM(IUserSessionService userSessionService, ITransactionService transactionService, IAccountService accountService) : VMBase, IQueryAttributable
     {
         #region Campos e Propriedades
 
@@ -189,9 +189,10 @@ namespace XpemFinancial.VMs
         {
             bool isValid = true;
 
-            if (string.IsNullOrWhiteSpace(Description))
+            if (string.IsNullOrWhiteSpace(Description) && string.IsNullOrWhiteSpace(SelectedCategory?.Name))
             {
                 isValid = false;
+                _ = VMBase.ShowMessage("Aviso", "Defina uma descrição ou selecione uma categoria!");
             }
             else if (string.IsNullOrWhiteSpace(Amount) || !decimal.TryParse(Amount, System.Globalization.NumberStyles.Currency, new System.Globalization.CultureInfo("pt-BR"), out _))
             {
@@ -230,6 +231,9 @@ namespace XpemFinancial.VMs
 
             var account = await accountService.GetAsync();
 
+
+            string description = (string.IsNullOrEmpty(Description) ? SelectedCategory.Name : Description).Trim();
+
             var transaction = new TransactionDTO()
             {
                 Date = TransactionDate,
@@ -238,7 +242,8 @@ namespace XpemFinancial.VMs
                 Type = SelectedTransactionType,
                 Repetition = SelectedRepetition,
                 Note = Note?.Trim(),
-                CategoryId = SelectedCategory?.Id ?? 1,
+                CategoryId = SelectedCategory?.Id ?? 0,
+                CategoryExternalId = SelectedCategory?.ExternalId,
                 UserId = user.Id,
                 CreatedAt = DateTime.UtcNow,
                 AccountId = account.Id
@@ -250,7 +255,7 @@ namespace XpemFinancial.VMs
                 transaction.TotalInstallments = NumberOfInstallments;
             }
 
-            await transactionService.AddAsync(transaction);
+            await transactionService.AddAsync(transaction, IsOn);
 
             _ = VMBase.ShowMessage("Sucesso", "Transação salva com sucesso!");
 

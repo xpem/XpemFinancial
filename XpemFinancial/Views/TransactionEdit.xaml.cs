@@ -4,6 +4,8 @@ namespace XpemFinancial.Views;
 
 public partial class TransactionEdit : ContentPage
 {
+    private bool _initialized = false;
+
     public TransactionEdit(VMs.TransactionEditVM transactionEditVM)
     {
         InitializeComponent();
@@ -13,6 +15,10 @@ public partial class TransactionEdit : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        await ((TransactionEditVM)BindingContext).InitializeAsync();
+        if (!_initialized)
+        {
+            _initialized = true;
+            await ((TransactionEditVM)BindingContext).InitializeAsync();
+        }
     }
 }

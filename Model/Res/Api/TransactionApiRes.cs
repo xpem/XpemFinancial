@@ -24,7 +24,7 @@ namespace Model.Resp.Api
 
         public int? Installment { get; set; }
 
-        public int CategoryId { get; set; }
+        public int? CategoryId { get; set; }
 
         public int Type { get; set; }
 

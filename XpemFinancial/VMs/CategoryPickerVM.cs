@@ -33,13 +33,23 @@ public partial class CategoryPickerVM(ICategoryService categoryService, IUserSes
         {
             var filtered = string.IsNullOrWhiteSpace(newValue)
                 ? _cachedCategories
-                : _cachedCategories.Where(x => x.Name.Contains(newValue, StringComparison.OrdinalIgnoreCase)).ToList();
+                : _cachedCategories.Where(x => RemoveDiacritics(x.Name).Contains(RemoveDiacritics(newValue), StringComparison.OrdinalIgnoreCase)).ToList();
 
-            // Dispatch asynchronously to avoid mutating Categories
-            // during an active CollectionChanged notification.
             MainThread.BeginInvokeOnMainThread(async () =>
                 await ReloadSourceAsync(filtered, showBusy: false));
         }
+    }
+
+    private static string RemoveDiacritics(string text)
+    {
+        var normalized = text.Normalize(System.Text.NormalizationForm.FormD);
+        var sb = new System.Text.StringBuilder();
+        foreach (var c in normalized)
+        {
+            if (System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c) != System.Globalization.UnicodeCategory.NonSpacingMark)
+                sb.Append(c);
+        }
+        return sb.ToString().Normalize(System.Text.NormalizationForm.FormC);
     }
 
     public async Task InitializeAsync()

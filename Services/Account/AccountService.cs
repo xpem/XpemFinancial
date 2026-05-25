@@ -77,7 +77,6 @@ namespace Service.Account
                     Date = DateTime.MinValue,
                     Amount = newbalance - oldbalance,
                     Repetition = Repetition.None,
-                    CategoryId = 1,
                     Type = TransactionType.Adjustment,
                 }
             };
@@ -135,7 +134,6 @@ namespace Service.Account
                 Type = TransactionType.Adjustment,
                 CreatedAt = DateTime.Now,
                 Repetition = Repetition.None,
-                CategoryId = 1,
             };
     }
 }
