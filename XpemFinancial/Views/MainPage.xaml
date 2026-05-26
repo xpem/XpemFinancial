@@ -1,15 +1,17 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:Icons="clr-namespace:XpemFinancial.Resources"  
-             xmlns:Utils="clr-namespace:XpemFinancial.Utils"
-             Shell.FlyoutBehavior="Flyout"
-             xmlns:ViewModels="clr-namespace:XpemFinancial.VMs"
-             x:DataType="ViewModels:MainVM"
-             x:Class="XpemFinancial.Views.MainPage">
+<ContentPage
+    x:Class="XpemFinancial.Views.MainPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:Icons="clr-namespace:XpemFinancial.Resources"
+    xmlns:Utils="clr-namespace:XpemFinancial.Utils"
+    xmlns:ViewModels="clr-namespace:XpemFinancial.VMs"
+    x:DataType="ViewModels:MainVM"
+    Shell.FlyoutBehavior="Flyout">
     <ContentPage.Resources>
         <ResourceDictionary>
             <Utils:AmountToColorConverter x:Key="AmountToColorConverter" />
+            <Utils:IsRecurringConverter x:Key="IsRecurringConverter" />
         </ResourceDictionary>
         <Style x:Key="btnDefault" TargetType="Button">
             <Setter Property="BorderColor" Value="#9da9b9" />
@@ -24,151 +26,254 @@
     <ScrollView Margin="10">
         <VerticalStackLayout Padding="5">
             <Grid IsVisible="{Binding IsNullAccount}">
-                <Border Stroke="{StaticResource DeleteAction}" StrokeShape="10" Padding="10">
+                <Border
+                    Padding="10"
+                    Stroke="{StaticResource DeleteAction}"
+                    StrokeShape="10">
                     <StackLayout>
-                        <Label Text="*Defina um valor inicial para a sua conta" Margin="0,0,0,10"></Label>
-                        <Button Text="Ajustar Saldo Inicial" Style="{StaticResource PrimaryButtonOutline}" HorizontalOptions="Start" Command="{Binding GoToAccountPageCommand}">
+                        <Label Margin="0,0,0,10" Text="*Defina um valor inicial para a sua conta" />
+                        <Button
+                            Command="{Binding GoToAccountPageCommand}"
+                            HorizontalOptions="Start"
+                            Style="{StaticResource PrimaryButtonOutline}"
+                            Text="Ajustar Saldo Inicial">
                             <Button.ImageSource>
-                                <FontImageSource Size="15" FontFamily="Icons" Glyph="{x:Static Icons:IconFont.Wallet}" Color="{StaticResource PrimaryAction}" />
+                                <FontImageSource
+                                    FontFamily="Icons"
+                                    Glyph="{x:Static Icons:IconFont.Wallet}"
+                                    Size="15"
+                                    Color="{StaticResource PrimaryAction}" />
                             </Button.ImageSource>
                         </Button>
                     </StackLayout>
                 </Border>
             </Grid>
-            <FlexLayout Wrap="Wrap" Direction="Row" AlignItems="Center">
-                <Button x:Name="PreviousMonthButton" Style="{StaticResource btnDefault}">
+            <FlexLayout
+                AlignItems="Center"
+                Direction="Row"
+                Wrap="Wrap">
+                <Button
+                    x:Name="PreviousMonthButton"
+                    Command="{Binding LoadPreviousMonthCommand}"
+                    Style="{StaticResource btnDefault}">
                     <Button.ImageSource>
-                        <FontImageSource FontFamily="Icons"
-                                         Glyph="{x:Static Icons:IconFont.CaretLeft}"/>
+                        <FontImageSource FontFamily="Icons" Glyph="{x:Static Icons:IconFont.CaretLeft}" />
                     </Button.ImageSource>
                 </Button>
                 <Border Margin="5,10,5,10" Stroke="#9da9b9">
-                    <Label Text="{Binding MonthYearDisplay}" Margin="10,10,10,10" HeightRequest="20"  TextColor="#d6e0eb" />
+                    <Label
+                        Margin="10,10,10,10"
+                        HeightRequest="20"
+                        Text="{Binding MonthYearDisplay}"
+                        TextColor="#d6e0eb" />
                 </Border>
-                <Button x:Name="NextMonthButton" Style="{StaticResource btnDefault}" Margin="0,0,10,0">
+                <Button
+                    x:Name="NextMonthButton"
+                    Margin="0,0,10,0"
+                    Command="{Binding LoadNextMonthCommand}"
+                    Style="{StaticResource btnDefault}">
                     <Button.ImageSource>
-                        <FontImageSource FontFamily="Icons"
-                                       Glyph="{x:Static Icons:IconFont.CaretRight}"/>
+                        <FontImageSource FontFamily="Icons" Glyph="{x:Static Icons:IconFont.CaretRight}" />
                     </Button.ImageSource>
                 </Button>
-                <Button x:Name="CreateTransaction" Style="{StaticResource SuccessButton}"
-                        IsEnabled="{Binding IsNotNullAccount}"
-                        ContentLayout="Left, 10"
-                        Command="{Binding GoToTransactionEditCommand}">
+                <Button
+                    x:Name="CreateTransaction"
+                    Command="{Binding GoToTransactionEditCommand}"
+                    ContentLayout="Left, 10"
+                    IsEnabled="{Binding IsNotNullAccount}"
+                    Style="{StaticResource SuccessButton}">
                     <Button.ImageSource>
-                        <FontImageSource FontFamily="Icons" Color="#121b27"
-                                         Glyph="{x:Static Icons:IconFont.Plus}"/>
+                        <FontImageSource
+                            FontFamily="Icons"
+                            Glyph="{x:Static Icons:IconFont.Plus}"
+                            Color="#121b27" />
                     </Button.ImageSource>
                 </Button>
             </FlexLayout>
-            <Border Stroke="#232c39" StrokeShape="5" Margin="10" Padding="0" >
+            <Border
+                Margin="10"
+                Padding="0"
+                Stroke="#232c39"
+                StrokeShape="5">
                 <Grid RowDefinitions="Auto, *,*">
-                    <!-- Header Section -->
-                    <Label Text="Entradas e saídas" 
-                           FontAttributes="Bold" 
-                           FontSize="Header" 
-                           TextColor="#d6e0eb"
-                           BackgroundColor="#232c39" 
-                           Padding="10"
-                           />
-                    <!-- Content Section -->
-                    <HorizontalStackLayout Spacing="0" 
-                       Grid.Row="1" 
-                       VerticalOptions="Center">
+                    <!--  Header Section  -->
+                    <Label
+                        Padding="10"
+                        BackgroundColor="#232c39"
+                        FontAttributes="Bold"
+                        FontSize="Header"
+                        Text="Entradas e saídas"
+                        TextColor="#d6e0eb" />
+                    <!--  Content Section  -->
+                    <HorizontalStackLayout
+                        Grid.Row="1"
+                        Spacing="0"
+                        VerticalOptions="Center">
 
-                        <CheckBox x:Name="CheckBoxIncludePreviousBalance"
-                                  Color="White"
-                                  IsChecked="{Binding IncludePreviousBalance}" />
+                        <CheckBox
+                            x:Name="CheckBoxIncludePreviousBalance"
+                            IsChecked="{Binding IncludePreviousBalance}"
+                            Color="White" />
 
-                        <Label Text="Incluir saldo anterior" 
-                               TextColor="#d6e0eb"                                     
-                               VerticalOptions="Center">
+                        <Label
+                            Text="Incluir saldo anterior"
+                            TextColor="#d6e0eb"
+                            VerticalOptions="Center">
                             <Label.GestureRecognizers>
-                                <TapGestureRecognizer Command="{Binding ToggleIncludePreviousBalanceCommand}"/>
+                                <TapGestureRecognizer Command="{Binding ToggleIncludePreviousBalanceCommand}" />
                             </Label.GestureRecognizers>
                         </Label>
 
                     </HorizontalStackLayout>
-                    <Grid Grid.Row="2" ColumnDefinitions="*, *" 
-                          HorizontalOptions="Fill" Padding="5"
-                          RowDefinitions="Auto, Auto, Auto, Auto, Auto">
+                    <Grid
+                        Grid.Row="2"
+                        Padding="5"
+                        ColumnDefinitions="*, *"
+                        HorizontalOptions="Fill"
+                        RowDefinitions="Auto, Auto, Auto, Auto, Auto">
 
-                        <Label Text="Saldo anterior" FontAttributes="Bold" TextColor="#d6e0eb" VerticalTextAlignment="Center" IsVisible="{Binding IncludePreviousBalance}"/>
-                        <Label Grid.Column="1" Text="{Binding PreviousBalance, StringFormat='{}{0:C}'}" FontSize="Large" TextColor="#6cc8ef" HorizontalOptions="End" IsVisible="{Binding IncludePreviousBalance}"/>
+                        <Label
+                            FontAttributes="Bold"
+                            IsVisible="{Binding IncludePreviousBalance}"
+                            Text="Saldo anterior"
+                            TextColor="#d6e0eb"
+                            VerticalTextAlignment="Center" />
+                        <Label
+                            Grid.Column="1"
+                            FontSize="Large"
+                            HorizontalOptions="End"
+                            IsVisible="{Binding IncludePreviousBalance}"
+                            Text="{Binding PreviousBalance, StringFormat='{}{0:C}'}"
+                            TextColor="#6cc8ef" />
 
-                        <Label Grid.Row="1" Text="Entradas" FontAttributes="Bold" TextColor="{StaticResource Income}" VerticalTextAlignment="Center"/>
-                        <Label Grid.Row="1" Grid.Column="1"  Text="{Binding Income, StringFormat='{}{0:C}'}" FontSize="Large" TextColor="{StaticResource Income}" HorizontalOptions="End"/>
-                        <Label Grid.Row="2" Text="Saídas" FontAttributes="Bold" TextColor="#d6e0eb" VerticalTextAlignment="Center"/>
-                        <Label Grid.Row="2" Grid.Column="1"  Text="{Binding Expense, StringFormat='{}{0:C}'}" FontSize="Large" TextColor="{StaticResource Expense}" HorizontalOptions="End"/>
+                        <Label
+                            Grid.Row="1"
+                            FontAttributes="Bold"
+                            Text="Entradas"
+                            TextColor="{StaticResource Income}"
+                            VerticalTextAlignment="Center" />
+                        <Label
+                            Grid.Row="1"
+                            Grid.Column="1"
+                            FontSize="Large"
+                            HorizontalOptions="End"
+                            Text="{Binding Income, StringFormat='{}{0:C}'}"
+                            TextColor="{StaticResource Income}" />
+                        <Label
+                            Grid.Row="2"
+                            FontAttributes="Bold"
+                            Text="Saídas"
+                            TextColor="#d6e0eb"
+                            VerticalTextAlignment="Center" />
+                        <Label
+                            Grid.Row="2"
+                            Grid.Column="1"
+                            FontSize="Large"
+                            HorizontalOptions="End"
+                            Text="{Binding Expense, StringFormat='{}{0:C}'}"
+                            TextColor="{StaticResource Expense}" />
 
-                        <BoxView Grid.Row="3" Grid.ColumnSpan="2" HeightRequest="1" BackgroundColor="#6cc8ef" Margin="0,10,0,10"/>
-                        <Label Grid.Row="4" Grid.ColumnSpan="2" Text="{Binding Total, StringFormat='{}{0:C}'}" FontAttributes="Bold" TextColor="#d6e0eb" VerticalTextAlignment="Center" FontSize="Large" HorizontalOptions="End"/>
+                        <BoxView
+                            Grid.Row="3"
+                            Grid.ColumnSpan="2"
+                            Margin="0,10,0,10"
+                            BackgroundColor="#6cc8ef"
+                            HeightRequest="1" />
+                        <Label
+                            Grid.Row="4"
+                            Grid.ColumnSpan="2"
+                            FontAttributes="Bold"
+                            FontSize="Large"
+                            HorizontalOptions="End"
+                            Text="{Binding Total, StringFormat='{}{0:C}'}"
+                            TextColor="#d6e0eb"
+                            VerticalTextAlignment="Center" />
                     </Grid>
                 </Grid>
             </Border>
-            <Border Stroke="#232c39" StrokeShape="5" Margin="10" Padding="0" >
+            <Border
+                Margin="10"
+                Padding="0"
+                Stroke="#232c39"
+                StrokeShape="5">
                 <Grid RowDefinitions="Auto, *">
                     <Grid BackgroundColor="#232c39">
-                        <Label Text="Transações" 
-                           Grid.ColumnSpan="3"
-                           FontAttributes="Bold" 
-                           FontSize="Header" 
-                           TextColor="#d6e0eb"
-                           Padding="10"
-                           HorizontalOptions="Start"
-                           />
-                        <!--<Label Text="Agosto/2026" 
+                        <Label
+                            Grid.ColumnSpan="3"
+                            Padding="10"
+                            FontAttributes="Bold"
+                            FontSize="Header"
+                            HorizontalOptions="Start"
+                            Text="Transações"
+                            TextColor="#d6e0eb" />
+                        <!--<Label Text="Agosto/2026"
                            Grid.Column="1"
                            Grid.ColumnSpan="2"
-                           FontAttributes="Bold" 
-                           FontSize="Header" 
+                           FontAttributes="Bold"
+                           FontSize="Header"
                            TextColor="#d6e0eb"
                            Padding="10"
                            HorizontalOptions="End"
                            />-->
                     </Grid>
-                    <CollectionView Grid.Row="1" ItemsSource="{Binding Transactions}" Margin="0,10,0,0" SelectedItem="{Binding SelectedTransaction}" SelectionMode="Single">
+                    <CollectionView
+                        Grid.Row="1"
+                        Margin="0,10,0,0"
+                        ItemsSource="{Binding Transactions}"
+                        SelectedItem="{Binding SelectedTransaction}"
+                        SelectionMode="Single">
                         <CollectionView.ItemTemplate>
-                            <DataTemplate >
-                                <Grid ColumnDefinitions="2*, 1.2*, 1*" Padding="5,0,5,0" VerticalOptions="Center" RowSpacing="0">
-                                    <Label Text="{Binding Description}" 
-                                           TextColor="#d6e0eb" 
-                                           LineBreakMode="TailTruncation"
-                                           VerticalOptions="Center"
-                                           />
-                                    <Label Grid.Column="1" 
-                                           Text="{Binding Date, StringFormat='{0:dd/MM}'}" 
-                                           TextColor="#d6e0eb" 
-                                           HorizontalTextAlignment="Center"
-                                           VerticalOptions="Center"
-                                           />
+                            <DataTemplate>
+                                <Grid
+                                    Padding="5,0,5,0"
+                                    ColumnDefinitions="2*, 1.2*, 1*, Auto"
+                                    RowSpacing="0"
+                                    VerticalOptions="Center">
+                                    <Label
+                                        LineBreakMode="TailTruncation"
+                                        Text="{Binding Description}"
+                                        TextColor="#d6e0eb"
+                                        VerticalOptions="Center" />
+                                    <Label
+                                        Grid.Column="1"
+                                        HorizontalTextAlignment="Center"
+                                        Text="{Binding Date, StringFormat='{0:dd/MM}'}"
+                                        TextColor="#d6e0eb"
+                                        VerticalOptions="Center" />
 
-                                    <Label Grid.Column="2" 
-                                           Text="{Binding Amount, StringFormat='{0:N2}'}" 
-                                           TextColor="{Binding Amount, Converter={StaticResource AmountToColorConverter}}" 
-                                           FontAttributes="Bold"
-                                           HorizontalTextAlignment="End"
-                                           VerticalOptions="Center"/>
+                                    <Label
+                                        Grid.Column="2"
+                                        FontAttributes="Bold"
+                                        HorizontalTextAlignment="End"
+                                        Text="{Binding Amount, StringFormat='{0:N2}'}"
+                                        TextColor="{Binding Amount, Converter={StaticResource AmountToColorConverter}}"
+                                        VerticalOptions="Center" />
 
-                                    <!--<Button Grid.Column="3" 
-                                                 BackgroundColor="Transparent"                                                
-                                                 VerticalOptions="Center">
-                                        <Button.ImageSource>
-                                            <FontImageSource FontFamily="Icons"
-                                                             Color="#3ca7f7"
-                                                             Size="10"
-                                                             Glyph="{x:Static Icons:IconFont.Pencil}"
-                                                             />
-                                        </Button.ImageSource>
-                                    </Button>-->
+                                    <!--  Recurring indicator: shown when RecurringRuleId != null  -->
+                                    <Image
+                                        Grid.Column="3"
+                                        Margin="4,0,0,0"
+                                        HeightRequest="12"
+                                        IsVisible="{Binding RecurringRuleId, Converter={StaticResource IsRecurringConverter}}"
+                                        VerticalOptions="Center"
+                                        WidthRequest="12">
+                                        <Image.Source>
+                                            <FontImageSource
+                                                FontFamily="Icons"
+                                                Glyph="{x:Static Icons:IconFont.ArrowsRotate}"
+                                                Size="12"
+                                                Color="#6cc8ef" />
+                                        </Image.Source>
+                                    </Image>
                                 </Grid>
                             </DataTemplate>
                         </CollectionView.ItemTemplate>
                         <CollectionView.EmptyView>
-                            <Label Text="Nenhuma transação encontrada." 
-                                   HorizontalOptions="Center" 
-                                   Margin="20" 
-                                   TextColor="#758292"/>
+                            <Label
+                                Margin="20"
+                                HorizontalOptions="Center"
+                                Text="Nenhuma transação encontrada."
+                                TextColor="#758292" />
                         </CollectionView.EmptyView>
                     </CollectionView>
                 </Grid>

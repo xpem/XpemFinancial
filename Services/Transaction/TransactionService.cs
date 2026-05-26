@@ -12,12 +12,16 @@ namespace Service.Transaction
     public interface ITransactionService
     {
         Task AddAsync(TransactionDTO transaction, bool isOnline);
+        Task AddOccurrenceAsync(TransactionDTO occurrence);
+        Task UpdateAsync(TransactionDTO transaction);
         Task UpsertAsync(TransactionDTO transaction);
         Task<DateTime> GetLastUpdatedAtAsync();
         Task<IEnumerable<TransactionDTO>> GetByMonthYear(DateTime monthYear);
         Task<decimal> GetPreviousBalanceAsync(DateTime monthYear);
         Task<decimal?> GetBalanceAsync(int accountId);
         Task<TransactionDTO> GetByIdAsync(int id);
+        Task<IEnumerable<TransactionDTO>> GetByRecurringRuleIdAsync(Guid recurringRuleId);
+        Task DeleteFutureOccurrencesAsync(Guid recurringRuleId, DateTime fromDate);
         Task PullAsync(int uid);
     }
 
@@ -93,6 +97,34 @@ namespace Service.Transaction
 
                 if (isOnline)
                     await PushAsync(transaction);
+            }
+        }
+
+        public async Task AddOccurrenceAsync(TransactionDTO occurrence)
+        {
+            occurrence.CreatedAt = DateTime.Now;
+            occurrence.UpdatedAt = DateTime.Now;
+            await transactionRepo.Add(occurrence);
+        }
+
+        public async Task UpdateAsync(TransactionDTO transaction)
+        {
+            await transactionRepo.Update(transaction);
+        }
+
+        public async Task<IEnumerable<TransactionDTO>> GetByRecurringRuleIdAsync(Guid recurringRuleId)
+        {
+            return await transactionRepo.GetByRecurringRuleIdAsync(recurringRuleId);
+        }
+
+        public async Task DeleteFutureOccurrencesAsync(Guid recurringRuleId, DateTime fromDate)
+        {
+            var occurrences = await GetByRecurringRuleIdAsync(recurringRuleId);
+            foreach (var occurrence in occurrences.Where(o => o.Date >= fromDate))
+            {
+                occurrence.Inactive = true;
+                occurrence.UpdatedAt = DateTime.Now;
+                await transactionRepo.Update(occurrence);
             }
         }
 

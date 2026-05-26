@@ -13,6 +13,7 @@ namespace Repo
         Task<decimal> GetPreviousBalanceAsync(DateTime monthYear);
         Task<decimal?> GetBalanceAsync(int accountId);
         Task<TransactionDTO> GetByIdAsync(int transactionId);
+        Task<IEnumerable<TransactionDTO>> GetByRecurringRuleIdAsync(Guid recurringRuleId);
     }
 
     public class TransactionRepo(IDbContextFactory<DbCtx> DbCtx) : ITransactionRepo
@@ -74,6 +75,14 @@ namespace Repo
         {
             using var db = await DbCtx.CreateDbContextAsync();
             return await db.Transaction.Include(x => x.Category).FirstAsync(t => t.Id == transactionId);
+        }
+
+        public async Task<IEnumerable<TransactionDTO>> GetByRecurringRuleIdAsync(Guid recurringRuleId)
+        {
+            using var db = await DbCtx.CreateDbContextAsync();
+            return await db.Transaction
+                .Where(t => t.RecurringRuleId == recurringRuleId)
+                .ToListAsync();
         }
     }
 }

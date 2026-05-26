@@ -51,17 +51,24 @@ namespace XpemFinancial.VMs
                 return;
             }
 
-            MonthYearDisplay = DateTime.Now.ToString("MMMM/yyyy");
             SelectedDate = DateTime.Now;
+            IncludePreviousBalance = true;
 
             var existingAccount = await accountService.GetAsync();
             IsNullAccount = existingAccount == null;
             IsNotNullAccount = !IsNullAccount;
-            IncludePreviousBalance = true;
-            PreviousBalance = await transactionService.GetPreviousBalanceAsync(SelectedDate);
+
+            await LoadTransactionsForMonthAsync(SelectedDate);
+        }
+
+        private async Task LoadTransactionsForMonthAsync(DateTime date)
+        {
+            MonthYearDisplay = date.ToString("MMMM/yyyy");
+            PreviousBalance = await transactionService.GetPreviousBalanceAsync(date);
             Transactions = [];
             Expense = Income = 0;
-            var transactionsFromService = await transactionService.GetByMonthYear(DateTime.Now);
+
+            var transactionsFromService = await transactionService.GetByMonthYear(date);
 
             foreach (var transaction in transactionsFromService)
             {
@@ -73,7 +80,23 @@ namespace XpemFinancial.VMs
                 Transactions.Add(transaction);
             }
 
-            Total = (PreviousBalance + Income) + Expense;
+            Total = IncludePreviousBalance
+                ? (PreviousBalance + Income) + Expense
+                : Income + Expense;
+        }
+
+        [RelayCommand]
+        private async Task LoadPreviousMonth()
+        {
+            SelectedDate = SelectedDate.AddMonths(-1);
+            await LoadTransactionsForMonthAsync(SelectedDate);
+        }
+
+        [RelayCommand]
+        private async Task LoadNextMonth()
+        {
+            SelectedDate = SelectedDate.AddMonths(1);
+            await LoadTransactionsForMonthAsync(SelectedDate);
         }
 
         [RelayCommand]

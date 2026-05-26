@@ -14,5 +14,7 @@ namespace Repo
         public DbSet<TransactionDTO> Transaction => Set<TransactionDTO>();
 
         public DbSet<AccountDTO> Account => Set<AccountDTO>();
+
+        public DbSet<RecurringRuleDTO> RecurringRule => Set<RecurringRuleDTO>();
     }
 }

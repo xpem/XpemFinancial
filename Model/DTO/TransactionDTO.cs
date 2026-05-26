@@ -22,6 +22,8 @@ namespace Model.DTO
 
         public Guid? InstallmentId { get; set; }
 
+        public Guid? RecurringRuleId { get; set; }
+
         public int? Installment { get; set; }
 
         public int CategoryId { get; set; }
@@ -56,8 +58,8 @@ namespace Model.DTO
 
     public enum Repetition
     {
-        None,
-        Monthly,
-        //Advanced
+        None    = 0,
+        Monthly = 1,
+        Recurring = 2,
     }
 }

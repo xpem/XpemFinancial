@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Repo;
 using Service.Account;
 using Service.Category;
+using Service.Recurring;
 using Service.Transaction;
 
 namespace Service
@@ -35,6 +36,10 @@ namespace Service
 
             // category
             services.AddTransient<ICategoryService, CategoryService>();
+
+            // recurring
+            services.AddTransient<IRecurringRuleService, RecurringRuleService>();
+            services.AddTransient<IRecurringScheduler, RecurringScheduler>();
         }
 
         public static void AddRepo(this IServiceCollection services)
@@ -43,6 +48,7 @@ namespace Service
             services.AddTransient<IAccountRepo, AccountRepo>();
             services.AddTransient<ITransactionRepo, TransactionRepo>();
             services.AddTransient<ICategoryRepo, CategoryRepo>();
+            services.AddTransient<IRecurringRuleRepo, RecurringRuleRepo>();
         }
 
         public static void AddApiRepo(this IServiceCollection services)
@@ -51,6 +57,7 @@ namespace Service
             services.AddTransient<ICategoryApiRepo, CategoryApiRepo>();
             services.AddTransient<IAccountApiRepo, AccountApiRepo>();
             services.AddTransient<ITransactionApiRepo, TransactionApiRepo>();
+            services.AddTransient<IRecurringRuleApiRepo, RecurringRuleApiRepo>();
         }
     }
 }

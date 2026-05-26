@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Messaging;
 using Service;
 using Service.Account;
 using Service.Category;
+using Service.Recurring;
 using Service.Transaction;
 using XpemFinancial.Messages;
 using XpemFinancial.Views;
@@ -13,6 +14,7 @@ namespace XpemFinancial.VMs
         IUserSessionService userSessionService,
         ICategoryService categoryService,
         IAccountService accountService,
+        IRecurringRuleService recurringRuleService,
         ITransactionService transactionService) : VMBase
     {
         [ObservableProperty] private double progress;
@@ -40,15 +42,16 @@ namespace XpemFinancial.VMs
                 }
 
                 await categoryService.PullAsync(user.Id);
-                Progress = 0.25;
+                Progress = 0.2;
 
                 await accountService.PullAsync(user.Id);
-                Progress = 0.5;
+                Progress = 0.4;
+
+                await recurringRuleService.PullAsync(user.Id);
+                Progress = 0.6;
 
                 await transactionService.PullAsync(user.Id);
-                Progress = 0.75;
-
-                // await BookHistoricSyncBLL.ApiToLocalSync(user.Id, user.LastUpdate);
+                Progress = 0.8;
                 Progress = 1;
 
                 WeakReferenceMessenger.Default.Send(new UserLoggedInMessage());

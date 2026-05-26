@@ -3,9 +3,11 @@ using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using Model;
 using Model.DTO;
+using Model.Req;
 using Repo;
 using Service;
 using Service.Account;
+using Service.Recurring;
 using Service.Transaction;
 using System.Collections.ObjectModel;
 using XpemFinancial.Utils;
@@ -13,7 +15,11 @@ using XpemFinancial.Views;
 
 namespace XpemFinancial.VMs
 {
-    public partial class TransactionEditVM(IUserSessionService userSessionService, ITransactionService transactionService, IAccountService accountService) : VMBase, IQueryAttributable
+    public partial class TransactionEditVM(
+        IUserSessionService userSessionService,
+        ITransactionService transactionService,
+        IAccountService accountService,
+        IRecurringRuleService recurringRuleService) : VMBase, IQueryAttributable
     {
         #region Campos e Propriedades
 
@@ -119,6 +125,12 @@ namespace XpemFinancial.VMs
                     InitialInstallments = transaction.Installment ?? 0;
                     SelectedCategory = transaction.Category ?? new CategoryDTO { Id = 1, Name = "Sem Categoria" };
                     SelectedCategoryName = SelectedCategory.Name;
+
+                    // Se for uma ocorrência recorrente, apresenta as opções de edição/cancelamento
+                    if (transaction.RecurringRuleId != null)
+                    {
+                        _ = HandleRecurringOccurrenceAsync(transaction);
+                    }
                 }
             }
 
@@ -131,6 +143,133 @@ namespace XpemFinancial.VMs
             }
             // sem item → mantém o valor anterior ✅
         }
+
+        private async Task HandleRecurringOccurrenceAsync(TransactionDTO transaction)
+        {
+            var page = Application.Current!.Windows[0].Page!;
+
+            // Primeiro: perguntar se o usuário quer Editar ou Cancelar
+            string? action = await page.DisplayActionSheet(
+                "Transação recorrente",
+                "Continuar editando normalmente",
+                null,
+                "Editar",
+                "Cancelar recorrência");
+
+            if (action == "Editar")
+            {
+                await HandleEditFlowAsync(transaction, page);
+            }
+            else if (action == "Cancelar recorrência")
+            {
+                await HandleCancelFlowAsync(transaction, page);
+            }
+            // "Continuar editando normalmente" ou dismiss → não faz nada, o usuário edita o form normalmente
+        }
+
+        private async Task HandleEditFlowAsync(TransactionDTO transaction, Page page)
+        {
+            string? scope = await page.DisplayActionSheet(
+                "Como deseja editar?",
+                "Cancelar",
+                null,
+                "Editar apenas esta ocorrência",
+                "Editar esta e as futuras",
+                "Editar todas");
+
+            if (scope == null || scope == "Cancelar") return;
+
+            EditScope editScope = scope switch
+            {
+                "Editar apenas esta ocorrência" => EditScope.ThisOnly,
+                "Editar esta e as futuras" => EditScope.ThisAndFuture,
+                "Editar todas" => EditScope.All,
+                _ => EditScope.ThisOnly,
+            };
+
+            // Constrói o UpdatedRule com os valores atuais carregados no form
+            var updatedRule = new RecurringRuleDTO
+            {
+                RecurringRuleId = transaction.RecurringRuleId!.Value,
+                Description = transaction.Description,
+                Amount = transaction.Amount,
+                Type = transaction.Type,
+                CategoryId = transaction.CategoryId,
+                CategoryExternalId = transaction.CategoryExternalId,
+                AccountId = transaction.AccountId,
+                Frequency = Frequency.Monthly,
+                StartDate = transaction.Date,
+                UserId = transaction.UserId,
+            };
+
+            var req = new EditOccurrenceReq
+            {
+                TransactionId = transaction.Id,
+                RecurringRuleId = transaction.RecurringRuleId!.Value,
+                Scope = editScope,
+                UpdatedRule = updatedRule,
+            };
+
+            var result = await recurringRuleService.EditOccurrenceAsync(req, IsOn);
+
+            if (result.Success)
+            {
+                _ = VMBase.ShowMessage("Sucesso", "Ocorrência atualizada com sucesso!");
+                await Shell.Current.GoToAsync("..");
+            }
+            else
+            {
+                _ = VMBase.ShowMessage("Erro", result.Content?.ToString() ?? "Não foi possível editar a ocorrência.");
+            }
+        }
+
+        private async Task HandleCancelFlowAsync(TransactionDTO transaction, Page page)
+        {
+            string? scope = await page.DisplayActionSheet(
+                "Como deseja cancelar?",
+                "Voltar",
+                null,
+                "Cancelar a partir desta",
+                "Cancelar a regra inteira");
+
+            if (scope == null || scope == "Voltar") return;
+
+            CancelScope cancelScope = scope switch
+            {
+                "Cancelar a partir desta" => CancelScope.FromThisOnwards,
+                "Cancelar a regra inteira" => CancelScope.EntireRule,
+                _ => CancelScope.FromThisOnwards,
+            };
+
+            var req = new CancelRuleReq
+            {
+                TransactionId = transaction.Id,
+                RecurringRuleId = transaction.RecurringRuleId!.Value,
+                Scope = cancelScope,
+            };
+
+            var result = await recurringRuleService.CancelAsync(req, IsOn);
+
+            if (result.Success)
+            {
+                _ = VMBase.ShowMessage("Sucesso", "Recorrência cancelada com sucesso!");
+                await Shell.Current.GoToAsync("..");
+            }
+            else
+            {
+                _ = VMBase.ShowMessage("Erro", result.Content?.ToString() ?? "Não foi possível cancelar a recorrência.");
+            }
+        }
+
+        /// Maps a Repetition value (used on occurrences) back to the Frequency enum used on RecurringRuleDTO.
+        //private static Frequency FrequencyFromRepetition(Repetition repetition) => repetition switch
+        //{
+        //    Repetition.Daily => Frequency.Daily,
+        //    Repetition.Weekly => Frequency.Weekly,
+        //    Repetition.Monthly => Frequency.Monthly,
+        //    Repetition.Yearly => Frequency.Yearly,
+        //    _ => Frequency.Monthly,
+        //};
 
         partial void OnNumberOfInstallmentsChanged(int oldValue, int newValue)
         {
@@ -231,6 +370,35 @@ namespace XpemFinancial.VMs
 
             var account = await accountService.GetAsync();
 
+            // Caminho para regras recorrentes (Daily, Weekly, Yearly)
+            if (SelectedRepetition == Repetition.Recurring)
+            {
+                var rule = new RecurringRuleDTO
+                {
+                    Description = (string.IsNullOrEmpty(Description) ? SelectedCategory?.Name : Description)?.Trim(),
+                    Amount = Math.Abs(amountValue),
+                    Type = SelectedTransactionType,
+                    CategoryId = SelectedCategory?.Id ?? 0,
+                    CategoryExternalId = SelectedCategory?.ExternalId,
+                    AccountId = account?.Id,
+                    Frequency = Frequency.Monthly,
+                    StartDate = TransactionDate,
+                    EndDate = null,
+                    UserId = user.Id,
+                };
+
+                var result = await recurringRuleService.SaveAsync(rule, IsOn);
+
+                if (!result.Success)
+                {
+                    _ = VMBase.ShowMessage("Erro", result.Content?.ToString() ?? "Não foi possível salvar a regra recorrente.");
+                    return;
+                }
+
+                _ = VMBase.ShowMessage("Sucesso", "Transação recorrente salva com sucesso!");
+                await Shell.Current.GoToAsync("..");
+                return;
+            }
 
             string description = (string.IsNullOrEmpty(Description) ? SelectedCategory.Name : Description).Trim();
 
