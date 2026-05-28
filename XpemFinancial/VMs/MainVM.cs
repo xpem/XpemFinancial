@@ -4,6 +4,7 @@ using Model;
 using Model.DTO;
 using Service;
 using Service.Account;
+using Service.Recurring;
 using Service.Transaction;
 using System;
 using System.Collections.Generic;
@@ -15,7 +16,8 @@ namespace XpemFinancial.VMs
 {
     public partial class MainVM(IAccountService accountService,
         ITransactionService transactionService,
-        IUserSessionService userSessionService) : VMBase
+        IUserSessionService userSessionService,
+        IRecurringRuleService recurringRuleService) : VMBase
     {
         [ObservableProperty] private ObservableCollection<TransactionDTO> transactions;
         [ObservableProperty] private TransactionDTO selectedTransaction;
@@ -96,6 +98,10 @@ namespace XpemFinancial.VMs
         private async Task LoadNextMonth()
         {
             SelectedDate = SelectedDate.AddMonths(1);
+
+            if (SelectedDate > DateTime.Today.AddMonths(3))
+                await recurringRuleService.RunSchedulerAsync(SelectedDate);
+
             await LoadTransactionsForMonthAsync(SelectedDate);
         }
 

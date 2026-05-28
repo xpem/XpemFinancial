@@ -10,6 +10,7 @@ namespace ApiRepo
     {
         Task<List<TransactionApiRes>?> GetByUpdatedAtAsync(DateTime updatedAt);
         Task<int> PostAsync(TransactionReq req);
+        Task PutAsync(int externalId, TransactionReq req);
     }
 
     public class TransactionApiRepo(IUserApiRepo userApiRepo) : ITransactionApiRepo
@@ -48,6 +49,18 @@ namespace ApiRepo
                 ?? throw new Exception("Resposta inválida ao adicionar transação na API.");
 
             return result.Id;
+        }
+
+        public async Task PutAsync(int externalId, TransactionReq req)
+        {
+            string json = JsonSerializer.Serialize(req);
+            ApiResp resp = await userApiRepo.AuthRequestAsync(
+                RequestsTypes.Put,
+                ApiKeys.ApiAddress + $"/financial/transaction/{externalId}",
+                json);
+
+            if (!resp.Success)
+                throw new Exception($"Falha ao atualizar transação na API: {resp.Error}");
         }
     }
 }

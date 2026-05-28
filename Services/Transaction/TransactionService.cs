@@ -13,8 +13,8 @@ namespace Service.Transaction
     {
         Task AddAsync(TransactionDTO transaction, bool isOnline);
         Task AddOccurrenceAsync(TransactionDTO occurrence);
-        Task UpdateAsync(TransactionDTO transaction);
-        Task UpsertAsync(TransactionDTO transaction);
+        Task UpdateAsync(TransactionDTO transaction, bool isOnline);
+        Task ApplyFromApiAsync(TransactionDTO transaction);
         Task<DateTime> GetLastUpdatedAtAsync();
         Task<IEnumerable<TransactionDTO>> GetByMonthYear(DateTime monthYear);
         Task<decimal> GetPreviousBalanceAsync(DateTime monthYear);
@@ -32,7 +32,7 @@ namespace Service.Transaction
             return await transactionRepo.GetMaxUpdatedAtAsync();
         }
 
-        public async Task UpsertAsync(TransactionDTO transaction)
+        public async Task ApplyFromApiAsync(TransactionDTO transaction)
         {
             var existing = await transactionRepo.GetByExternalIdAsync(transaction.ExternalId!.Value);
 
@@ -107,9 +107,32 @@ namespace Service.Transaction
             await transactionRepo.Add(occurrence);
         }
 
-        public async Task UpdateAsync(TransactionDTO transaction)
+        public async Task UpdateAsync(TransactionDTO transaction, bool isOnline)
         {
+            transaction.UpdatedAt = DateTime.Now;
             await transactionRepo.Update(transaction);
+
+            if (isOnline && transaction.ExternalId.HasValue)
+            {
+                TransactionReq req = new()
+                {
+                    UpdatedAt = transaction.UpdatedAt,
+                    Inactive = transaction.Inactive,
+                    Description = transaction.Description,
+                    Date = transaction.Date,
+                    Amount = transaction.Amount,
+                    Repetition = transaction.Repetition,
+                    TotalInstallments = transaction.TotalInstallments,
+                    InstallmentId = transaction.InstallmentId,
+                    Installment = transaction.Installment,
+                    CategoryId = transaction.CategoryExternalId,
+                    Type = transaction.Type,
+                    Note = transaction.Note,
+                    AccountId = transaction.AccountId ?? 0,
+                };
+
+                await transactionApiRepo.PutAsync(transaction.ExternalId.Value, req);
+            }
         }
 
         public async Task<IEnumerable<TransactionDTO>> GetByRecurringRuleIdAsync(Guid recurringRuleId)
@@ -213,7 +236,7 @@ namespace Service.Transaction
                     UserId = uid,
                 };
 
-                await UpsertAsync(dto);
+                await ApplyFromApiAsync(dto);
             }
         }
     }

@@ -5,15 +5,17 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:Components="clr-namespace:XpemFinancial.Components"
     xmlns:Icons="clr-namespace:XpemFinancial.Resources"
+    xmlns:Utils="clr-namespace:XpemFinancial.Utils"
     xmlns:model="clr-namespace:Model.DTO;assembly=Model"
     xmlns:vms="clr-namespace:XpemFinancial.VMs"
     x:Name="this"
-    Title="Adicionar transação"
+    Title="{Binding PageTitle}"
     x:DataType="vms:TransactionEditVM"
     BackgroundColor="{StaticResource BodyBackground}"
     Shell.BackgroundColor="{Binding TransactionTypeColor}"
     Shell.TitleColor="{StaticResource White}">
     <ContentPage.Resources>
+        <Utils:InvertedBoolConverter x:Key="InvertedBoolConverter" />
         <Style x:Key="RadioButton" TargetType="RadioButton">
             <Setter Property="TextColor" Value="#d6e0eb" />
             <Setter Property="BorderColor" Value="#d6e0eb" />
@@ -138,6 +140,7 @@
                     Padding="0,5,0,0"
                     BackgroundColor="{StaticResource InputBackground}"
                     HorizontalOptions="Start"
+                    IsEnabled="{Binding IsEditing, Converter={StaticResource InvertedBoolConverter}}"
                     RadioButtonGroup.GroupName="Repetition"
                     RadioButtonGroup.SelectedValue="{Binding SelectedRepetition}">
                     <RadioButton
@@ -184,7 +187,7 @@
             </VerticalStackLayout>
         </ScrollView>
         <Button
-            x:Name="CreateTransaction"
+            x:Name="CreateTransactionButton"
             Margin="0,0,10,10"
             BackgroundColor="{Binding TransactionTypeColor}"
             Command="{Binding SaveTransactionCommand}"
@@ -200,6 +203,22 @@
                     Glyph="{x:Static Icons:IconFont.Check}"
                     Color="#121b27" />
             </Button.ImageSource>
+            <!--<Button.Triggers>
+                <DataTrigger
+                    Binding="{Binding IsEditing}"
+                    TargetType="Button"
+                    Value="True">
+                    <Setter Property="Style" Value="{StaticResource UpdateButton}" />
+                    <Setter Property="ImageSource">
+                        <Setter.Value>
+                            <FontImageSource
+                                FontFamily="Icons"
+                                Glyph="{x:Static Icons:IconFont.Pen}"
+                                Color="#121b27" />
+                        </Setter.Value>
+                    </Setter>
+                </DataTrigger>
+            </Button.Triggers>-->
         </Button>
     </Grid>
 </ContentPage>

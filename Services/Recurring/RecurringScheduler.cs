@@ -7,16 +7,20 @@ namespace Service.Recurring
     public interface IRecurringScheduler
     {
         /// <summary>
-        /// Generates all missing occurrences for the given rules up to (today + horizonMonths).
+        /// Generates all missing occurrences for the given rules up to the given horizon date.
+        /// If no horizon is provided, defaults to today + 3 months.
         /// </summary>
-        Task GeneratePendingAsync(IEnumerable<RecurringRuleDTO> rules, int horizonMonths = 3);
+        Task GeneratePendingAsync(IEnumerable<RecurringRuleDTO> rules, DateTime? horizon = null);
     }
 
     public class RecurringScheduler(ITransactionService transactionService) : IRecurringScheduler
     {
-        public async Task GeneratePendingAsync(IEnumerable<RecurringRuleDTO> rules, int horizonMonths = 3)
+        public async Task GeneratePendingAsync(IEnumerable<RecurringRuleDTO> rules, DateTime? horizon = null)
         {
-            DateTime horizon = DateTime.Today.AddMonths(horizonMonths);
+            DateTime defaultHorizon = DateTime.Today.AddMonths(3);
+            DateTime resolvedHorizon = horizon.HasValue && horizon.Value > defaultHorizon
+                ? horizon.Value
+                : defaultHorizon;
 
             foreach (var rule in rules)
             {
@@ -25,8 +29,8 @@ namespace Service.Recurring
                     continue;
 
                 DateTime cutoff = rule.EndDate.HasValue
-                    ? (rule.EndDate.Value < horizon ? rule.EndDate.Value : horizon)
-                    : horizon;
+                    ? (rule.EndDate.Value < resolvedHorizon ? rule.EndDate.Value : resolvedHorizon)
+                    : resolvedHorizon;
 
                 // Compute all expected occurrence dates in ascending order
                 var expectedDates = ComputeExpectedDates(rule.StartDate, cutoff, rule.Frequency);
@@ -38,6 +42,11 @@ namespace Service.Recurring
                 );
 
                 // Generate missing occurrences in ascending order (Requirement 2.5)
+                // SYNC NOTE: occurrences generated here are local-only projections and should NOT
+                // be synchronized with the backend. They are regenerated from the RecurringRule on
+                // any device via PullAsync + scheduler. The exception is occurrences edited with
+                // EditScope.ThisOnly — those carry user-specific changes and MUST be synced.
+                // When implementing transaction sync, use a flag (e.g. IsCustomized) to distinguish them.
                 foreach (var date in expectedDates)
                 {
                     if (existingDates.Contains(date.Date))
@@ -79,29 +88,30 @@ namespace Service.Recurring
             //Frequency.Weekly  => date.AddDays(7),
             Frequency.Monthly => date.AddMonths(1),
             //Frequency.Yearly  => date.AddYears(1),
-            _                 => throw new ArgumentOutOfRangeException(nameof(frequency), frequency, "Unknown frequency value.")
+            _ => throw new ArgumentOutOfRangeException(nameof(frequency), frequency, "Unknown frequency value.")
         };
 
-        private static Repetition MapFrequencyToRepetition(Frequency frequency) => frequency switch
-        {
-            //Frequency.Daily   => Repetition.Daily,
-            //Frequency.Weekly  => Repetition.Weekly,
-            Frequency.Monthly => Repetition.Monthly,
-            //Frequency.Yearly  => Repetition.Yearly,
-            _                 => throw new ArgumentOutOfRangeException(nameof(frequency), frequency, "Unknown frequency value.")
-        };
+        //private static Repetition MapFrequencyToRepetition(Frequency frequency) => frequency switch
+        //{
+        //    //Frequency.Daily   => Repetition.Daily,
+        //    //Frequency.Weekly  => Repetition.Weekly,
+        //    Frequency.Monthly => Repetition.Monthly,
+        //    //Frequency.Yearly  => Repetition.Yearly,
+        //    _ => throw new ArgumentOutOfRangeException(nameof(frequency), frequency, "Unknown frequency value.")
+        //};
 
         private static TransactionDTO BuildOccurrence(RecurringRuleDTO rule, DateTime date) => new()
         {
-            Description     = rule.Description ?? string.Empty,
-            Amount          = rule.Amount,
-            Type            = rule.Type,
-            CategoryId      = rule.CategoryId,
-            AccountId       = rule.AccountId,
+            Description = rule.Description ?? string.Empty,
+            Amount = rule.Amount,
+            Type = rule.Type,
+            CategoryId = rule.CategoryId,
+            AccountId = rule.AccountId,
             RecurringRuleId = rule.RecurringRuleId,
-            Repetition      = MapFrequencyToRepetition(rule.Frequency),
-            Date            = date,
-            UserId          = rule.UserId,
+            Repetition = Repetition.Recurring,
+            Date = date,
+            
+            UserId = rule.UserId,
             // CreatedAt and UpdatedAt are set by AddOccurrenceAsync
         };
     }
