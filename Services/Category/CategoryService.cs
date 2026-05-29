@@ -9,25 +9,16 @@ namespace Service.Category
     public interface ICategoryService
     {
         Task<List<CategoryDTO>> GetAllAsync();
-        Task<DateTime> GetLastUpdatedAtAsync();
         Task UpsertAsync(CategoryDTO category);
-        Task PullAsync(int uid);
+        Task PullAsync(int uid, DateTime lastUpdatedAt);
     }
 
     public class CategoryService(ICategoryRepo categoryRepo, ICategoryApiRepo categoryApiRepo) : ICategoryService
     {
         private static readonly JsonSerializerOptions _jsonOptions = new() { PropertyNameCaseInsensitive = true };
 
-        public async Task<DateTime> GetLastUpdatedAtAsync()
+        public async Task PullAsync(int uid, DateTime lastUpdatedAt)
         {
-            var all = await categoryRepo.GetAllAsync();
-            return all.Count > 0 ? all.Max(c => c.UpdatedAt) : DateTime.MinValue;
-        }
-
-        public async Task PullAsync(int uid)
-        {
-            DateTime lastUpdatedAt = await GetLastUpdatedAtAsync();
-
             ApiResp apiResp = await categoryApiRepo.GetByLastUpdateAsync(lastUpdatedAt, page: 1);
 
             if (!apiResp.Success || apiResp.Content is null)

@@ -196,12 +196,14 @@
             HorizontalOptions="End"
             Style="{StaticResource SuccessButton}"
             Text="Confirmar"
+            TextColor="White"
             VerticalOptions="End">
             <Button.ImageSource>
                 <FontImageSource
                     FontFamily="Icons"
                     Glyph="{x:Static Icons:IconFont.Check}"
-                    Color="#121b27" />
+                    Size="13"
+                    Color="White" />
             </Button.ImageSource>
             <!--<Button.Triggers>
                 <DataTrigger

@@ -12,13 +12,13 @@ public partial class TransactionEdit : ContentPage
         BindingContext = transactionEditVM;
     }
 
-    protected override async void OnAppearing()
-    {
-        base.OnAppearing();
-        if (!_initialized)
-        {
-            _initialized = true;
-            await ((TransactionEditVM)BindingContext).InitializeAsync();
-        }
-    }
+    //protected override async void OnAppearing()
+    //{
+    //    base.OnAppearing();
+    //    if (!_initialized)
+    //    {
+    //        _initialized = true;
+    //        await ((TransactionEditVM)BindingContext).InitializeAsync();
+    //    }
+    //}
 }

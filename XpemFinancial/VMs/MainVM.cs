@@ -33,6 +33,13 @@ namespace XpemFinancial.VMs
 
         private DateTime SelectedDate { get; set; }
 
+        partial void OnIncludePreviousBalanceChanged(bool value)
+        {
+            Total = value
+                ? (PreviousBalance + Income) + Expense
+                : Income + Expense;
+        }
+
         partial void OnIsNullAccountChanged(bool value) => IsNotNullAccount = !value;
 
         partial void OnSelectedTransactionChanged(TransactionDTO? oldValue, TransactionDTO? newValue)
@@ -109,11 +116,9 @@ namespace XpemFinancial.VMs
         private async Task GoToAccountPage() => await Shell.Current.GoToAsync($"{nameof(Views.AccountPage)}");
 
         [RelayCommand]
-        private async Task ToggleIncludePreviousBalance()
+        private void ToggleIncludePreviousBalance()
         {
             IncludePreviousBalance = !IncludePreviousBalance;
-            Total = IncludePreviousBalance ? PreviousBalance + Income - Expense : Income - Expense;
-            OnPropertyChanged(nameof(Totals));
         }
 
         [RelayCommand]

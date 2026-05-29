@@ -12,6 +12,8 @@ namespace Repo
         Task Add(AccountDTO account);
         Task<AccountDTO?> GetAsync();
         Task Update(AccountDTO account);
+
+        Task<int> GetLocalIdByExternalIdAsync(int externalId);
     }
 
     public class AccountRepo(IDbContextFactory<DbCtx> DbCtx) : IAccountRepo
@@ -35,6 +37,12 @@ namespace Repo
             using var db = await DbCtx.CreateDbContextAsync();
             db.Account.Update(account);
             await db.SaveChangesAsync();
+        }
+
+        public async Task<int> GetLocalIdByExternalIdAsync(int externalId)
+        {
+            using var db = await DbCtx.CreateDbContextAsync();
+            return (await db.Account.FirstOrDefaultAsync(a => a.ExternalId == externalId)).Id;            
         }
     }
 }

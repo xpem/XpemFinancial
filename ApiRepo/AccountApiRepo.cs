@@ -37,8 +37,11 @@ namespace ApiRepo
                 RequestsTypes.Get,
                 ApiKeys.ApiAddress + $"/financial/account?updatedAt={updatedAt:yyyy-MM-ddTHH:mm:ss.fff}");
 
-            if (resp.Success && resp.Content is not null)
-                return JsonSerializer.Deserialize<AccountApiRes>(resp.Content, _jsonOptions);
+            if (resp.Success && resp.Content is string content)
+            {
+                if (!string.IsNullOrEmpty(content))
+                    return JsonSerializer.Deserialize<AccountApiRes>(resp.Content, _jsonOptions);
+            }
 
             return null;
         }

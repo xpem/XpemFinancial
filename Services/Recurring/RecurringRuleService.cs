@@ -14,7 +14,7 @@ namespace Service.Recurring
         Task<ServiceResp> CancelAsync(CancelRuleReq req, bool isOnline);
         Task RunSchedulerAsync(DateTime? horizon = null);
         Task<IEnumerable<RecurringRuleDTO>> GetAllActiveAsync();
-        Task PullAsync(int uid);
+        Task PullAsync(int uid, DateTime lastUpdatedAt);
     }
 
     public class RecurringRuleService(
@@ -223,10 +223,8 @@ namespace Service.Recurring
             return await recurringRuleRepo.GetAllActiveAsync();
         }
 
-        public async Task PullAsync(int uid)
+        public async Task PullAsync(int uid, DateTime lastUpdatedAt)
         {
-            DateTime lastUpdatedAt = await recurringRuleRepo.GetMaxUpdatedAtAsync();
-
             List<Model.Resp.Api.RecurringRuleApiRes>? results = await recurringRuleApiRepo.GetByUpdatedAtAsync(lastUpdatedAt);
 
             if (results is null || results.Count == 0) return;

@@ -26,7 +26,7 @@ namespace Model.DTO
 
         public int? Installment { get; set; }
 
-        public int CategoryId { get; set; }
+        public int? CategoryId { get; set; }
 
         [NotMapped]
         public int? CategoryExternalId { get; set; }
@@ -38,6 +38,9 @@ namespace Model.DTO
         public string? Note { get; set; }
 
         public int? AccountId { get; set; }
+
+        [NotMapped]
+        public int? AccountExternalId { get; set; }
 
         public AccountDTO? Account { get; set; }
 

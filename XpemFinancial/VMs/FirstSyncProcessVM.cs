@@ -28,6 +28,7 @@ namespace XpemFinancial.VMs
             try
             {
                 var user = await userSessionService.GetCurrentUserAsync();
+                DateTime mindate = DateTime.MinValue;
 
                 if (user == null)
                 {
@@ -41,17 +42,18 @@ namespace XpemFinancial.VMs
                     return;
                 }
 
-                await categoryService.PullAsync(user.Id);
+                await categoryService.PullAsync(user.Id, mindate);
                 Progress = 0.2;
 
-                await accountService.PullAsync(user.Id);
+                await accountService.PullAsync(user.Id, mindate);
                 Progress = 0.4;
 
-                await recurringRuleService.PullAsync(user.Id);
+                await recurringRuleService.PullAsync(user.Id, mindate);
                 Progress = 0.6;
 
-                await transactionService.PullAsync(user.Id);
+                await transactionService.PullAsync(user.Id, mindate);
                 Progress = 0.8;
+
                 Progress = 1;
 
                 WeakReferenceMessenger.Default.Send(new UserLoggedInMessage());

@@ -22,10 +22,10 @@ namespace Service.Transaction
         Task<TransactionDTO> GetByIdAsync(int id);
         Task<IEnumerable<TransactionDTO>> GetByRecurringRuleIdAsync(Guid recurringRuleId);
         Task DeleteFutureOccurrencesAsync(Guid recurringRuleId, DateTime fromDate);
-        Task PullAsync(int uid);
+        Task PullAsync(int uid, DateTime lastUpdatedAt);
     }
 
-    public class TransactionService(ITransactionRepo transactionRepo, ITransactionApiRepo transactionApiRepo, ICategoryRepo categoryRepo) : ITransactionService
+    public class TransactionService(ITransactionRepo transactionRepo, ITransactionApiRepo transactionApiRepo, ICategoryRepo categoryRepo, IAccountRepo accountRepo) : ITransactionService
     {
         public async Task<DateTime> GetLastUpdatedAtAsync()
         {
@@ -49,6 +49,7 @@ namespace Service.Transaction
                 await transactionRepo.Add(transaction);
             }
         }
+
         public async Task AddAsync(TransactionDTO transaction, bool isOnline)
         {
             if (transaction.Repetition == Repetition.Monthly)
@@ -74,9 +75,11 @@ namespace Service.Transaction
                         InstallmentId = transaction.InstallmentId,
                         Installment = i,
                         CategoryId = transaction.CategoryId,
+                        CategoryExternalId = transaction.CategoryExternalId,
                         Type = transaction.Type,
                         Note = transaction.Note,
                         AccountId = transaction.AccountId,
+                        AccountExternalId = transaction.AccountExternalId,
                         UserId = transaction.UserId,
                         CreatedAt = DateTime.Now,
                         UpdatedAt = DateTime.Now,
@@ -167,7 +170,7 @@ namespace Service.Transaction
                 CategoryId = transaction.CategoryExternalId,
                 Type = transaction.Type,
                 Note = transaction.Note,
-                AccountId = transaction.AccountId ?? 0,
+                AccountId = transaction.AccountExternalId ?? 0,
             };
 
             int serverId = await transactionApiRepo.PostAsync(req);
@@ -198,22 +201,34 @@ namespace Service.Transaction
             return await transactionRepo.GetBalanceAsync(accountId);
         }
 
-        public async Task PullAsync(int uid)
+        public async Task PullAsync(int uid, DateTime lastUpdatedAt)
         {
-            DateTime lastUpdatedAt = await GetLastUpdatedAtAsync();
-
             List<TransactionApiRes>? apiTransactions = await transactionApiRepo.GetByUpdatedAtAsync(lastUpdatedAt);
 
             if (apiTransactions is null || apiTransactions.Count == 0) return;
 
+            Dictionary<int, int> accountCache = [];
+            Dictionary<int, int?> categoryCache = [];
+
             foreach (var t in apiTransactions)
             {
-                // Resolve o CategoryId local a partir do ExternalId da categoria
+                // Resolve o CategoryId local a partir do ExternalId da categoria (com cache)
                 int? localCategoryId = null;
                 if (t.CategoryId.HasValue)
                 {
-                    var localCategory = await categoryRepo.GetByExternalIdAsync(t.CategoryId.Value);
-                    localCategoryId = localCategory?.Id;
+                    if (!categoryCache.TryGetValue(t.CategoryId.Value, out localCategoryId))
+                    {
+                        var localCategory = await categoryRepo.GetByExternalIdAsync(t.CategoryId.Value);
+                        localCategoryId = localCategory?.Id;
+                        categoryCache[t.CategoryId.Value] = localCategoryId;
+                    }
+                }
+
+                // Resolve o AccountId local a partir do ExternalId da conta (com cache)
+                if (!accountCache.TryGetValue(t.AccountId, out int localAccountId))
+                {
+                    localAccountId = await accountRepo.GetLocalIdByExternalIdAsync(t.AccountId);
+                    accountCache[t.AccountId] = localAccountId;
                 }
 
                 TransactionDTO dto = new()
@@ -226,10 +241,10 @@ namespace Service.Transaction
                     TotalInstallments = t.TotalInstallments,
                     InstallmentId = t.InstallmentId,
                     Installment = t.Installment,
-                    CategoryId = localCategoryId ?? 0,
+                    CategoryId = localCategoryId ?? null,
                     Type = (TransactionType)t.Type,
                     Note = t.Note,
-                    AccountId = t.AccountId,
+                    AccountId = localAccountId,
                     Inactive = t.Inactive,
                     CreatedAt = t.CreatedAt,
                     UpdatedAt = t.UpdatedAt,

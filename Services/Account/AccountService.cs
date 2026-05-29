@@ -8,8 +8,7 @@ namespace Service.Account
     public interface IAccountService
     {
         Task<AccountDTO?> GetAsync();
-        Task<DateTime> GetLastUpdatedAtAsync();
-        Task PullAsync(int uid);
+        Task PullAsync(int uid, DateTime lastUpdatedAt);
         Task UpsertFromApiAsync(int uid, int externalId, DateTime updatedAt, bool inactive);
         Task AdjustAccountBalanceAsync(AccountDTO account, decimal oldbalance, decimal newbalance, bool isOnline);
         Task UpdateExternalIdsAsync(int localAccountId, int serverAccountId, int localTransactionId, int serverTransactionId);
@@ -22,15 +21,8 @@ namespace Service.Account
     {
         public async Task<AccountDTO?> GetAsync() => await accountRepo.GetAsync();
 
-        public async Task<DateTime> GetLastUpdatedAtAsync()
+        public async Task PullAsync(int uid, DateTime lastUpdatedAt)
         {
-            var account = await accountRepo.GetAsync();
-            return account?.UpdatedAt ?? DateTime.MinValue;
-        }
-
-        public async Task PullAsync(int uid)
-        {
-            DateTime lastUpdatedAt = await GetLastUpdatedAtAsync();
             var apiAccount = await accountApiRepo.GetAccountAsync(lastUpdatedAt);
 
             if (apiAccount is null) return;
@@ -134,6 +126,7 @@ namespace Service.Account
                 Type = TransactionType.Adjustment,
                 CreatedAt = DateTime.Now,
                 Repetition = Repetition.None,
+                CategoryId = null,
             };
     }
 }

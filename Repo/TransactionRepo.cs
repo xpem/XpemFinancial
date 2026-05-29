@@ -20,9 +20,12 @@ namespace Repo
     {
         public async Task Add(TransactionDTO transaction)
         {
-            using var db = await DbCtx.CreateDbContextAsync();
-            db.Transaction.Add(transaction);
-            await db.SaveChangesAsync();
+            try
+            {
+                using var db = await DbCtx.CreateDbContextAsync();
+                db.Transaction.Add(transaction);
+                await db.SaveChangesAsync();
+            }catch(Exception ex) { throw ex; }
         }
 
         public async Task Update(TransactionDTO transaction)

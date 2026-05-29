@@ -107,12 +107,12 @@ namespace XpemFinancial.VMs
             await Shell.Current.GoToAsync(nameof(CategoryPicker), true, navigationParameter);
         }
 
-        public async Task InitializeAsync()
-        {
-            TransactionTypeColor = "#f75c5c"; //Color.FromArgb("#2bbf69"); // Cor padrão para transações de entrada
-            TransactionDate = DateTime.Now;
-            SelectedTransactionType = TransactionType.Expense;
-        }
+        //public async Task InitializeAsync()
+        //{
+        //    TransactionTypeColor = "#f75c5c"; //Color.FromArgb("#2bbf69"); // Cor padrão para transações de entrada
+        //    TransactionDate = DateTime.Now;
+        //    SelectedTransactionType = TransactionType.Expense;
+        //}
 
         // Este método é chamado automaticamente quando a navegação volta para cá
         public void ApplyQueryAttributes(IDictionary<string, object> query)
@@ -145,7 +145,22 @@ namespace XpemFinancial.VMs
                         _awaitingRecurringAction = true;
                         _ = HandleRecurringOccurrenceAsync(transaction);
                     }
+
+                    if(transaction.Type == TransactionType.Income)
+                    {
+                        TransactionTypeColor = "#2bbf69";
+                    }
+                    else
+                    {
+                        TransactionTypeColor = "#f75c5c";
+                    }
                 }
+            }
+            else
+            {
+                TransactionTypeColor = "#f75c5c"; //Color.FromArgb("#2bbf69"); // Cor padrão para transações de entrada
+                TransactionDate = DateTime.Now;
+                SelectedTransactionType = TransactionType.Expense;
             }
 
             if (query.TryGetValue("SelectedCategory", out var valSelectedCategory) && valSelectedCategory is CategoryDTO selected)
@@ -429,6 +444,7 @@ namespace XpemFinancial.VMs
                 Note = Note?.Trim(),
                 CategoryId = SelectedCategory?.Id ?? 0,
                 CategoryExternalId = SelectedCategory?.ExternalId,
+                AccountExternalId = account?.ExternalId,
                 UserId = user.Id,
                 CreatedAt = DateTime.UtcNow,
                 AccountId = account.Id
@@ -455,7 +471,7 @@ namespace XpemFinancial.VMs
                 Description = (string.IsNullOrEmpty(Description) ? SelectedCategory?.Name : Description)?.Trim(),
                 Amount = amountValue,
                 Type = SelectedTransactionType,
-                CategoryId = SelectedCategory?.Id ?? existingTransaction.CategoryId,
+                CategoryId = SelectedCategory?.Id ?? existingTransaction.CategoryId.Value,
                 CategoryExternalId = SelectedCategory?.ExternalId,
                 AccountId = existingTransaction.AccountId,
                 Frequency = Frequency.Monthly,
