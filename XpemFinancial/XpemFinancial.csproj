@@ -49,15 +49,15 @@
 
 	<ItemGroup>
 		<!-- App Icon -->
-		<MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#512BD4" />
+		<MauiIcon Include="Resources\AppIcon\appicon.svg" Color="#10151e" TintColor="#ffffff" />
 
 		<!-- Splash Screen -->
-		<MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#512BD4" BaseSize="128,128" />
+		<MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#10151e" TintColor="#ffffff" BaseSize="128,128" />
 
 		<!-- Images -->
 		<MauiImage Include="Resources\Images\*" />
 		<MauiImage Update="Resources\Images\dotnet_bot.png" Resize="True" BaseSize="300,185" />
-		
+
 		<!-- Custom Fonts -->
 		<MauiFont Include="Resources\Fonts\*" />
 
@@ -66,76 +66,76 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Compile Remove="Resources\Fonts\Icons.cs" />
+		<Compile Remove="Resources\Fonts\Icons.cs" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="CommunityToolkit.Maui" Version="14.1.0" />
+		<PackageReference Include="CommunityToolkit.Maui" Version="14.1.1" />
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.7" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.7" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.7">
-		  <PrivateAssets>all</PrivateAssets>
-		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.8" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.8" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.8">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
-		<PackageReference Include="Microsoft.Maui.Controls" Version="10.0.51" />
-		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.7" />
+		<PackageReference Include="Microsoft.Maui.Controls" Version="10.0.70" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.8" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <MauiFont Include="Resources\Icons.cs" />
+		<MauiFont Include="Resources\Icons.cs" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\ApiRepo\ApiRepo.csproj" />
-	  <ProjectReference Include="..\Model\Model.csproj" />
-	  <ProjectReference Include="..\Repo\Repo.csproj" />
-	  <ProjectReference Include="..\Services\Service.csproj" />
+		<ProjectReference Include="..\ApiRepo\ApiRepo.csproj" />
+		<ProjectReference Include="..\Model\Model.csproj" />
+		<ProjectReference Include="..\Repo\Repo.csproj" />
+		<ProjectReference Include="..\Services\Service.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Compile Update="Views\AccountPage.xaml.cs">
-	    <DependentUpon>AccountPage.xaml</DependentUpon>
-	  </Compile>
-	  <Compile Update="Views\MainPage.xaml.cs">
-	    <DependentUpon>MainPage.xaml</DependentUpon>
-	  </Compile>
-	  <Compile Update="Views\SignInPage.xaml.cs">
-	    <DependentUpon>SignInPage.xaml</DependentUpon>
-	  </Compile>
-	  <Compile Update="Views\TransactionEdit.xaml.cs">
-	    <DependentUpon>TransactionEdit.xaml</DependentUpon>
-	  </Compile>
+		<Compile Update="Views\AccountPage.xaml.cs">
+			<DependentUpon>AccountPage.xaml</DependentUpon>
+		</Compile>
+		<Compile Update="Views\MainPage.xaml.cs">
+			<DependentUpon>MainPage.xaml</DependentUpon>
+		</Compile>
+		<Compile Update="Views\SignInPage.xaml.cs">
+			<DependentUpon>SignInPage.xaml</DependentUpon>
+		</Compile>
+		<Compile Update="Views\TransactionEdit.xaml.cs">
+			<DependentUpon>TransactionEdit.xaml</DependentUpon>
+		</Compile>
 	</ItemGroup>
 
 	<ItemGroup>
-	  <MauiXaml Update="Components\CurrencyEntry.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </MauiXaml>
-	  <MauiXaml Update="Components\FlyoutHeader.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </MauiXaml>
-	  <MauiXaml Update="Components\NumericEntry.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </MauiXaml>
-	  <MauiXaml Update="Components\RequiredEntry.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </MauiXaml>
-	  <MauiXaml Update="Views\AccountPage.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </MauiXaml>
-	  <MauiXaml Update="Views\CategoryPicker.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </MauiXaml>
-	  <MauiXaml Update="Views\FirstSyncProcessPage.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </MauiXaml>
-	  <MauiXaml Update="Views\SignInPage.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </MauiXaml>
-	  <MauiXaml Update="Views\TransactionEdit.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </MauiXaml>
+		<MauiXaml Update="Components\CurrencyEntry.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</MauiXaml>
+		<MauiXaml Update="Components\FlyoutHeader.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</MauiXaml>
+		<MauiXaml Update="Components\NumericEntry.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</MauiXaml>
+		<MauiXaml Update="Components\RequiredEntry.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</MauiXaml>
+		<MauiXaml Update="Views\AccountPage.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</MauiXaml>
+		<MauiXaml Update="Views\CategoryPicker.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</MauiXaml>
+		<MauiXaml Update="Views\FirstSyncProcessPage.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</MauiXaml>
+		<MauiXaml Update="Views\SignInPage.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</MauiXaml>
+		<MauiXaml Update="Views\TransactionEdit.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</MauiXaml>
 	</ItemGroup>
 
 </Project>

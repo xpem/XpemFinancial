@@ -5,6 +5,9 @@ namespace XpemFinancial.Utils;
 
 public class RangeObservableCollection<T> : ObservableCollection<T>
 {
+    public RangeObservableCollection() { }
+
+    public RangeObservableCollection(IEnumerable<T> items) : base(items) { }
     public void AddRange(IEnumerable<T> items)
     {
         var list = items.ToList();
@@ -21,10 +24,16 @@ public class RangeObservableCollection<T> : ObservableCollection<T>
     public void ReplaceAll(IEnumerable<T> items)
     {
         Items.Clear();
-        foreach (var item in items)
+        OnCollectionChanged(new NotifyCollectionChangedEventArgs(
+            NotifyCollectionChangedAction.Reset));
+
+        var list = items.ToList();
+        if (list.Count == 0) return;
+
+        foreach (var item in list)
             Items.Add(item);
 
         OnCollectionChanged(new NotifyCollectionChangedEventArgs(
-            NotifyCollectionChangedAction.Reset));
+            NotifyCollectionChangedAction.Add, list, 0));
     }
 }

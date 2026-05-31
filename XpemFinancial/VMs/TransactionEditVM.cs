@@ -5,6 +5,7 @@ using Model.Req;
 using Model.Resp;
 using Service;
 using Service.Account;
+using Service.Category;
 using Service.Recurring;
 using Service.Transaction;
 using System.Collections.ObjectModel;
@@ -16,7 +17,8 @@ namespace XpemFinancial.VMs
         IUserSessionService userSessionService,
         ITransactionService transactionService,
         IAccountService accountService,
-        IRecurringRuleService recurringRuleService) : VMBase, IQueryAttributable
+        IRecurringRuleService recurringRuleService,
+        ICategoryService categoryService) : VMBase, IQueryAttributable
     {
         #region Campos e Propriedades
 
@@ -91,6 +93,15 @@ namespace XpemFinancial.VMs
             OnPropertyChanged(nameof(PageTitle));
         }
 
+        private async Task<string> ResolveCategoryDisplayNameAsync(CategoryDTO category)
+        {
+            if (category == null) return "Sem Categoria";
+            if (category.IsMainCategory || !category.ParentExternalId.HasValue) return category.Name;
+
+            var allCategories = await categoryService.GetAllAsync();
+            var parent = allCategories.FirstOrDefault(c => c.ExternalId == category.ParentExternalId.Value);
+            return parent != null ? $"{parent.Name} / {category.Name}" : category.Name;
+        }
         partial void OnSelectedTransactionTypeChanged(TransactionType value)
         {
             // Atualiza a cor com base no tipo de transação
@@ -117,6 +128,16 @@ namespace XpemFinancial.VMs
         // Este método é chamado automaticamente quando a navegação volta para cá
         public void ApplyQueryAttributes(IDictionary<string, object> query)
         {
+            if (query.TryGetValue("SelectedCategory", out var valSelectedCategory) && valSelectedCategory is CategoryDTO selected)
+            {
+                SelectedCategory = selected;
+
+                SelectedCategoryName = query.TryGetValue("SelectedCategoryDisplayName", out var displayName) && displayName is string name
+                    ? name
+                    : selected.Name;
+                return;
+            }
+
             if (query.TryGetValue("TransactionId", out var valTransactionId) && valTransactionId is string)
             {
                 int transactionId = Convert.ToInt32(valTransactionId);
@@ -138,6 +159,7 @@ namespace XpemFinancial.VMs
                     InitialInstallments = transaction.Installment ?? 0;
                     SelectedCategory = transaction.Category ?? new CategoryDTO { Id = 1, Name = "Sem Categoria" };
                     SelectedCategoryName = SelectedCategory.Name;
+                    _ = ResolveCategoryDisplayNameAsync(SelectedCategory).ContinueWith(t => SelectedCategoryName = t.Result, TaskScheduler.FromCurrentSynchronizationContext());
 
                     // Se for uma ocorrência recorrente, apresenta as opções de edição/cancelamento
                     if (transaction.RecurringRuleId != null)
@@ -146,7 +168,7 @@ namespace XpemFinancial.VMs
                         _ = HandleRecurringOccurrenceAsync(transaction);
                     }
 
-                    if(transaction.Type == TransactionType.Income)
+                    if (transaction.Type == TransactionType.Income)
                     {
                         TransactionTypeColor = "#2bbf69";
                     }
@@ -162,36 +184,35 @@ namespace XpemFinancial.VMs
                 TransactionDate = DateTime.Now;
                 SelectedTransactionType = TransactionType.Expense;
             }
-
-            if (query.TryGetValue("SelectedCategory", out var valSelectedCategory) && valSelectedCategory is CategoryDTO selected)
-            {
-                SelectedCategory = selected; // só atualiza se vier com item
-
-                SelectedCategoryName = SelectedCategory.Name;
-                query.Clear();
-            }
-            // sem item → mantém o valor anterior ✅
         }
 
         private async Task HandleRecurringOccurrenceAsync(TransactionDTO transaction)
         {
             var page = Application.Current!.Windows[0].Page!;
 
-            // Primeiro: perguntar se o usuário quer Editar ou Cancelar
-            //string? action = await page.DisplayActionSheet(
-            //    "Transação recorrente",
-            //    null,
-            //    "Editar",
-            //    "Cancelar recorrência");
+            string? action = await page.DisplayActionSheet(
+                "Transação recorrente",
+                "Cancelar",
+                null,
+                "Editar",
+                "Excluir");
 
-            //if (action == "Editar")
-            //{
+            if (action == null || action == "Cancelar")
+            {
+                _awaitingRecurringAction = false;
+                await Shell.Current.GoToAsync("..");
+                return;
+            }
+
+            if (action == "Editar")
+            {
                 await HandleEditFlowAsync(transaction, page);
-            //}
-            //else if (action == "Cancelar recorrência")
-            //{
-            //    await HandleCancelFlowAsync(transaction, page);
-            //}
+            }
+            else if (action == "Excluir")
+            {
+                await HandleDeleteRecurringAsync(transaction, page);
+            }
+
             _awaitingRecurringAction = false;
         }
 
@@ -217,43 +238,52 @@ namespace XpemFinancial.VMs
             };
         }
 
-        //private async Task HandleCancelFlowAsync(TransactionDTO transaction, Page page)
-        //{
-        //    string? scope = await page.DisplayActionSheet(
-        //        "Como deseja cancelar?",
-        //        "Voltar",
-        //        null,
-        //        "Cancelar a partir desta",
-        //        "Cancelar a regra inteira");
+        private async Task HandleDeleteRecurringAsync(TransactionDTO transaction, Page page)
+        {
+            string? scope = await page.DisplayActionSheet(
+                "Como deseja excluir?",
+                "Cancelar",
+                null,
+                "Excluir apenas esta ocorrência",
+                "Excluir esta e as futuras",
+                "Excluir todas");
 
-        //    if (scope == null || scope == "Voltar") return;
+            if (scope == null || scope == "Cancelar") return;
 
-        //    CancelScope cancelScope = scope switch
-        //    {
-        //        "Cancelar a partir desta" => CancelScope.FromThisOnwards,
-        //        "Cancelar a regra inteira" => CancelScope.EntireRule,
-        //        _ => CancelScope.FromThisOnwards,
-        //    };
+            if (scope == "Excluir apenas esta ocorrência")
+            {
+                await transactionService.DeleteAsync(transaction.Id, IsOn);
+                _ = VMBase.ShowMessage("Sucesso", "Ocorrência excluída com sucesso!");
+                await Shell.Current.GoToAsync("..");
+                return;
+            }
 
-        //    var req = new CancelRuleReq
-        //    {
-        //        TransactionId = transaction.Id,
-        //        RecurringRuleId = transaction.RecurringRuleId!.Value,
-        //        Scope = cancelScope,
-        //    };
+            var cancelScope = scope switch
+            {
+                "Excluir esta e as futuras" => CancelScope.FromThisOnwards,
+                "Excluir todas" => CancelScope.EntireRule,
+                _ => CancelScope.FromThisOnwards,
+            };
 
-        //    var result = await recurringRuleService.CancelAsync(req, IsOn);
+            var req = new CancelRuleReq
+            {
+                TransactionId = transaction.Id,
+                RecurringRuleId = transaction.RecurringRuleId!.Value,
+                Scope = cancelScope,
+            };
 
-        //    if (result.Success)
-        //    {
-        //        _ = VMBase.ShowMessage("Sucesso", "Recorrência cancelada com sucesso!");
-        //        await Shell.Current.GoToAsync("..");
-        //    }
-        //    else
-        //    {
-        //        _ = VMBase.ShowMessage("Erro", result.Content?.ToString() ?? "Não foi possível cancelar a recorrência.");
-        //    }
-        //}
+            var result = await recurringRuleService.CancelAsync(req, IsOn);
+
+            if (result.Success)
+            {
+                _ = VMBase.ShowMessage("Sucesso", "Transações excluídas com sucesso!");
+                await Shell.Current.GoToAsync("..");
+            }
+            else
+            {
+                _ = VMBase.ShowMessage("Erro", result.Content?.ToString() ?? "Não foi possível excluir as transações.");
+            }
+        }
 
         /// Maps a Repetition value (used on occurrences) back to the Frequency enum used on RecurringRuleDTO.
         //private static Frequency FrequencyFromRepetition(Repetition repetition) => repetition switch
@@ -342,6 +372,29 @@ namespace XpemFinancial.VMs
                 IsRequired = false;
 
             return isValid;
+        }
+
+        [RelayCommand]
+        public async Task DeleteTransaction()
+        {
+            if (TransactionId == 0) return;
+
+            var page = Application.Current!.Windows[0].Page!;
+            var transaction = await transactionService.GetByIdAsync(TransactionId);
+            if (transaction == null) return;
+
+            if (transaction.RecurringRuleId != null)
+            {
+                await HandleDeleteRecurringAsync(transaction, page);
+                return;
+            }
+
+            bool confirmed = await page.DisplayAlert("Excluir transação", "Deseja excluir esta transação?", "Excluir", "Cancelar");
+            if (!confirmed) return;
+
+            await transactionService.DeleteAsync(TransactionId, IsOn);
+            _ = VMBase.ShowMessage("Sucesso", "Transação excluída com sucesso!");
+            await Shell.Current.GoToAsync("..");
         }
 
         [RelayCommand]

@@ -14,6 +14,10 @@ public partial class CategoryPicker : ContentPage
 
         _viewModel.ScrollToItemRequested += item =>
             categoriesView.ScrollTo(item, position: ScrollToPosition.End, animate: false);
+
+        // No Android o binding TwoWay da SearchBar só atualiza ao confirmar a busca.
+        // O TextChanged garante que o filtro dispara a cada keystroke.
+        searchBar.TextChanged += (s, e) => _viewModel.SearchText = e.NewTextValue;
     }
 
     protected override async void OnNavigatedTo(NavigatedToEventArgs args)

@@ -1,3 +1,4 @@
+using XpemFinancial.Resources;
 using XpemFinancial.VMs;
 
 namespace XpemFinancial.Views;
@@ -12,13 +13,25 @@ public partial class TransactionEdit : ContentPage
         BindingContext = transactionEditVM;
     }
 
-    //protected override async void OnAppearing()
-    //{
-    //    base.OnAppearing();
-    //    if (!_initialized)
-    //    {
-    //        _initialized = true;
-    //        await ((TransactionEditVM)BindingContext).InitializeAsync();
-    //    }
-    //}
+    protected override void OnAppearing()
+    {
+        base.OnAppearing();
+
+        var vm = (TransactionEditVM)BindingContext;
+        if (vm.IsEditing)
+        {
+            ToolbarItems.Clear();
+            ToolbarItems.Add(new ToolbarItem
+            {
+                IconImageSource = new FontImageSource
+                {
+                    FontFamily = "Icons",
+                    Glyph = IconFont.Trash,
+                    Color = Colors.White,
+                    Size = 20,
+                },
+                Command = vm.DeleteTransactionCommand,
+            });
+        }
+    }
 }

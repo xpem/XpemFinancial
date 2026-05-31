@@ -21,6 +21,7 @@ namespace Service.Transaction
         Task<decimal?> GetBalanceAsync(int accountId);
         Task<TransactionDTO> GetByIdAsync(int id);
         Task<IEnumerable<TransactionDTO>> GetByRecurringRuleIdAsync(Guid recurringRuleId);
+        Task DeleteAsync(int transactionId, bool isOnline);
         Task DeleteFutureOccurrencesAsync(Guid recurringRuleId, DateTime fromDate);
         Task PullAsync(int uid, DateTime lastUpdatedAt);
     }
@@ -143,6 +144,15 @@ namespace Service.Transaction
             return await transactionRepo.GetByRecurringRuleIdAsync(recurringRuleId);
         }
 
+        public async Task DeleteAsync(int transactionId, bool isOnline)
+        {
+            var transaction = await transactionRepo.GetByIdAsync(transactionId);
+            if (transaction is null) return;
+
+            transaction.Inactive = true;
+            await UpdateAsync(transaction, isOnline);
+        }
+
         public async Task DeleteFutureOccurrencesAsync(Guid recurringRuleId, DateTime fromDate)
         {
             var occurrences = await GetByRecurringRuleIdAsync(recurringRuleId);
@@ -198,7 +208,11 @@ namespace Service.Transaction
 
         public async Task<decimal?> GetBalanceAsync(int accountId)
         {
-            return await transactionRepo.GetBalanceAsync(accountId);
+            //calcula até o primeiro dia do próximo mês(calcula o saldo atual, considerando todas as transações até o final do mês atual)
+            DateTime now = DateTime.Now;
+            DateTime nextMonth = new DateTime(now.Year, now.Month, 1).AddMonths(1);
+
+            return await transactionRepo.GetBalanceAsync(accountId, nextMonth);
         }
 
         public async Task PullAsync(int uid, DateTime lastUpdatedAt)

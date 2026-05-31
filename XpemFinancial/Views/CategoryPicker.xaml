@@ -15,13 +15,21 @@
     </ContentPage.Resources>
     <Grid RowDefinitions="Auto, *">
 
-        <SearchBar
-            x:Name="searchBar"
-            Grid.Row="0"
-            IsEnabled="{Binding IsNotBusy}"
-            Placeholder="Procurar..."
-            Text="{Binding SearchText, Mode=TwoWay}" />
-        <!--  SearchCommand="{Binding SearchCommand}"  -->
+        <Grid Grid.Row="0">
+            <SearchBar
+                x:Name="searchBar"
+                IsEnabled="{Binding IsNotBusy}"
+                Placeholder="Procurar..." />
+            <ActivityIndicator
+                Margin="0,0,15,0"
+                HeightRequest="20"
+                HorizontalOptions="End"
+                IsRunning="{Binding IsSearching}"
+                IsVisible="{Binding IsSearching}"
+                VerticalOptions="Center"
+                WidthRequest="20"
+                Color="{StaticResource White}" />
+        </Grid>
 
         <!--  Loading  -->
         <ActivityIndicator

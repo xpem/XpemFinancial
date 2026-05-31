@@ -1,16 +1,16 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Model.DTO;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Repo
 {
 
     public interface IAccountRepo
     {
+
         Task Add(AccountDTO account);
+
         Task<AccountDTO?> GetAsync();
+
         Task Update(AccountDTO account);
 
         Task<int> GetLocalIdByExternalIdAsync(int externalId);

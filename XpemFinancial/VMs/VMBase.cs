@@ -1,5 +1,4 @@
 ﻿using CommunityToolkit.Maui.Alerts;
-using CommunityToolkit.Maui.Core;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace XpemFinancial.VMs
@@ -14,17 +13,10 @@ namespace XpemFinancial.VMs
 
         protected static bool IsOn => Connectivity.NetworkAccess == NetworkAccess.Internet;
 
-        public static async Task ShowMessage(string message, string title)
+        public static async Task ShowMessage(string title, string message)
         {
-            if (DeviceInfo.Platform == DevicePlatform.iOS || DeviceInfo.Platform == DevicePlatform.Android)
-            {
-                ToastDuration duration = ToastDuration.Short;
-
-                var toast = Toast.Make(message, duration, 15);
-                await toast.Show();
-            }
-            else
-                await Application.Current.Windows[0].Page.DisplayAlertAsync(title, message, null, "Continuar");
+            var snackbar = Snackbar.Make(message, duration: TimeSpan.FromSeconds(3));
+            await snackbar.Show();
         }
     }
 }

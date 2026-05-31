@@ -32,13 +32,13 @@ namespace XpemFinancial.VMs
 
                 if (user == null)
                 {
-                    await ShowMessage("Usuário não encontrado. Faça login novamente.", "Erro");
+                    await ShowMessage("Erro", "Usuário não encontrado. Faça login novamente.");
                     return;
                 }
 
                 if (Connectivity.NetworkAccess != NetworkAccess.Internet)
                 {
-                    await ShowMessage("Sem conexão com a internet.", "Erro");
+                    await ShowMessage("Erro", "Sem conexão com a internet.");
                     return;
                 }
 
@@ -61,12 +61,12 @@ namespace XpemFinancial.VMs
             }
             catch (UnauthorizedAccessException)
             {
-                await ShowMessage("Sessão expirada. Faça login novamente.", "Sessão expirada");
+                await ShowMessage("Sessão expirada", "Sessão expirada. Faça login novamente.");
                 await Shell.Current.GoToAsync($"//{nameof(SignInPage)}");
             }
             catch (Exception ex)
             {
-                await ShowMessage($"Erro ao sincronizar: {ex.Message}", "Erro");
+                await ShowMessage("Erro", $"Erro ao sincronizar: {ex.Message}");
             }
             finally
             {

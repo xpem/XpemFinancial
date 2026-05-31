@@ -23,11 +23,11 @@
 
         </Style>
     </ContentPage.Resources>
-    <ScrollView Margin="10">
+    <ScrollView Margin="0">
         <VerticalStackLayout Padding="5">
             <Grid IsVisible="{Binding IsNullAccount}">
                 <Border
-                    Padding="10"
+                    Padding="0"
                     Stroke="{StaticResource DeleteAction}"
                     StrokeShape="10">
                     <StackLayout>
@@ -49,6 +49,7 @@
                 </Border>
             </Grid>
             <FlexLayout
+                Margin="5,0,5,10"
                 AlignItems="Center"
                 Direction="Row"
                 Wrap="Wrap">
@@ -57,10 +58,13 @@
                     Command="{Binding LoadPreviousMonthCommand}"
                     Style="{StaticResource btnDefault}">
                     <Button.ImageSource>
-                        <FontImageSource FontFamily="Icons" Glyph="{x:Static Icons:IconFont.CaretLeft}" />
+                        <FontImageSource
+                            FontFamily="Icons"
+                            Glyph="{x:Static Icons:IconFont.CaretLeft}"
+                            Size="20" />
                     </Button.ImageSource>
                 </Button>
-                <Border Margin="5,10,5,10" Stroke="#9da9b9">
+                <Border Margin="5,0,5,0" Stroke="#9da9b9">
                     <Label
                         Margin="10,10,10,10"
                         HeightRequest="20"
@@ -73,25 +77,30 @@
                     Command="{Binding LoadNextMonthCommand}"
                     Style="{StaticResource btnDefault}">
                     <Button.ImageSource>
-                        <FontImageSource FontFamily="Icons" Glyph="{x:Static Icons:IconFont.CaretRight}" />
+                        <FontImageSource
+                            FontFamily="Icons"
+                            Glyph="{x:Static Icons:IconFont.CaretRight}"
+                            Size="20" />
                     </Button.ImageSource>
                 </Button>
                 <Button
                     x:Name="CreateTransaction"
                     Command="{Binding GoToTransactionEditCommand}"
                     ContentLayout="Left, 10"
+                    HeightRequest="20"
                     IsEnabled="{Binding IsNotNullAccount}"
                     Style="{StaticResource SuccessButton}">
                     <Button.ImageSource>
                         <FontImageSource
                             FontFamily="Icons"
                             Glyph="{x:Static Icons:IconFont.Plus}"
+                            Size="15"
                             Color="#121b27" />
                     </Button.ImageSource>
                 </Button>
             </FlexLayout>
             <Border
-                Margin="10"
+                Margin="0"
                 Padding="0"
                 Stroke="#232c39"
                 StrokeShape="5">
@@ -101,7 +110,7 @@
                         Padding="10"
                         BackgroundColor="#232c39"
                         FontAttributes="Bold"
-                        FontSize="Header"
+                        FontSize="20"
                         Text="Entradas e saídas"
                         TextColor="#d6e0eb" />
                     <!--  Content Section  -->
@@ -143,7 +152,7 @@
                             FontSize="Large"
                             HorizontalOptions="End"
                             IsVisible="{Binding IncludePreviousBalance}"
-                            Text="{Binding PreviousBalance, StringFormat='{}{0:C}'}"
+                            Text="{Binding PreviousBalance, StringFormat='{}{0:N2}'}"
                             TextColor="#6cc8ef" />
 
                         <Label
@@ -157,7 +166,7 @@
                             Grid.Column="1"
                             FontSize="Large"
                             HorizontalOptions="End"
-                            Text="{Binding Income, StringFormat='{}{0:C}'}"
+                            Text="{Binding Income, StringFormat='{}{0:N2}'}"
                             TextColor="{StaticResource Income}" />
                         <Label
                             Grid.Row="2"
@@ -170,7 +179,7 @@
                             Grid.Column="1"
                             FontSize="Large"
                             HorizontalOptions="End"
-                            Text="{Binding Expense, StringFormat='{}{0:C}'}"
+                            Text="{Binding Expense, StringFormat='{}{0:N2}'}"
                             TextColor="{StaticResource Expense}" />
 
                         <BoxView
@@ -185,14 +194,14 @@
                             FontAttributes="Bold"
                             FontSize="Large"
                             HorizontalOptions="End"
-                            Text="{Binding Total, StringFormat='{}{0:C}'}"
+                            Text="{Binding Total, StringFormat='{}{0:N2}'}"
                             TextColor="#d6e0eb"
                             VerticalTextAlignment="Center" />
                     </Grid>
                 </Grid>
             </Border>
             <Border
-                Margin="10"
+                Margin="0,10,0,0"
                 Padding="0"
                 Stroke="#232c39"
                 StrokeShape="5">
@@ -202,7 +211,7 @@
                             Grid.ColumnSpan="3"
                             Padding="10"
                             FontAttributes="Bold"
-                            FontSize="Header"
+                            FontSize="20"
                             HorizontalOptions="Start"
                             Text="Transações"
                             TextColor="#d6e0eb" />

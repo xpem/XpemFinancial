@@ -9,7 +9,9 @@
     Title="XpemFinancial"
     BackgroundColor="#10151e"
     FlyoutBackgroundColor="{StaticResource PageBackground}"
-    FlyoutHeaderBehavior="CollapseOnScroll">
+    FlyoutHeaderBehavior="CollapseOnScroll"
+    ForegroundColor="{StaticResource FontLight}"
+    Shell.TitleColor="White">
 
     <Shell.ItemTemplate>
         <DataTemplate>

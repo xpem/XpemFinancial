@@ -18,6 +18,12 @@ namespace XpemFinancial
 
             builder
                 .UseMauiApp<App>()
+                .ConfigureMauiHandlers(handlers =>
+                {
+#if ANDROID
+                    handlers.AddHandler<DatePicker, XpemFinancial.Platforms.Android.ThemedDatePickerHandler>();
+#endif
+                })
                 .ConfigureFonts(fonts =>
                 {
                     fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");

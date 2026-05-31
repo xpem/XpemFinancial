@@ -1,6 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#512BD4</color>
-    <color name="colorPrimaryDark">#2B0B98</color>
-    <color name="colorAccent">#2B0B98</color>
+    <!-- Toolbar / ActionBar background -->
+    <color name="colorPrimary">#10151e</color>
+    <!-- Status bar background -->
+    <color name="colorPrimaryDark">#10151e</color>
+    <!-- Accent: cursor, checkbox, SearchBar focus ring, switches -->
+    <color name="colorAccent">#3ca7f7</color>
+    <!-- Default window/view background -->
+    <color name="colorBackground">#181f2a</color>
+    <!-- Surface: dialogs, bottom sheets, cards nativos -->
+    <color name="colorSurface">#232c39</color>
+    <!-- Font light: texto sobre fundos escuros -->
+    <color name="colorFontLight">#d6e0eb</color>
 </resources>

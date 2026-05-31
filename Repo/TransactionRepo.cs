@@ -11,7 +11,7 @@ namespace Repo
         Task<DateTime> GetMaxUpdatedAtAsync();
         Task<IEnumerable<TransactionDTO>> GetByMonthYear(DateTime monthYear);
         Task<decimal> GetPreviousBalanceAsync(DateTime monthYear);
-        Task<decimal?> GetBalanceAsync(int accountId);
+        Task<decimal?> GetBalanceAsync(int accountId, DateTime dateLimit);
         Task<TransactionDTO> GetByIdAsync(int transactionId);
         Task<IEnumerable<TransactionDTO>> GetByRecurringRuleIdAsync(Guid recurringRuleId);
     }
@@ -41,7 +41,8 @@ namespace Repo
             return await db.Transaction
                 .Where(t => t.Date.Month == monthYear.Month
                          && t.Date.Year == monthYear.Year
-                         && t.Type != TransactionType.Adjustment)
+                         && t.Type != TransactionType.Adjustment
+                         && !t.Inactive)
                 .OrderByDescending(t => t.Date)
                 .ToListAsync();
         }
@@ -50,14 +51,18 @@ namespace Repo
         public async Task<decimal> GetPreviousBalanceAsync(DateTime monthYear)
         {
             using var db = await DbCtx.CreateDbContextAsync();
-            var previousTransactions = await db.Transaction.Where(t => t.Date < new DateTime(monthYear.Year, monthYear.Month, 1)).ToListAsync();
+            var previousTransactions = await db.Transaction
+                .Where(t => t.Date < new DateTime(monthYear.Year, monthYear.Month, 1) && !t.Inactive)
+                .ToListAsync();
             return previousTransactions.Sum(t => t.Amount);
         }
 
-        public async Task<decimal?> GetBalanceAsync(int accountId)
+        public async Task<decimal?> GetBalanceAsync(int accountId, DateTime dateLimit)
         {
             using var db = await DbCtx.CreateDbContextAsync();
-            var transactions = await db.Transaction.Where(t => t.AccountId == accountId).ToListAsync();
+            var transactions = await db.Transaction
+                .Where(t => t.AccountId == accountId && t.Date < dateLimit && !t.Inactive)
+                .ToListAsync();
             return transactions.Sum(t => t.Amount);
         }
 
