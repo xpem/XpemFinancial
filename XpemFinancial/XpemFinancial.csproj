@@ -45,6 +45,7 @@
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">21.0</SupportedOSPlatformVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
 		<TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
+		<DefaultLanguage>pt-br</DefaultLanguage>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -103,8 +104,8 @@
 		<Compile Update="Views\SignInPage.xaml.cs">
 			<DependentUpon>SignInPage.xaml</DependentUpon>
 		</Compile>
-		<Compile Update="Views\TransactionEdit.xaml.cs">
-			<DependentUpon>TransactionEdit.xaml</DependentUpon>
+		<Compile Update="Views\TransactionEditPage.xaml.cs">
+			<DependentUpon>TransactionEditPage.xaml</DependentUpon>
 		</Compile>
 	</ItemGroup>
 
@@ -133,7 +134,10 @@
 		<MauiXaml Update="Views\SignInPage.xaml">
 			<Generator>MSBuild:Compile</Generator>
 		</MauiXaml>
-		<MauiXaml Update="Views\TransactionEdit.xaml">
+		<MauiXaml Update="Views\SignUpPage.xaml">
+		  <Generator>MSBuild:Compile</Generator>
+		</MauiXaml>
+		<MauiXaml Update="Views\TransactionEditPage.xaml">
 			<Generator>MSBuild:Compile</Generator>
 		</MauiXaml>
 	</ItemGroup>

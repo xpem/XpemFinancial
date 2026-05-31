@@ -19,5 +19,6 @@
         WrongEmailOrPassword = 3,
         Unauthorized = 4,
         BodyContentNull = 5,
+        EmailAlreadyExists = 6,
     }
 }

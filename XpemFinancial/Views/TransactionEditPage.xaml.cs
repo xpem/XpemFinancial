@@ -3,11 +3,11 @@ using XpemFinancial.VMs;
 
 namespace XpemFinancial.Views;
 
-public partial class TransactionEdit : ContentPage
+public partial class TransactionEditPage : ContentPage
 {
     private bool _initialized = false;
 
-    public TransactionEdit(VMs.TransactionEditVM transactionEditVM)
+    public TransactionEditPage(VMs.TransactionEditVM transactionEditVM)
     {
         InitializeComponent();
         BindingContext = transactionEditVM;

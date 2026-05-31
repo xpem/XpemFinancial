@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Maui;
 using Microsoft.Extensions.Logging;
 using Service;
+using XpemFinancial.Utils;
 using XpemFinancial.Views;
 using XpemFinancial.VMs;
 
@@ -14,7 +15,10 @@ namespace XpemFinancial
             //icons: https://fontawesome.com/icons/right-to-bracket?s=solid
             var builder = MauiApp.CreateBuilder();
 
-            builder.UseMauiApp<App>().UseMauiCommunityToolkit();
+            builder.UseMauiApp<App>().UseMauiCommunityToolkit(options =>
+            {
+                options.SetShouldEnableSnackbarOnWindows(true);
+            });
 
             builder
                 .UseMauiApp<App>()
@@ -39,6 +43,7 @@ namespace XpemFinancial
             builder.Services.AddService();
             builder.Services.AddRepo();
             builder.Services.AddApiRepo();
+            builder.Services.AddSingleton<SyncService>();
             builder.Services.ShellRoutes();
 
             return builder.Build();
@@ -52,11 +57,12 @@ namespace XpemFinancial
 
             // Páginas de navegação secundária
             services.AddTransientWithShellRoute<MainPage, MainVM>(nameof(MainPage));
-            services.AddTransientWithShellRoute<Views.TransactionEdit, VMs.TransactionEditVM>(nameof(Views.TransactionEdit));
+            services.AddTransientWithShellRoute<Views.TransactionEditPage, VMs.TransactionEditVM>(nameof(Views.TransactionEditPage));
             services.AddTransientWithShellRoute<Views.CategoryPicker, VMs.CategoryPickerVM>(nameof(Views.CategoryPicker));
             services.AddTransientWithShellRoute<Views.AccountPage, VMs.AccountVM>(nameof(Views.AccountPage));
             services.AddTransientWithShellRoute<Views.SignInPage, VMs.SignInVM>(nameof(Views.SignInPage));
             services.AddTransientWithShellRoute<Views.FirstSyncProcessPage, VMs.FirstSyncProcessVM>(nameof(Views.FirstSyncProcessPage));
+            services.AddTransientWithShellRoute<Views.SignUpPage, VMs.SignUpVM>(nameof(Views.SignUpPage));
             return services;
         }
     }

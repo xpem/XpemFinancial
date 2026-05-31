@@ -6,6 +6,7 @@ using Service.Category;
 using Service.Recurring;
 using Service.Transaction;
 using XpemFinancial.Messages;
+using XpemFinancial.Utils;
 using XpemFinancial.Views;
 
 namespace XpemFinancial.VMs
@@ -15,7 +16,8 @@ namespace XpemFinancial.VMs
         ICategoryService categoryService,
         IAccountService accountService,
         IRecurringRuleService recurringRuleService,
-        ITransactionService transactionService) : VMBase
+        ITransactionService transactionService,
+        SyncService syncService) : VMBase
     {
         [ObservableProperty] private double progress;
 
@@ -57,6 +59,7 @@ namespace XpemFinancial.VMs
                 Progress = 1;
 
                 WeakReferenceMessenger.Default.Send(new UserLoggedInMessage());
+                syncService.StartThread();
                 await Shell.Current.GoToAsync($"//{nameof(MainPage)}");
             }
             catch (UnauthorizedAccessException)

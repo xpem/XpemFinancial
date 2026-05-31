@@ -125,8 +125,8 @@ namespace XpemFinancial.VMs
         private async Task GoToTransactionEdit(int? transactionId = null)
         {
             var route = transactionId is not null
-                ? $"{nameof(Views.TransactionEdit)}?TransactionId={transactionId}"
-                : nameof(Views.TransactionEdit);
+                ? $"{nameof(Views.TransactionEditPage)}?TransactionId={transactionId}"
+                : nameof(Views.TransactionEditPage);
 
             await Shell.Current.GoToAsync(route);
         }

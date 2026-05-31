@@ -8,6 +8,7 @@ namespace Service.Account
     public interface IAccountService
     {
         Task<AccountDTO?> GetAsync();
+        Task<DateTime> GetLastUpdatedAtAsync();
         Task PullAsync(int uid, DateTime lastUpdatedAt);
         Task UpsertFromApiAsync(int uid, int externalId, DateTime updatedAt, bool inactive);
         Task AdjustAccountBalanceAsync(AccountDTO account, decimal oldbalance, decimal newbalance, bool isOnline);
@@ -20,6 +21,9 @@ namespace Service.Account
         IAccountApiRepo accountApiRepo) : IAccountService
     {
         public async Task<AccountDTO?> GetAsync() => await accountRepo.GetAsync();
+
+        public async Task<DateTime> GetLastUpdatedAtAsync()
+            => await accountRepo.GetMaxUpdatedAtAsync();
 
         public async Task PullAsync(int uid, DateTime lastUpdatedAt)
         {

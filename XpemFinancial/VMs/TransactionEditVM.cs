@@ -24,23 +24,17 @@ namespace XpemFinancial.VMs
 
         private int TransactionId { get; set; }
 
-        [ObservableProperty]
-        private string transactionTypeColor;
+        [ObservableProperty] private string transactionTypeColor;
 
-        [ObservableProperty]
-        private DateTime transactionDate;
+        [ObservableProperty] private DateTime transactionDate;
 
-        [ObservableProperty]
-        private string description;
+        [ObservableProperty] private string description;
 
-        [ObservableProperty]
-        private string amount;
+        [ObservableProperty] private string amount;
 
-        [ObservableProperty]
-        private CategoryDTO selectedCategory;
+        [ObservableProperty] private CategoryDTO selectedCategory;
 
-        [ObservableProperty]
-        private List<string> categories;
+        [ObservableProperty] private List<string> categories;
 
         public ObservableCollection<CategoryDTO> FlattenedCategories { get; set; } = new();
 
@@ -48,38 +42,24 @@ namespace XpemFinancial.VMs
         // Ela será atualizada sempre que a SelectedCategory mudar
         public string CategoryDisplayName => selectedCategory?.Name ?? "Sem Categoria";
 
-        [ObservableProperty]
-        private string selectedCategoryName;
-
-        [ObservableProperty]
-        private bool isRequired;
-
-        [ObservableProperty]
-        private Repetition selectedRepetition;
-
-        [ObservableProperty]
-        private TransactionType selectedTransactionType;
-
-        [ObservableProperty]
-        private bool isEditing = false;
+        [ObservableProperty] private string selectedCategoryName;
+        [ObservableProperty] private bool isRequired;
+        [ObservableProperty] private Repetition selectedRepetition;
+        [ObservableProperty] private TransactionType selectedTransactionType;
+        [ObservableProperty] private bool isEditing = false;
 
         public string PageTitle => IsEditing ? "Editar transação" : "Adicionar transação";
 
-        [ObservableProperty]
-        private bool installmentPanelIsVisible = false;
+        [ObservableProperty] private bool installmentPanelIsVisible = false;
 
-        [ObservableProperty]
-        private int numberOfInstallments;
+        [ObservableProperty] private int numberOfInstallments;
 
-        [ObservableProperty]
-        private int initialInstallments;
+        [ObservableProperty] private int initialInstallments;
 
-        [ObservableProperty]
-        private string totalAmountInstallments = "0,00";
+        [ObservableProperty] private string totalAmountInstallments = "0,00";
 
 
-        [ObservableProperty]
-        private string note;
+        [ObservableProperty] private string note;
 
         private EditScope EditScope;
 
@@ -389,7 +369,7 @@ namespace XpemFinancial.VMs
                 return;
             }
 
-            bool confirmed = await page.DisplayAlert("Excluir transação", "Deseja excluir esta transação?", "Excluir", "Cancelar");
+            bool confirmed = await page.DisplayAlertAsync("Excluir transação", "Deseja excluir esta transação?", "Excluir", "Cancelar");
             if (!confirmed) return;
 
             await transactionService.DeleteAsync(TransactionId, IsOn);

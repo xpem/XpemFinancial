@@ -3,6 +3,7 @@ using Service;
 using Service.Account;
 using Service.Category;
 using Service.Recurring;
+using XpemFinancial.Utils;
 using XpemFinancial.VMs;
 
 namespace XpemFinancial
@@ -16,10 +17,12 @@ namespace XpemFinancial
         private readonly IBuildDbService _buildDbService;
         private readonly IAccountService _accountService;
         private readonly IRecurringRuleService _recurringRuleService;
+        private readonly SyncService _syncService;
         public readonly string Version = "@0.2.5";
 
         public App(IUserService userService, IUserSessionService userSessionService, ICategoryService categoryService,
-            IBuildDbService buildDbService, IAccountService accountService, IRecurringRuleService recurringRuleService)
+            IBuildDbService buildDbService, IAccountService accountService, IRecurringRuleService recurringRuleService,
+            SyncService syncService)
         {
             InitializeComponent();
 
@@ -29,6 +32,7 @@ namespace XpemFinancial
             _buildDbService = buildDbService;
             _accountService = accountService;
             _recurringRuleService = recurringRuleService;
+            _syncService = syncService;
 
             Application.Current!.UserAppTheme = AppTheme.Dark;
         }
@@ -56,8 +60,13 @@ namespace XpemFinancial
             //await _accountService.MockAccount(1);
             //await _categoryService.MockCategories(1);
 
-            var appShellVM = new AppShellVM(UserSessionService, _buildDbService);
+            var appShellVM = new AppShellVM(UserSessionService, _buildDbService, _syncService);
             await appShellVM.UserFlyoutAsync();
+
+            // Se o usuário já está logado, inicia o sync em background
+            var user = await UserSessionService.GetCurrentUserAsync();
+            if (user != null)
+                _syncService.StartThread();
 
             // Só navega para o Shell após tudo pronto
             window.Page = new AppShell(appShellVM);

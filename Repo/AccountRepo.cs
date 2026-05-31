@@ -6,14 +6,11 @@ namespace Repo
 
     public interface IAccountRepo
     {
-
         Task Add(AccountDTO account);
-
         Task<AccountDTO?> GetAsync();
-
         Task Update(AccountDTO account);
-
         Task<int> GetLocalIdByExternalIdAsync(int externalId);
+        Task<DateTime> GetMaxUpdatedAtAsync();
     }
 
     public class AccountRepo(IDbContextFactory<DbCtx> DbCtx) : IAccountRepo
@@ -42,7 +39,14 @@ namespace Repo
         public async Task<int> GetLocalIdByExternalIdAsync(int externalId)
         {
             using var db = await DbCtx.CreateDbContextAsync();
-            return (await db.Account.FirstOrDefaultAsync(a => a.ExternalId == externalId)).Id;            
+            return (await db.Account.FirstOrDefaultAsync(a => a.ExternalId == externalId)).Id;
+        }
+
+        public async Task<DateTime> GetMaxUpdatedAtAsync()
+        {
+            using var db = await DbCtx.CreateDbContextAsync();
+            var account = await db.Account.FirstOrDefaultAsync();
+            return account?.UpdatedAt ?? DateTime.MinValue;
         }
     }
 }

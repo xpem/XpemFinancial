@@ -21,13 +21,10 @@ namespace ApiRepo
     {
         public async Task<ApiResp> SignUpAsync(string name, string email, string password)
         {
-            try
-            {
-                string json = JsonSerializer.Serialize(new { name, email, password });
+            email = email.ToLower();
+            string json = JsonSerializer.Serialize(new { name, email, password });
 
-                return await HttpClientFunctions.Request(RequestsTypes.Post, ApiKeys.ApiAddress + "/user", jsonContent: json);
-            }
-            catch (Exception) { throw; }
+            return await HttpClientFunctions.Request(RequestsTypes.Post, ApiKeys.ApiAddress + "/user", jsonContent: json);
         }
 
         public async Task<ApiResp> RecoverPasswordAsync(string email)

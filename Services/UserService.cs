@@ -15,6 +15,8 @@ namespace Service
 
         Task<ServiceResp> SignInAsync(string email, string password);
 
+        Task<ServiceResp> SignUpAsync(string name, string email, string password);
+
         Task UpdateLastUpdate(int uid);
     }
 
@@ -32,57 +34,84 @@ namespace Service
 
         public async Task<ServiceResp> SignInAsync(string email, string password)
         {
-            try
+            email = email.ToLower();
+
+            var apiresp = await userApiRepo.GetTokenAsync(email, password);
+
+            if (apiresp.Success && apiresp.Content is not null and string newToken)
             {
-                email = email.ToLower();
+                ApiResp resp = await userApiRepo.GetAsync(newToken);
 
-                var apiresp = await userApiRepo.GetTokenAsync(email, password);
-
-                if (apiresp.Success && apiresp.Content is not null and string newToken)
+                if (resp.Success && resp.Content != null)
                 {
-                    ApiResp resp = await userApiRepo.GetAsync(newToken);
-
-                    if (resp.Success && resp.Content != null)
+                    JsonNode? userResponse = JsonNode.Parse(resp.Content);
+                    if (userResponse is not null)
                     {
-                        JsonNode? userResponse = JsonNode.Parse(resp.Content);
-                        if (userResponse is not null)
+                        UserDTO user = new()
                         {
-                            UserDTO? user = new()
-                            {
-                                Id = userResponse["id"]?.GetValue<int>() ?? 0,
-                                Name = userResponse["name"]?.GetValue<string>(),
-                                Email = userResponse["email"]?.GetValue<string>(),
-                                Token = newToken,
-                                Password = EncryptionHandler.Encrypt(password)
-                            };
+                            Id = userResponse["id"]?.GetValue<int>() ?? 0,
+                            Name = userResponse["name"]?.GetValue<string>(),
+                            Email = userResponse["email"]?.GetValue<string>(),
+                            Token = newToken,
+                            Password = EncryptionHandler.Encrypt(password)
+                        };
 
-                            UserDTO? actualUser = await userRepo.GetAsync();
+                        UserDTO? actualUser = await userRepo.GetAsync();
 
-                            //resign 
-                            if (actualUser != null)
-                            {
-                                //with the same user
-                                if (actualUser.Id == user.Id)
-                                    await userRepo.UpdateAsync(user);
-                                else
-                                {
-                                    await buildDbService.CleanLocalDatabaseAsync();
-                                    await userRepo.AddAsync(user);
-                                }
-                            }
+                        if (actualUser != null)
+                        {
+                            if (actualUser.Id == user.Id)
+                                await userRepo.UpdateAsync(user);
                             else
+                            {
+                                await buildDbService.CleanLocalDatabaseAsync();
                                 await userRepo.AddAsync(user);
-                            return new ServiceResp(true, user);
+                            }
                         }
+                        else
+                            await userRepo.AddAsync(user);
+
+                        return new ServiceResp(true, user);
                     }
                 }
-                else if (!apiresp.Success && apiresp.Content is not null && apiresp.Content is "User/Password incorrect" or "Invalid Email")
-                    return new ServiceResp(false, ErrorTypes.WrongEmailOrPassword);
-                else return new ServiceResp(false, ErrorTypes.ServerUnavaliable);
+            }
+            else if (!apiresp.Success && apiresp.Content is "User/Password incorrect" or "Invalid Email")
+                return new ServiceResp(false, ErrorTypes.WrongEmailOrPassword);
+            else
+                return new ServiceResp(false, ErrorTypes.ServerUnavaliable);
+
+            return new ServiceResp(false, ErrorTypes.Unknown);
+        }
+
+        public async Task<ServiceResp> SignUpAsync(string name, string email, string password)
+        {
+            email = email.ToLower();
+
+            var resp = await userApiRepo.SignUpAsync(name, email, password);
+
+            if (resp.Success && resp.Content is not null)
+            {
+                JsonNode? jResp = JsonNode.Parse(resp.Content);
+                if (jResp is not null)
+                {
+                    UserDTO user = new()
+                    {
+                        Id = jResp["id"]?.GetValue<int>() ?? 0,
+                        Name = jResp["name"]?.GetValue<string>(),
+                        Email = jResp["email"]?.GetValue<string>()
+                    };
+
+                    if (user.Id is not 0)
+                        return new ServiceResp(true, user);
+                }
 
                 return new ServiceResp(false, ErrorTypes.Unknown);
             }
-            catch { throw; }
+
+            if (!resp.Success && resp.Content is not null && resp.Content.Contains("already exists"))
+                return new ServiceResp(false, ErrorTypes.EmailAlreadyExists);
+
+            return new ServiceResp(false, ErrorTypes.ServerUnavaliable);
         }
 
         public async Task UpdateLastUpdate(int uid) => await userRepo.UpdateLastUpdateAsync(DateTime.Now, uid);

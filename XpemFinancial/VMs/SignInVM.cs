@@ -18,7 +18,6 @@ namespace XpemFinancial.VMs
         [ObservableProperty] private string version = ((App)Application.Current)!.Version;
         [ObservableProperty] private bool isRequired;
 
-
         private async Task<bool> VerrifyFields()
         {
             bool isValid = true;
@@ -89,7 +88,7 @@ namespace XpemFinancial.VMs
         }
 
         [RelayCommand]
-        private async Task CreateUser() => throw new NotImplementedException();// await Shell.Current.GoToAsync($"{nameof(SignUp)}");
+        private async Task CreateUser() =>  await Shell.Current.GoToAsync($"{nameof(SignUpPage)}");
 
         [RelayCommand]
         private async Task UpdatePassword() => await Shell.Current.GoToAsync($"{nameof(UpdatePassword)}");

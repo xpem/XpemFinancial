@@ -4,11 +4,12 @@ using CommunityToolkit.Mvvm.Messaging;
 using Model.DTO;
 using Service;
 using XpemFinancial.Messages;
+using XpemFinancial.Utils;
 using XpemFinancial.Views;
 
 namespace XpemFinancial.VMs
 {
-    public partial class AppShellVM(Service.IUserSessionService userSessionService, IBuildDbService buildDbService) : ObservableObject
+    public partial class AppShellVM(IUserSessionService userSessionService, IBuildDbService buildDbService, SyncService syncService) : ObservableObject
     {
         [ObservableProperty]
         private string? email;
@@ -42,10 +43,7 @@ namespace XpemFinancial.VMs
 
             if (resp)
             {
-                //finalize sync thread process
-                //syncService.ThreadIsRunning = false;
-
-                //syncService.Timer?.Dispose();
+                syncService.Stop();
 
                 userSessionService.Invalidate();
 
