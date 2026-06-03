@@ -41,6 +41,7 @@
     <SolidColorBrush x:Key="Gray950Brush" Color="{StaticResource Gray950}" />
 
     <Color x:Key="Income">#2bbf69</Color>
+    <Color x:Key="Success">#198754</Color>
     <Color x:Key="Expense">#f75c5c</Color>
     <Color x:Key="Transfer">#6cc8ef</Color>
     <Color x:Key="PrimaryAction">#3ca7f7</Color>

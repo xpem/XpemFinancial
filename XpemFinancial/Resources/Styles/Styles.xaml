@@ -430,7 +430,7 @@
     </Style>
 
     <Style x:Key="SuccessButton" TargetType="Button">
-        <Setter Property="TextColor" Value="{StaticResource Black}" />
+        <Setter Property="TextColor" Value="{StaticResource White}" />
         <Setter Property="BorderWidth" Value="1" />
         <Setter Property="BackgroundColor" Value="{StaticResource Income}" />
         <Setter Property="CornerRadius" Value="5" />
@@ -489,6 +489,7 @@
         <Setter Property="BackgroundColor" Value="Transparent" />
         <Setter Property="BorderColor" Value="{StaticResource UpdateAction}" />
         <Setter Property="BorderColor" Value="{StaticResource UpdateAction}" />
+        <Setter Property="TextColor" Value="{StaticResource UpdateAction}" />
         <Setter Property="CornerRadius" Value="5" />
         <Setter Property="BorderWidth" Value="1" />
         <Setter Property="VisualStateManager.VisualStateGroups">
@@ -516,8 +517,8 @@
 
     <Style x:Key="DeleteButtonOutline" TargetType="Button">
         <Setter Property="BackgroundColor" Value="Transparent" />
-        <Setter Property="BorderColor" Value="{StaticResource DeleteAction}" />
-        <Setter Property="TextColor" Value="{StaticResource DeleteAction}" />
+        <Setter Property="BorderColor" Value="{StaticResource Expense}" />
+        <Setter Property="TextColor" Value="{StaticResource Expense}" />
         <Setter Property="CornerRadius" Value="5" />
         <Setter Property="BorderWidth" Value="1" />
         <Setter Property="VisualStateManager.VisualStateGroups">
@@ -527,7 +528,7 @@
 
                     <VisualState Name="Pressed">
                         <VisualState.Setters>
-                            <Setter Property="BackgroundColor" Value="{StaticResource DeleteAction}" />
+                            <Setter Property="BackgroundColor" Value="{StaticResource Expense}" />
                             <Setter Property="Opacity" Value="0.8" />
                             <Setter Property="Scale" Value="0.95" />
                         </VisualState.Setters>

@@ -91,8 +91,7 @@ namespace XpemFinancial.VMs
         private async Task CreateUser() =>  await Shell.Current.GoToAsync($"{nameof(SignUpPage)}");
 
         [RelayCommand]
-        private async Task UpdatePassword() => await Shell.Current.GoToAsync($"{nameof(UpdatePassword)}");
-
+        private async Task UpdatePassword() => await Shell.Current.GoToAsync($"{nameof(UpdatePasswordPage)}");
 
     }
 }

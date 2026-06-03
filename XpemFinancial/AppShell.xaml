@@ -65,7 +65,7 @@
                 <Button
                     x:Name="BtnSignOut"
                     Margin="10,10,10,10"
-                    BackgroundColor="{StaticResource DeleteAction}"
+                    BackgroundColor="{StaticResource Expense}"
                     Command="{Binding SignOutCommand}"
                     ContentLayout="Left,10"
                     FontSize="15"

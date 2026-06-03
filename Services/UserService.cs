@@ -18,6 +18,8 @@ namespace Service
         Task<ServiceResp> SignUpAsync(string name, string email, string password);
 
         Task UpdateLastUpdate(int uid);
+
+        Task<string?> RecoverPassword(string email);
     }
 
     public class UserService(Repo.IUserRepo userRepo, IUserApiRepo userApiRepo, IBuildDbService buildDbService) : IUserService
@@ -115,5 +117,20 @@ namespace Service
         }
 
         public async Task UpdateLastUpdate(int uid) => await userRepo.UpdateLastUpdateAsync(DateTime.Now, uid);
+
+        public async Task<string?> RecoverPassword(string email)
+        {
+            email = email.ToLower();
+            ApiResp? resp = await userApiRepo.RecoverPasswordAsync(email);
+
+            if (resp is not null && resp.Content is not null)
+            {
+                JsonNode? jResp = JsonNode.Parse(resp.Content);
+                if (jResp is not null)
+                    return jResp["Mensagem"]?.GetValue<string>();
+            }
+
+            return null;
+        }
     }
 }

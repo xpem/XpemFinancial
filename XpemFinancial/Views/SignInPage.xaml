@@ -53,7 +53,7 @@
                     FontFamily="Icons"
                     Glyph="{x:Static Icons:IconFont.ArrowRightToBracket}"
                     Size="15"
-                    Color="Black" />
+                    Color="White" />
             </Button.ImageSource>
         </Button>
         <Label

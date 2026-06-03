@@ -27,22 +27,23 @@
         <VerticalStackLayout Padding="5">
             <Grid IsVisible="{Binding IsNullAccount}">
                 <Border
-                    Padding="0"
-                    Stroke="{StaticResource DeleteAction}"
+                    Margin="10"
+                    Padding="10"
+                    Stroke="{StaticResource Income}"
                     StrokeShape="10">
                     <StackLayout>
-                        <Label Margin="0,0,0,10" Text="*Defina um valor inicial para a sua conta" />
+                        <Label Margin="0,0,0,10" Text="Defina um valor inicial para a sua conta antes de inserir sua primeira transação" />
                         <Button
                             Command="{Binding GoToAccountPageCommand}"
                             HorizontalOptions="Start"
-                            Style="{StaticResource PrimaryButtonOutline}"
+                            Style="{StaticResource EditButtonOutline}"
                             Text="Ajustar Saldo Inicial">
                             <Button.ImageSource>
                                 <FontImageSource
                                     FontFamily="Icons"
                                     Glyph="{x:Static Icons:IconFont.Wallet}"
                                     Size="15"
-                                    Color="{StaticResource PrimaryAction}" />
+                                    Color="{StaticResource UpdateAction}" />
                             </Button.ImageSource>
                         </Button>
                     </StackLayout>

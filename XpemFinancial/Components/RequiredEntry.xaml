@@ -1,30 +1,27 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="XpemFinancial.Components.RequiredEntry"
-             x:Name="this"
-             >
+<ContentView
+    x:Class="XpemFinancial.Components.RequiredEntry"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Name="this">
     <VerticalStackLayout>
-        <Label 
-            Text="{Binding Source={x:Reference this}, Path=LabelText}"
-            Padding="0,10,0,0"  />
+        <Label Padding="0,10,0,0" Text="{Binding Source={x:Reference this}, Path=LabelText}" />
         <Border
-            Stroke="{StaticResource DeleteAction}"
-            StrokeThickness="{Binding Source={x:Reference this}, Path=RequiredStrokeThickness}"
-            StrokeShape="RoundRectangle 5"
             BackgroundColor="Transparent"
             HorizontalOptions="Fill"
+            Stroke="{StaticResource DeleteAction}"
+            StrokeShape="RoundRectangle 5"
+            StrokeThickness="{Binding Source={x:Reference this}, Path=RequiredStrokeThickness}"
             VerticalOptions="Fill">
             <Entry
-                Text="{Binding Source={x:Reference this}, Path=EntryValue}"
                 IsPassword="{Binding Source={x:Reference this}, Path=IsPassword}"
                 IsTextPredictionEnabled="{Binding Source={x:Reference this}, Path=IsTextPredictionEnabled}"
-                />
+                Text="{Binding Source={x:Reference this}, Path=EntryValue}" />
         </Border>
-        <Label 
+        <Label
+            Padding="0,0,0,0"
             IsVisible="{Binding Source={x:Reference this}, Path=IsRequired}"
             Text="{Binding Source={x:Reference this}, Path=RequiredText}"
-            TextColor="{StaticResource DeleteAction}"
-            Padding="0,0,0,0"  />
+            TextColor="{StaticResource DeleteAction}" />
     </VerticalStackLayout>
 </ContentView>
