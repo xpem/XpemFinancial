@@ -99,6 +99,7 @@
         <Grid Margin="0,5,0,0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
@@ -122,6 +123,21 @@
                 Text="@Emanuel Martins"
                 TextColor="{StaticResource Gray100}"
                 VerticalOptions="End" />
+            <Label
+                x:Name="CrashLogLabel"
+                Grid.Row="1"
+                Grid.Column="0"
+                Grid.ColumnSpan="2"
+                FontSize="10"
+                HorizontalOptions="Center"
+                IsVisible="False"
+                Text="⚠ Ver log de erros"
+                TextColor="{StaticResource DeleteAction}"
+                TextDecorations="Underline">
+                <Label.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnViewCrashLogTapped" />
+                </Label.GestureRecognizers>
+            </Label>
         </Grid>
     </VerticalStackLayout>
 </ContentPage>

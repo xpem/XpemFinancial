@@ -2,6 +2,7 @@
 using CommunityToolkit.Mvvm.Input;
 using Model.DTO;
 using Model.Req;
+using Model.Res;
 using Model.Resp;
 using Service;
 using Service.Account;
@@ -42,6 +43,10 @@ namespace XpemFinancial.VMs
 
         public ObservableCollection<CategoryDTO> FlattenedCategories { get; set; } = new();
 
+        public ObservableCollection<TransactionDescriptionRes> DescriptionSuggestions { get; set; } = new();
+
+        [ObservableProperty] private bool suggestionsVisible = false;
+
         // Esta propriedade apenas facilita a exibição no botão/label da View
         // Ela será atualizada sempre que a SelectedCategory mudar
         public string CategoryDisplayName => selectedCategory?.Name ?? "Sem Categoria";
@@ -57,9 +62,47 @@ namespace XpemFinancial.VMs
 
         #endregion
 
-        partial void OnIsEditingChanged(bool value)
+        partial void OnDescriptionChanged(string value)
         {
-            OnPropertyChanged(nameof(PageTitle));
+            _ = LoadDescriptionSuggestionsAsync(value);
+        }
+
+        private async Task LoadDescriptionSuggestionsAsync(string text)
+        {
+            DescriptionSuggestions.Clear();
+
+            if (string.IsNullOrWhiteSpace(text) || text.Length < 2)
+            {
+                SuggestionsVisible = false;
+                return;
+            }
+
+            var suggestions = await transactionService.GetDescriptionSuggestionsAsync(text);
+            foreach (var s in suggestions)
+                DescriptionSuggestions.Add(s);
+
+            SuggestionsVisible = DescriptionSuggestions.Any();
+        }
+
+        public async Task ApplySuggestion(TransactionDescriptionRes suggestion)
+        {
+            // Atribui direto ao campo para não re-disparar o hook de busca
+            description = suggestion.Description;
+            OnPropertyChanged(nameof(Description));
+
+            if (suggestion.CategoryId.HasValue)
+            {
+                var all = await categoryService.GetAllAsync();
+                var category = all.FirstOrDefault(c => c.Id == suggestion.CategoryId.Value);
+                if (category is not null)
+                {
+                    SelectedCategory = category;
+                    SelectedCategoryName = await ResolveCategoryDisplayNameAsync(category);
+                }
+            }
+
+            DescriptionSuggestions.Clear();
+            SuggestionsVisible = false;
         }
 
         private async Task<string> ResolveCategoryDisplayNameAsync(CategoryDTO category)

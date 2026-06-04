@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Model.DTO;
+using Model.Res;
 
 namespace Repo
 {
@@ -14,6 +15,8 @@ namespace Repo
         Task<decimal?> GetBalanceAsync(int accountId, DateTime dateLimit);
         Task<TransactionDTO> GetByIdAsync(int transactionId);
         Task<IEnumerable<TransactionDTO>> GetByRecurringRuleIdAsync(Guid recurringRuleId);
+
+        Task<List<TransactionDescriptionRes>> GetTransactionDescription(string description);
     }
 
     public class TransactionRepo(IDbContextFactory<DbCtx> DbCtx) : ITransactionRepo
@@ -25,7 +28,7 @@ namespace Repo
                 using var db = await DbCtx.CreateDbContextAsync();
                 db.Transaction.Add(transaction);
                 await db.SaveChangesAsync();
-            }catch(Exception ex) { throw ex; }
+            }catch(Exception) { throw; }
         }
 
         public async Task Update(TransactionDTO transaction)
@@ -91,6 +94,28 @@ namespace Repo
             return await db.Transaction
                 .Where(t => t.RecurringRuleId == recurringRuleId)
                 .ToListAsync();
+        }
+
+        /// <summary>
+        /// para construir a lista de recomendações de auto preenchimento da transação
+        /// </summary>
+        /// <param name="description"></param>
+        /// <returns></returns>
+        public async Task<List<TransactionDescriptionRes>> GetTransactionDescription(string description)
+        {
+            using var db = await DbCtx.CreateDbContextAsync();
+            var list = await db.Transaction
+                .Where(t => EF.Functions.Like(t.Description, $"%{description}%"))
+                .Include(t => t.Category)
+                .Select(t => new TransactionDescriptionRes
+                {
+                    TransactionID = t.Id,
+                    Description = t.Description,
+                    CategoryId = t.CategoryId,
+                    CategoryName = t.Category.Name
+                })
+                .ToListAsync();
+            return list;
         }
     }
 }

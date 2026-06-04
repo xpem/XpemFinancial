@@ -13,6 +13,7 @@ namespace ApiRepo
                 HttpClient httpClient = new(new HttpClientHandler
                 {
                     SslProtocols = System.Security.Authentication.SslProtocols.Tls12
+                               | System.Security.Authentication.SslProtocols.Tls13
                 });
 
                 if (userToken is not null)
@@ -55,9 +56,9 @@ namespace ApiRepo
                     Content = await httpResponse.Content.ReadAsStringAsync()
                 };
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                throw ex;
+                throw;
             }
         }
     }

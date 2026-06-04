@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using Model.DTO;
 using Model.Resp.Api;
 using Service;
+using System.Net.Http;
 using XpemFinancial.Views;
 
 namespace XpemFinancial.VMs
@@ -70,21 +71,32 @@ namespace XpemFinancial.VMs
                     if (resp.Content is not null and ErrorTypes error)
                     {
                         if (error == ErrorTypes.WrongEmailOrPassword)
-                            errorMessage = "Wrong email/password";
+                            errorMessage = "Email ou senha incorretos";
                         else if (error == ErrorTypes.ServerUnavaliable)
-                            errorMessage = "Server unavailable";
+                            errorMessage = "Servidor indisponível";
                     }
                     else throw new Exception("Invalid Content");
 
                     ErrorMessageIsVisible = true;
                     ErrorMessage = errorMessage;
                 }
-
+            }
+            catch (HttpRequestException)
+            {
+                ErrorMessageIsVisible = true;
+                ErrorMessage = "Não foi possível conectar ao servidor. Verifique sua conexão.";
+            }
+            catch (Exception)
+            {
+                ErrorMessageIsVisible = true;
+                ErrorMessage = "Ocorreu um erro inesperado. Tente novamente.";
+            }
+            finally
+            {
                 BtnSignEnabled = true;
+                SignInText = "Acessar";
                 IsBusy = false;
             }
-            catch { throw; }
-
         }
 
         [RelayCommand]

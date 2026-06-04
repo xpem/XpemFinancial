@@ -5,8 +5,6 @@ namespace XpemFinancial.Views;
 
 public partial class TransactionEditPage : ContentPage
 {
-    private bool _initialized = false;
-
     public TransactionEditPage(VMs.TransactionEditVM transactionEditVM)
     {
         InitializeComponent();
@@ -33,5 +31,15 @@ public partial class TransactionEditPage : ContentPage
                 Command = vm.DeleteTransactionCommand,
             });
         }
+    }
+
+    private async void OnSugestaoSelected(object sender, SelectionChangedEventArgs e)
+    {
+        if (e.CurrentSelection.FirstOrDefault() is not Model.Res.TransactionDescriptionRes item)
+            return;
+
+        var vm = (TransactionEditVM)BindingContext;
+        await vm.ApplySuggestion(item);
+        ((CollectionView)sender).SelectedItem = null;
     }
 }

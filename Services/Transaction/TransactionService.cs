@@ -1,6 +1,7 @@
 ﻿using ApiRepo;
 using Model.DTO;
 using Model.Req;
+using Model.Res;
 using Model.Resp.Api;
 using Repo;
 using System;
@@ -24,6 +25,7 @@ namespace Service.Transaction
         Task DeleteAsync(int transactionId, bool isOnline);
         Task DeleteFutureOccurrencesAsync(Guid recurringRuleId, DateTime fromDate);
         Task PullAsync(int uid, DateTime lastUpdatedAt);
+        Task<List<TransactionDescriptionRes>> GetDescriptionSuggestionsAsync(string description);
     }
 
     public class TransactionService(ITransactionRepo transactionRepo, ITransactionApiRepo transactionApiRepo, ICategoryRepo categoryRepo, IAccountRepo accountRepo) : ITransactionService
@@ -267,6 +269,21 @@ namespace Service.Transaction
 
                 await ApplyFromApiAsync(dto);
             }
+        }
+
+        public async Task<List<TransactionDescriptionRes>> GetDescriptionSuggestionsAsync(string description)
+        {
+            if (string.IsNullOrWhiteSpace(description))
+                return [];
+
+            var results = await transactionRepo.GetTransactionDescription(description);
+
+            // Deduplica por descrição, mantendo a mais recente (maior TransactionID)
+            return results
+                .GroupBy(r => r.Description, StringComparer.OrdinalIgnoreCase)
+                .Select(g => g.OrderByDescending(r => r.TransactionID).First())
+                .Take(5)
+                .ToList();
         }
     }
 }

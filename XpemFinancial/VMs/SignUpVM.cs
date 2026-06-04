@@ -2,6 +2,7 @@
 using CommunityToolkit.Mvvm.Input;
 using Model.Resp.Api;
 using Service;
+using System.Net.Http;
 using System.Text.RegularExpressions;
 
 namespace XpemFinancial.VMs
@@ -93,6 +94,16 @@ namespace XpemFinancial.VMs
                     await ShowMessage("Sucesso", "Usuário cadastrado!");
                     await Shell.Current.GoToAsync("..");
                 }
+            }
+            catch (HttpRequestException)
+            {
+                ErrorMessageIsVisible = true;
+                ErrorMessage = "Não foi possível conectar ao servidor. Verifique sua conexão.";
+            }
+            catch (Exception)
+            {
+                ErrorMessageIsVisible = true;
+                ErrorMessage = "Ocorreu um erro inesperado. Tente novamente.";
             }
             finally
             {

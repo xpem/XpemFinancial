@@ -7,6 +7,7 @@
     xmlns:Icons="clr-namespace:XpemFinancial.Resources"
     xmlns:Utils="clr-namespace:XpemFinancial.Utils"
     xmlns:model="clr-namespace:Model.DTO;assembly=Model"
+    xmlns:res="clr-namespace:Model.Res;assembly=Model"
     xmlns:vms="clr-namespace:XpemFinancial.VMs"
     x:Name="this"
     Title="{Binding PageTitle}"
@@ -40,7 +41,6 @@
                                     VerticalOptions="Center"
                                     WidthRequest="10" />
                             </Grid>
-
                             <ContentPresenter VerticalOptions="Center" />
                             <VisualStateManager.VisualStateGroups>
                                 <VisualStateGroupList>
@@ -132,6 +132,25 @@
                     IsRequired="{Binding IsRequired}"
                     IsTextPredictionEnabled="True"
                     LabelText="Descrição" />
+
+                <CollectionView
+                    x:Name="ListaSugestoes"
+                    BackgroundColor="{StaticResource InputBackground}"
+                    IsVisible="{Binding SuggestionsVisible}"
+                    ItemsSource="{Binding DescriptionSuggestions}"
+                    SelectionChanged="OnSugestaoSelected"
+                    SelectionMode="Single">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="res:TransactionDescriptionRes">
+                            <Grid Padding="10,8">
+                                <Label
+                                    FontSize="15"
+                                    Text="{Binding Description}"
+                                    TextColor="White" />
+                            </Grid>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
 
                 <Label Padding="0,10,0,0" Text="Valor" />
                 <Components:CurrencyEntry Text="{Binding Amount}" />
