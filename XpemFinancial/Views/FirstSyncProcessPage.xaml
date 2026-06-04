@@ -30,6 +30,6 @@
         <ProgressBar
             Margin="5,0,5,0"
             Progress="{Binding Progress}"
-            ProgressColor="{StaticResource PrimaryColor}" />
+            ProgressColor="{StaticResource Primary}" />
     </VerticalStackLayout>
 </ContentPage>

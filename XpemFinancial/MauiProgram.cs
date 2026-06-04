@@ -35,6 +35,8 @@ namespace XpemFinancial
                     fonts.AddFont("Free-Solid-900.otf", "Icons");
                 });
 
+            builder.Logging.AddProvider(new CrashFileLoggerProvider());
+
 #if DEBUG
             builder.Logging.AddDebug();
 #endif

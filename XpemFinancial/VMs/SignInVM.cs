@@ -81,15 +81,15 @@ namespace XpemFinancial.VMs
                     ErrorMessage = errorMessage;
                 }
             }
-            catch (HttpRequestException)
+            catch (HttpRequestException ex)
             {
                 ErrorMessageIsVisible = true;
-                ErrorMessage = "Não foi possível conectar ao servidor. Verifique sua conexão.";
+                ErrorMessage = $"Conexão: {ex.Message}";
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 ErrorMessageIsVisible = true;
-                ErrorMessage = "Ocorreu um erro inesperado. Tente novamente.";
+                ErrorMessage = $"{ex.GetType().Name}: {ex.Message}";
             }
             finally
             {
