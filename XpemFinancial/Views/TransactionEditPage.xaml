@@ -10,11 +10,25 @@
     xmlns:res="clr-namespace:Model.Res;assembly=Model"
     xmlns:vms="clr-namespace:XpemFinancial.VMs"
     x:Name="this"
-    Title="{Binding PageTitle}"
     x:DataType="vms:TransactionEditVM"
     BackgroundColor="{StaticResource BodyBackground}"
     Shell.BackgroundColor="{Binding TransactionTypeColor}"
     Shell.TitleColor="{StaticResource White}">
+    <Shell.TitleView>
+        <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
+            <Label
+                FontFamily="Icons"
+                FontSize="17"
+                Text="{Binding TitleIcon}"
+                TextColor="{StaticResource White}"
+                VerticalOptions="Center" />
+            <Label
+                FontSize="17"
+                Text="{Binding PageTitle}"
+                TextColor="{StaticResource White}"
+                VerticalOptions="Center" />
+        </HorizontalStackLayout>
+    </Shell.TitleView>
     <ContentPage.Resources>
         <Utils:InvertedBoolConverter x:Key="InvertedBoolConverter" />
         <Style x:Key="RadioButton" TargetType="RadioButton">

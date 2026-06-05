@@ -53,6 +53,12 @@ namespace XpemFinancial.VMs
 
         public string PageTitle => IsEditing ? "Editar transação" : "Adicionar transação";
 
+        public bool IsIncome => SelectedTransactionType == TransactionType.Income;
+
+        public string TitleIcon => SelectedTransactionType == TransactionType.Income
+            ? XpemFinancial.Resources.IconFont.ArrowTrendUp
+            : XpemFinancial.Resources.IconFont.ArrowTrendDown;
+
         [ObservableProperty] private string note;
 
         private EditScope EditScope;
@@ -119,8 +125,9 @@ namespace XpemFinancial.VMs
         {
             // Atualiza a cor com base no tipo de transação
             TransactionTypeColor = value == TransactionType.Income ? "#2bbf69" : "#ef4444";
+            OnPropertyChanged(nameof(IsIncome));
+            OnPropertyChanged(nameof(TitleIcon));
         }
-
 
         [RelayCommand]
         async Task OpenCategoryPicker()

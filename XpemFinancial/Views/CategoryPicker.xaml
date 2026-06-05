@@ -3,12 +3,27 @@
     x:Class="XpemFinancial.Views.CategoryPicker"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:Icons="clr-namespace:XpemFinancial.Resources"
     xmlns:Models="clr-namespace:Model.DTO;assembly=Model"
     xmlns:utils="clr-namespace:XpemFinancial.Utils"
     xmlns:vms="clr-namespace:XpemFinancial.VMs"
-    Title="Selecionar Categoria"
     x:DataType="vms:CategoryPickerVM"
     BackgroundColor="{StaticResource BodyBackground}">
+    <Shell.TitleView>
+        <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
+            <Label
+                FontFamily="Icons"
+                FontSize="17"
+                Text="{x:Static Icons:IconFont.Tag}"
+                TextColor="{StaticResource White}"
+                VerticalOptions="Center" />
+            <Label
+                FontSize="17"
+                Text="Selecionar Categoria"
+                TextColor="{StaticResource White}"
+                VerticalOptions="Center" />
+        </HorizontalStackLayout>
+    </Shell.TitleView>
     <ContentPage.Resources>
         <utils:BoldConverter x:Key="BoldConverter" />
         <utils:IndentConverter x:Key="IndentConverter" />

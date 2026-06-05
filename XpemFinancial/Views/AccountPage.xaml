@@ -7,8 +7,22 @@
     xmlns:icons="clr-namespace:XpemFinancial.Resources"
     xmlns:vms="clr-namespace:XpemFinancial.VMs"
     x:Name="this"
-    Title="Conta"
     x:DataType="vms:AccountVM">
+    <Shell.TitleView>
+        <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
+            <Label
+                FontFamily="Icons"
+                FontSize="17"
+                Text="{x:Static icons:IconFont.Wallet}"
+                TextColor="{StaticResource White}"
+                VerticalOptions="Center" />
+            <Label
+                FontSize="17"
+                Text="Conta"
+                TextColor="{StaticResource White}"
+                VerticalOptions="Center" />
+        </HorizontalStackLayout>
+    </Shell.TitleView>
     <ContentPage.Resources />
     <VerticalStackLayout Margin="10" HorizontalOptions="Start">
         <Label Text="Balanço atual" />

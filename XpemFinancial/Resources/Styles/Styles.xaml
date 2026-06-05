@@ -433,7 +433,7 @@
     <Style x:Key="SuccessButton" TargetType="Button">
         <Setter Property="TextColor" Value="{StaticResource White}" />
         <Setter Property="BorderWidth" Value="1" />
-        <Setter Property="BackgroundColor" Value="{StaticResource Income}" />
+        <Setter Property="BackgroundColor" Value="{StaticResource Success}" />
         <Setter Property="CornerRadius" Value="5" />
         <Setter Property="VisualStateManager.VisualStateGroups">
             <VisualStateGroupList>

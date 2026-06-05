@@ -23,7 +23,8 @@ namespace XpemFinancial
         private readonly IRecurringRuleService _recurringRuleService;
         private readonly SyncService _syncService;
         private readonly ILogger<AppShell> _appShellLogger;
-        public readonly string Version = "@0.2.5";
+        public readonly string Version = AppInfo.Current.BuildString;
+
 
         public App(IUserService userService, IUserSessionService userSessionService, ICategoryService categoryService,
             IBuildDbService buildDbService, IAccountService accountService, IRecurringRuleService recurringRuleService,

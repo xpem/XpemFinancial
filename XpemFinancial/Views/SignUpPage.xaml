@@ -7,10 +7,23 @@
     xmlns:Icons="clr-namespace:XpemFinancial.Resources"
     xmlns:Utils="clr-namespace:XpemFinancial.Utils"
     xmlns:vms="clr-namespace:XpemFinancial.VMs"
-    Title="Cadastrar Usuário"
     x:DataType="vms:SignUpVM"
-    Shell.FlyoutBehavior="Disabled"
-    Style="{StaticResource ContentPage}">
+    Shell.FlyoutBehavior="Disabled">
+    <Shell.TitleView>
+        <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
+            <Label
+                FontFamily="Icons"
+                FontSize="17"
+                Text="{x:Static Icons:IconFont.UserPlus}"
+                TextColor="{StaticResource White}"
+                VerticalOptions="Center" />
+            <Label
+                FontSize="17"
+                Text="Cadastrar Usuário"
+                TextColor="{StaticResource White}"
+                VerticalOptions="Center" />
+        </HorizontalStackLayout>
+    </Shell.TitleView>
     <ContentPage.Resources>
         <Style x:Key="Icon" TargetType="Label">
             <Setter Property="TextColor" Value="White" />
