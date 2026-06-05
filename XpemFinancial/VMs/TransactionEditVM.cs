@@ -63,9 +63,6 @@ namespace XpemFinancial.VMs
 
         private EditScope EditScope;
 
-        // Bloqueia o botão Confirmar enquanto o ActionSheet de recorrência está aberto
-        private bool _awaitingRecurringAction = false;
-
         #endregion
 
         partial void OnDescriptionChanged(string value)
@@ -181,13 +178,6 @@ namespace XpemFinancial.VMs
                     SelectedCategoryName = SelectedCategory.Name;
                     _ = ResolveCategoryDisplayNameAsync(SelectedCategory).ContinueWith(t => SelectedCategoryName = t.Result, TaskScheduler.FromCurrentSynchronizationContext());
 
-                    // Se for uma ocorrência recorrente, apresenta as opções de edição/cancelamento
-                    if (transaction.RecurringRuleId != null)
-                    {
-                        _awaitingRecurringAction = true;
-                        _ = HandleRecurringOccurrenceAsync(transaction);
-                    }
-
                     if (transaction.Type == TransactionType.Income)
                     {
                         TransactionTypeColor = "#2bbf69";
@@ -206,37 +196,7 @@ namespace XpemFinancial.VMs
             }
         }
 
-        private async Task HandleRecurringOccurrenceAsync(TransactionDTO transaction)
-        {
-            var page = Application.Current!.Windows[0].Page!;
-
-            string? action = await page.DisplayActionSheetAsync(
-                "Transação recorrente",
-                "Cancelar",
-                null,
-                "Editar",
-                "Excluir");
-
-            if (action == null || action == "Cancelar")
-            {
-                _awaitingRecurringAction = false;
-                await Shell.Current.GoToAsync("..");
-                return;
-            }
-
-            if (action == "Editar")
-            {
-                await HandleEditFlowAsync(transaction, page);
-            }
-            else if (action == "Excluir")
-            {
-                await HandleDeleteRecurringAsync(transaction, page);
-            }
-
-            _awaitingRecurringAction = false;
-        }
-
-        private async Task HandleEditFlowAsync(TransactionDTO transaction, Page page)
+        private async Task<bool> HandleEditFlowAsync(TransactionDTO transaction, Page page)
         {
             string? scope = await page.DisplayActionSheetAsync(
                 "Como deseja editar?",
@@ -246,8 +206,7 @@ namespace XpemFinancial.VMs
                 "Editar esta e as futuras",
                 "Editar todas");
 
-            //retorna para a main
-            if (scope == null || scope == "Cancelar") await Shell.Current.GoToAsync("..");
+            if (scope == null || scope == "Cancelar") return false;
 
             EditScope = scope switch
             {
@@ -256,6 +215,8 @@ namespace XpemFinancial.VMs
                 "Editar todas" => EditScope.All,
                 _ => EditScope.ThisOnly,
             };
+
+            return true;
         }
 
         private async Task HandleDeleteRecurringAsync(TransactionDTO transaction, Page page)
@@ -420,13 +381,6 @@ namespace XpemFinancial.VMs
         [RelayCommand]
         public async Task SaveTransaction()
         {
-            // Aguarda o ActionSheet de recorrência terminar antes de prosseguir
-            if (_awaitingRecurringAction)
-            {
-                _ = VMBase.ShowMessage("Aguarde", "Selecione uma opção para a transação recorrente antes de confirmar.");
-                return;
-            }
-
             if (!await VerrifyFields()) return;
 
             decimal amountValue = decimal.Parse(Amount, System.Globalization.NumberStyles.Currency, new System.Globalization.CultureInfo("pt-BR"));
@@ -445,9 +399,13 @@ namespace XpemFinancial.VMs
                 var existingTransaction = await transactionService.GetByIdAsync(TransactionId);
                 if (existingTransaction == null) return;
 
-                // Ocorrência recorrente: delega ao fluxo de edição de recorrência
+                // Ocorrência recorrente: pergunta o escopo no momento do Confirmar
                 if (existingTransaction.RecurringRuleId != null)
                 {
+                    var page = Application.Current!.Windows[0].Page!;
+                    bool confirmed = await HandleEditFlowAsync(existingTransaction, page);
+                    if (!confirmed) return;
+
                     var result = await EditRecurrencyAsync(existingTransaction, amountValue);
                     if (!result.Success)
                     {

@@ -34,11 +34,6 @@
         </Style>
     </ContentPage.Resources>
     <VerticalStackLayout Margin="10" VerticalOptions="Center">
-        <Label
-            FontFamily="Icons"
-            SemanticProperties.Description="Imagem da tela inicial do sistema"
-            Style="{StaticResource Icon}"
-            Text="{x:Static Icons:IconFont.User}" />
         <Components:RequiredEntry
             EntryValue="{Binding Name}"
             IsRequired="{Binding IsRequired}"
