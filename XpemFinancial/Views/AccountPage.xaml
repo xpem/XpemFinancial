@@ -1,41 +1,66 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="XpemFinancial.Views.AccountPage"
-                          x:Name="this"
-                xmlns:vms="clr-namespace:XpemFinancial.VMs"
-             xmlns:icons="clr-namespace:XpemFinancial.Resources"
-             xmlns:Components="clr-namespace:XpemFinancial.Components"
-                x:DataType="vms:AccountVM"
-             Title="Conta">
-    <ContentPage.Resources>
-
-    </ContentPage.Resources>
+<ContentPage
+    x:Class="XpemFinancial.Views.AccountPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:Components="clr-namespace:XpemFinancial.Components"
+    xmlns:icons="clr-namespace:XpemFinancial.Resources"
+    xmlns:vms="clr-namespace:XpemFinancial.VMs"
+    x:Name="this"
+    Title="Conta"
+    x:DataType="vms:AccountVM">
+    <ContentPage.Resources />
     <VerticalStackLayout Margin="10" HorizontalOptions="Start">
-        <Label 
-            Text="Balanço atual" />
+        <Label Text="Balanço atual" />
         <HorizontalStackLayout>
             <Components:CurrencyEntry
-            Text="{Binding CurrentBalance}"
-            IsEnabled="{Binding IsEditingBalance}"
-            MinimumWidthRequest="100"
-            VerticalOptions="Center" 
-            HorizontalOptions="Center" />
-            <Button Style="{StaticResource EditButtonOutline}" Command="{Binding EditBalanceCommand}" IsVisible="{Binding IsNotEditingBalance}">
+                Margin="0,0,10,0"
+                HorizontalOptions="Center"
+                IsEnabled="{Binding IsEditingBalance}"
+                MinimumWidthRequest="100"
+                Text="{Binding CurrentBalance}"
+                VerticalOptions="Center" />
+            <Button
+                Command="{Binding EditBalanceCommand}"
+                IsVisible="{Binding IsNotEditingBalance}"
+                Style="{StaticResource EditButtonOutline}">
                 <Button.ImageSource>
-                    <FontImageSource Size="15" FontFamily="Icons" Color="{x:StaticResource UpdateAction}" Glyph="{x:Static icons:IconFont.Pencil}" />
+                    <FontImageSource
+                        FontFamily="Icons"
+                        Glyph="{x:Static icons:IconFont.Pencil}"
+                        Size="15"
+                        Color="{x:StaticResource UpdateAction}" />
                 </Button.ImageSource>
             </Button>
         </HorizontalStackLayout>
-        <HorizontalStackLayout Spacing="5" Margin="0,10,0,0" VerticalOptions="Center" HorizontalOptions="Center" IsVisible="{Binding IsEditingBalance}">
-            <Button Text="Salvar" Style="{StaticResource PrimaryButtonOutline}" Command="{Binding SaveBalanceCommand}" >
+        <HorizontalStackLayout
+            Margin="0,10,0,0"
+            HorizontalOptions="Center"
+            IsVisible="{Binding IsEditingBalance}"
+            Spacing="5"
+            VerticalOptions="Center">
+            <Button
+                Command="{Binding SaveBalanceCommand}"
+                Style="{StaticResource PrimaryButtonOutline}"
+                Text="Salvar">
                 <Button.ImageSource>
-                    <FontImageSource Size="15" FontFamily="Icons" Glyph="{x:Static icons:IconFont.Check}" Color="{StaticResource PrimaryAction}" />
+                    <FontImageSource
+                        FontFamily="Icons"
+                        Glyph="{x:Static icons:IconFont.Check}"
+                        Size="15"
+                        Color="{StaticResource PrimaryAction}" />
                 </Button.ImageSource>
             </Button>
-            <Button Text="Cancelar" Command="{Binding CancelEditBalanceCommand}" Style="{StaticResource DeleteButtonOutline}">
+            <Button
+                Command="{Binding CancelEditBalanceCommand}"
+                Style="{StaticResource DeleteButtonOutline}"
+                Text="Cancelar">
                 <Button.ImageSource>
-                    <FontImageSource Size="15" FontFamily="Icons" Glyph="{x:Static icons:IconFont.Xmark}" Color="{StaticResource DeleteAction}" />
+                    <FontImageSource
+                        FontFamily="Icons"
+                        Glyph="{x:Static icons:IconFont.Xmark}"
+                        Size="15"
+                        Color="{StaticResource DeleteAction}" />
                 </Button.ImageSource>
             </Button>
         </HorizontalStackLayout>

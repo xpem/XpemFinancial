@@ -118,7 +118,7 @@ namespace XpemFinancial.VMs
         partial void OnSelectedTransactionTypeChanged(TransactionType value)
         {
             // Atualiza a cor com base no tipo de transação
-            TransactionTypeColor = value == TransactionType.Income ? "#2bbf69" : "#f75c5c";
+            TransactionTypeColor = value == TransactionType.Income ? "#2bbf69" : "#ef4444";
         }
 
 

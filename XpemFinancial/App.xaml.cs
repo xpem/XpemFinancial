@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Service;
 using Service.Account;
 using Service.Category;
@@ -21,11 +22,12 @@ namespace XpemFinancial
         private readonly IAccountService _accountService;
         private readonly IRecurringRuleService _recurringRuleService;
         private readonly SyncService _syncService;
+        private readonly ILogger<AppShell> _appShellLogger;
         public readonly string Version = "@0.2.5";
 
         public App(IUserService userService, IUserSessionService userSessionService, ICategoryService categoryService,
             IBuildDbService buildDbService, IAccountService accountService, IRecurringRuleService recurringRuleService,
-            SyncService syncService)
+            SyncService syncService, ILogger<AppShell> appShellLogger)
         {
             RegisterCrashHandlers();
 
@@ -38,6 +40,7 @@ namespace XpemFinancial
             _accountService = accountService;
             _recurringRuleService = recurringRuleService;
             _syncService = syncService;
+            _appShellLogger = appShellLogger;
 
             Application.Current!.UserAppTheme = AppTheme.Dark;
         }
@@ -99,7 +102,7 @@ namespace XpemFinancial
                 _syncService.StartThread();
 
             // Só navega para o Shell após tudo pronto
-            window.Page = new AppShell(appShellVM);
+            window.Page = new AppShell(appShellVM, _appShellLogger);
         }
     }
 }
