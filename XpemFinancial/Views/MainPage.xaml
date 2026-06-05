@@ -12,6 +12,7 @@
         <ResourceDictionary>
             <Utils:AmountToColorConverter x:Key="AmountToColorConverter" />
             <Utils:IsRecurringConverter x:Key="IsRecurringConverter" />
+            <Utils:IsFutureDateConverter x:Key="IsFutureDateConverter" />
         </ResourceDictionary>
         <Style x:Key="btnDefault" TargetType="Button">
             <Setter Property="BorderColor" Value="#9da9b9" />
@@ -246,6 +247,7 @@
                                         VerticalOptions="Center" />
                                     <Label
                                         Grid.Column="1"
+                                        FontAttributes="{Binding Date, Converter={StaticResource IsFutureDateConverter}}"
                                         HorizontalTextAlignment="Center"
                                         Text="{Binding Date, StringFormat='{0:dd/MM}'}"
                                         TextColor="#d6e0eb"

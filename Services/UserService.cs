@@ -20,6 +20,8 @@ namespace Service
         Task UpdateLastUpdate(int uid);
 
         Task<string?> RecoverPassword(string email);
+
+        Task UpdateIncludePreviousBalanceAsync(bool value, int uid);
     }
 
     public class UserService(Repo.IUserRepo userRepo, IUserApiRepo userApiRepo, IBuildDbService buildDbService) : IUserService
@@ -117,6 +119,9 @@ namespace Service
         }
 
         public async Task UpdateLastUpdate(int uid) => await userRepo.UpdateLastUpdateAsync(DateTime.Now, uid);
+
+        public async Task UpdateIncludePreviousBalanceAsync(bool value, int uid)
+            => await userRepo.UpdateIncludePreviousBalanceAsync(value, uid);
 
         public async Task<string?> RecoverPassword(string email)
         {

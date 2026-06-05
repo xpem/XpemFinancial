@@ -34,7 +34,7 @@
             <Label
                 Grid.Row="0"
                 Grid.Column="1"
-                FontFamily="EBGaramondRegular"
+                FontFamily="OpenSansRegular"
                 FontSize="18"
                 HorizontalOptions="Start"
                 LineBreakMode="TailTruncation"
@@ -44,7 +44,7 @@
             <Label
                 Grid.Row="1"
                 Grid.Column="1"
-                FontFamily="EBGaramondRegular"
+                FontFamily="OpenSansRegular"
                 FontSize="15"
                 HorizontalOptions="Start"
                 LineBreakMode="TailTruncation"

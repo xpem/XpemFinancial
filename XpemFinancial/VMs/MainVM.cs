@@ -17,7 +17,8 @@ namespace XpemFinancial.VMs
     public partial class MainVM(IAccountService accountService,
         ITransactionService transactionService,
         IUserSessionService userSessionService,
-        IRecurringRuleService recurringRuleService) : VMBase
+        IRecurringRuleService recurringRuleService,
+        IUserService userService) : VMBase
     {
         [ObservableProperty] private ObservableCollection<TransactionDTO> transactions;
         [ObservableProperty] private TransactionDTO selectedTransaction;
@@ -32,12 +33,17 @@ namespace XpemFinancial.VMs
         [ObservableProperty] private bool isRequired;
 
         private DateTime SelectedDate { get; set; }
+        private int? _currentUserId;
 
         partial void OnIncludePreviousBalanceChanged(bool value)
         {
             Total = value
                 ? (PreviousBalance + Income) + Expense
                 : Income + Expense;
+
+            // persiste a preferência de forma assíncrona (fire-and-forget intencional)
+            if (_currentUserId.HasValue)
+                _ = userService.UpdateIncludePreviousBalanceAsync(value, _currentUserId.Value);
         }
 
         partial void OnIsNullAccountChanged(bool value) => IsNotNullAccount = !value;
@@ -61,7 +67,8 @@ namespace XpemFinancial.VMs
             }
 
             SelectedDate = DateTime.Now;
-            IncludePreviousBalance = true;
+            _currentUserId = user.Id;
+            IncludePreviousBalance = user.IncludePreviousBalance;
 
             var existingAccount = await accountService.GetAsync();
             IsNullAccount = existingAccount == null;

@@ -15,7 +15,7 @@ namespace Service
 
     public class BuildDbService(IDbContextFactory<DbCtx> DbCtx) : IBuildDbService
     {
-        private const int CurrentDbVersion = 10;
+        private const int CurrentDbVersion = 11;
 
         public async Task InitAsync()
         {

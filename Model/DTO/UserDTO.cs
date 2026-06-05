@@ -20,6 +20,8 @@ namespace Model.DTO
 
         public DateTime LastUpdate { get; set; }
 
+        public bool IncludePreviousBalance { get; set; } = true;
+
         //por enquanto, um usuário só tem uma conta, mas futuramente pode ter mais de uma
         public AccountDTO? Account { get; set; }
 

@@ -12,6 +12,8 @@ namespace Repo
         Task UpdateAsync(UserDTO user);
 
         Task UpdateLastUpdateAsync(DateTime lastUpdate, int uid);
+
+        Task UpdateIncludePreviousBalanceAsync(bool value, int uid);
     }
 
     public class UserRepo(IDbContextFactory<DbCtx> dbCtx) : IUserRepo
@@ -42,6 +44,13 @@ namespace Repo
             using var context = dbCtx.CreateDbContext();
             await context.User.Where(x => x.Id == uid)
                 .ExecuteUpdateAsync(y => y.SetProperty(z => z.LastUpdate, lastUpdate));
+        }
+
+        public async Task UpdateIncludePreviousBalanceAsync(bool value, int uid)
+        {
+            using var context = dbCtx.CreateDbContext();
+            await context.User.Where(x => x.Id == uid)
+                .ExecuteUpdateAsync(y => y.SetProperty(z => z.IncludePreviousBalance, value));
         }
     }
 }
