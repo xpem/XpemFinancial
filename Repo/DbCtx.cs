@@ -16,5 +16,7 @@ namespace Repo
         public DbSet<AccountDTO> Account => Set<AccountDTO>();
 
         public DbSet<RecurringRuleDTO> RecurringRule => Set<RecurringRuleDTO>();
+
+        public DbSet<SyncCursorDTO> SyncCursor => Set<SyncCursorDTO>();
     }
 }

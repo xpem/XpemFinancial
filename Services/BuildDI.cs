@@ -49,6 +49,7 @@ namespace Service
             services.AddTransient<ITransactionRepo, TransactionRepo>();
             services.AddTransient<ICategoryRepo, CategoryRepo>();
             services.AddTransient<IRecurringRuleRepo, RecurringRuleRepo>();
+            services.AddTransient<ISyncCursorRepo, SyncCursorRepo>();
         }
 
         public static void AddApiRepo(this IServiceCollection services)

@@ -4,7 +4,6 @@ using Model.Req;
 using Model.Resp;
 using Repo;
 using Service.Transaction;
-
 namespace Service.Recurring
 {
     public interface IRecurringRuleService
@@ -23,7 +22,8 @@ namespace Service.Recurring
         IRecurringScheduler recurringScheduler,
         IRecurringRuleApiRepo recurringRuleApiRepo,
         ITransactionService transactionService,
-        ICategoryRepo categoryRepo) : IRecurringRuleService
+        ICategoryRepo categoryRepo,
+        ISyncCursorRepo syncCursorRepo) : IRecurringRuleService
     {
         public async Task<ServiceResp> SaveAsync(RecurringRuleDTO rule, bool isOnline)
         {
@@ -228,7 +228,7 @@ namespace Service.Recurring
         }
 
         public async Task<DateTime> GetLastUpdatedAtAsync()
-            => await recurringRuleRepo.GetMaxUpdatedAtAsync();
+            => await syncCursorRepo.GetAsync(SyncCursorKeys.RecurringRule);
 
         public async Task PullAsync(int uid, DateTime lastUpdatedAt)
         {
@@ -272,6 +272,12 @@ namespace Service.Recurring
             }
 
             await recurringScheduler.GeneratePendingAsync(upsertedRules);
+
+            // Advance the cursor using the highest server-side UpdatedAt in this batch.
+            DateTime maxServerTs = results.Max(r => r.UpdatedAt);
+            DateTime current = await syncCursorRepo.GetAsync(SyncCursorKeys.RecurringRule);
+            if (maxServerTs > current)
+                await syncCursorRepo.SaveAsync(SyncCursorKeys.RecurringRule, maxServerTs);
         }
 
         // ── helpers ──────────────────────────────────────────────────────────

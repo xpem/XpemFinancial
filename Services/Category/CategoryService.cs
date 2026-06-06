@@ -14,12 +14,12 @@ namespace Service.Category
         Task PullAsync(int uid, DateTime lastUpdatedAt);
     }
 
-    public class CategoryService(ICategoryRepo categoryRepo, ICategoryApiRepo categoryApiRepo) : ICategoryService
+    public class CategoryService(ICategoryRepo categoryRepo, ICategoryApiRepo categoryApiRepo, ISyncCursorRepo syncCursorRepo) : ICategoryService
     {
         private static readonly JsonSerializerOptions _jsonOptions = new() { PropertyNameCaseInsensitive = true };
 
         public async Task<DateTime> GetLastUpdatedAtAsync()
-            => await categoryRepo.GetMaxUpdatedAtAsync();
+            => await syncCursorRepo.GetAsync(SyncCursorKeys.Category);
 
         public async Task PullAsync(int uid, DateTime lastUpdatedAt)
         {
@@ -30,7 +30,7 @@ namespace Service.Category
 
             List<TransactionCategoryApiRes>? apiRes = JsonSerializer.Deserialize<List<TransactionCategoryApiRes>>(apiResp.Content, _jsonOptions);
 
-            if (apiRes is null) return;
+            if (apiRes is null || apiRes.Count == 0) return;
 
             foreach (var category in apiRes)
             {
@@ -47,6 +47,12 @@ namespace Service.Category
                     UserId = uid
                 });
             }
+
+            // Advance the cursor to the highest server-side UpdatedAt in this batch.
+            DateTime maxServerTs = apiRes.Max(c => c.UpdatedAt);
+            DateTime current = await syncCursorRepo.GetAsync(SyncCursorKeys.Category);
+            if (maxServerTs > current)
+                await syncCursorRepo.SaveAsync(SyncCursorKeys.Category, maxServerTs);
         }
 
         public async Task<List<CategoryDTO>> GetAllAsync()

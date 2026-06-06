@@ -7,7 +7,6 @@ using Repo;
 using System;
 using System.Collections.Generic;
 using System.Text;
-
 namespace Service.Transaction
 {
     public interface ITransactionService
@@ -28,11 +27,13 @@ namespace Service.Transaction
         Task<List<TransactionDescriptionRes>> GetDescriptionSuggestionsAsync(string description);
     }
 
-    public class TransactionService(ITransactionRepo transactionRepo, ITransactionApiRepo transactionApiRepo, ICategoryRepo categoryRepo, IAccountRepo accountRepo) : ITransactionService
+    public class TransactionService(ITransactionRepo transactionRepo, ITransactionApiRepo transactionApiRepo, ICategoryRepo categoryRepo, IAccountRepo accountRepo, ISyncCursorRepo syncCursorRepo) : ITransactionService
     {
         public async Task<DateTime> GetLastUpdatedAtAsync()
         {
-            return await transactionRepo.GetMaxUpdatedAtAsync();
+            // Use the server-side cursor so the delta query is anchored to the server's clock,
+            // not the device clock (avoids skipping records when the device clock is behind).
+            return await syncCursorRepo.GetAsync(SyncCursorKeys.Transaction);
         }
 
         public async Task ApplyFromApiAsync(TransactionDTO transaction)
@@ -284,6 +285,14 @@ namespace Service.Transaction
 
                 await ApplyFromApiAsync(dto);
             }
+
+            // Advance the cursor to the highest server-side UpdatedAt in this batch.
+            // Using values from the server response (not DateTime.UtcNow) keeps the anchor
+            // on the server's clock regardless of any device clock skew.
+            DateTime maxServerTs = apiTransactions.Max(t => t.UpdatedAt);
+            DateTime current = await syncCursorRepo.GetAsync(SyncCursorKeys.Transaction);
+            if (maxServerTs > current)
+                await syncCursorRepo.SaveAsync(SyncCursorKeys.Transaction, maxServerTs);
         }
 
         public async Task<List<TransactionDescriptionRes>> GetDescriptionSuggestionsAsync(string description)

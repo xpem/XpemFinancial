@@ -2,7 +2,6 @@
 using Model.DTO;
 using Model.Req;
 using Repo;
-
 namespace Service.Account
 {
     public interface IAccountService
@@ -18,12 +17,13 @@ namespace Service.Account
     public class AccountService(
         IAccountRepo accountRepo,
         ITransactionRepo transactionRepo,
-        IAccountApiRepo accountApiRepo) : IAccountService
+        IAccountApiRepo accountApiRepo,
+        ISyncCursorRepo syncCursorRepo) : IAccountService
     {
         public async Task<AccountDTO?> GetAsync() => await accountRepo.GetAsync();
 
         public async Task<DateTime> GetLastUpdatedAtAsync()
-            => await accountRepo.GetMaxUpdatedAtAsync();
+            => await syncCursorRepo.GetAsync(SyncCursorKeys.Account);
 
         public async Task PullAsync(int uid, DateTime lastUpdatedAt)
         {
@@ -32,6 +32,11 @@ namespace Service.Account
             if (apiAccount is null) return;
 
             await UpsertFromApiAsync(uid, apiAccount.Id, apiAccount.UpdatedAt, apiAccount.Inactive);
+
+            // Advance the cursor to the server-side UpdatedAt of the returned account record.
+            DateTime current = await syncCursorRepo.GetAsync(SyncCursorKeys.Account);
+            if (apiAccount.UpdatedAt > current)
+                await syncCursorRepo.SaveAsync(SyncCursorKeys.Account, apiAccount.UpdatedAt);
         }
 
         public async Task UpsertFromApiAsync(int uid, int externalId, DateTime updatedAt, bool inactive)
