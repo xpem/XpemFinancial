@@ -7,6 +7,7 @@
     xmlns:Icons="clr-namespace:XpemFinancial.Resources"
     xmlns:Utils="clr-namespace:XpemFinancial.Utils"
     xmlns:model="clr-namespace:Model.DTO;assembly=Model"
+    xmlns:req="clr-namespace:Model.Req;assembly=Model"
     xmlns:res="clr-namespace:Model.Res;assembly=Model"
     xmlns:vms="clr-namespace:XpemFinancial.VMs"
     x:Name="this"
@@ -137,29 +138,12 @@
                     </VerticalStackLayout>
                 </Grid>
                 <Components:RequiredEntry
+                    x:Name="DescriptionEntry"
                     EntryValue="{Binding Description}"
                     IsRequired="{Binding IsRequired}"
                     IsTextPredictionEnabled="True"
-                    LabelText="Descrição" />
-
-                <CollectionView
-                    x:Name="ListaSugestoes"
-                    BackgroundColor="{StaticResource InputBackground}"
-                    IsVisible="{Binding SuggestionsVisible}"
-                    ItemsSource="{Binding DescriptionSuggestions}"
-                    SelectionChanged="OnSugestaoSelected"
-                    SelectionMode="Single">
-                    <CollectionView.ItemTemplate>
-                        <DataTemplate x:DataType="res:TransactionDescriptionRes">
-                            <Grid Padding="10,8">
-                                <Label
-                                    FontSize="15"
-                                    Text="{Binding Description}"
-                                    TextColor="White" />
-                            </Grid>
-                        </DataTemplate>
-                    </CollectionView.ItemTemplate>
-                </CollectionView>
+                    LabelText="Descrição"
+                    SizeChanged="OnDescriptionEntrySizeChanged" />
 
                 <Label Padding="0,10,0,0" Text="Valor" />
                 <Components:CurrencyEntry Text="{Binding Amount}" />
@@ -210,10 +194,53 @@
                         Text="{Binding TotalAmountInstallments}"
                         VerticalOptions="Center" />
                 </HorizontalStackLayout>
+                <!--  Escopo de edição — visível apenas ao editar ocorrência recorrente  -->
+                <Border
+                    Margin="0,10,0,0"
+                    Padding="10"
+                    IsVisible="{Binding IsRecurring}"
+                    Stroke="{StaticResource PrimaryAction}">
+                    <VerticalStackLayout Spacing="4">
+                        <Label
+                            FontAttributes="Bold"
+                            FontSize="13"
+                            Text="Editar recorrência"
+                            TextColor="{StaticResource White}" />
+                        <HorizontalStackLayout RadioButtonGroup.GroupName="EditScope" RadioButtonGroup.SelectedValue="{Binding SelectedEditScope}">
+                            <RadioButton
+                                Margin="0,0,16,0"
+                                Content="Só esta"
+                                Style="{StaticResource RadioButton}"
+                                Value="{x:Static req:EditScope.ThisOnly}" />
+                            <RadioButton
+                                Margin="0,0,16,0"
+                                Content="Esta e futuras"
+                                Style="{StaticResource RadioButton}"
+                                Value="{x:Static req:EditScope.ThisAndFuture}" />
+                            <RadioButton
+                                Content="Todas"
+                                Style="{StaticResource RadioButton}"
+                                Value="{x:Static req:EditScope.All}" />
+                        </HorizontalStackLayout>
+                    </VerticalStackLayout>
+                </Border>
+
                 <Label Padding="0,10,0,0" Text="Notas" />
                 <Editor HeightRequest="100" Text="{Binding Note}" />
             </VerticalStackLayout>
         </ScrollView>
+
+        <!--  Dismiss layer: sits above the ScrollView (z=2). Tapping anywhere outside the suggestion list dismisses it.  -->
+        <BoxView
+            Grid.Row="0"
+            BackgroundColor="Transparent"
+            InputTransparent="False"
+            IsVisible="{Binding SuggestionsVisible}">
+            <BoxView.GestureRecognizers>
+                <TapGestureRecognizer Command="{Binding DismissSuggestionsCommand}" />
+            </BoxView.GestureRecognizers>
+        </BoxView>
+
         <Button
             x:Name="CreateTransactionButton"
             Margin="0,0,10,10"
@@ -250,5 +277,31 @@
                 </DataTrigger>
             </Button.Triggers>-->
         </Button>
+        <!--
+            Suggestion list floats above the dismiss BoxView (declared last = highest z-order).
+            It is positioned at the top of the grid and sized to show only the list items,
+            so taps outside its bounds hit the BoxView and dismiss it.
+        -->
+        <CollectionView
+            x:Name="ListaSugestoes"
+            Grid.Row="0"
+            BackgroundColor="{StaticResource InputBackground}"
+            IsVisible="{Binding SuggestionsVisible}"
+            ItemsSource="{Binding DescriptionSuggestions}"
+            MaximumHeightRequest="200"
+            SelectionChanged="OnSugestaoSelected"
+            SelectionMode="Single"
+            VerticalOptions="Start">
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="res:TransactionDescriptionRes">
+                    <Grid Padding="10,8">
+                        <Label
+                            FontSize="15"
+                            Text="{Binding Description}"
+                            TextColor="White" />
+                    </Grid>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
     </Grid>
 </ContentPage>

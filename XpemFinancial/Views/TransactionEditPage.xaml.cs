@@ -9,6 +9,7 @@ public partial class TransactionEditPage : ContentPage
     {
         InitializeComponent();
         BindingContext = transactionEditVM;
+        transactionEditVM.PropertyChanged += OnVMPropertyChanged;
     }
 
     protected override void OnAppearing()
@@ -41,5 +42,32 @@ public partial class TransactionEditPage : ContentPage
         var vm = (TransactionEditVM)BindingContext;
         await vm.ApplySuggestion(item);
         ((CollectionView)sender).SelectedItem = null;
+    }
+
+    private void OnDescriptionEntrySizeChanged(object sender, EventArgs e)
+    {
+        PositionSuggestionList();
+    }
+
+    // Reposition whenever the suggestion list becomes visible so the scroll offset is current.
+    private void OnVMPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(TransactionEditVM.SuggestionsVisible))
+            PositionSuggestionList();
+    }
+
+    private void PositionSuggestionList()
+    {
+        // Alternative approach using Bounds property
+        var rootGrid = ListaSugestoes.Parent as VisualElement;
+        if (rootGrid is null)
+            return;
+
+        // Use the Y position from the Bounds property
+        var locationY = DescriptionEntry.Y;
+
+        // Place the list immediately below the DescriptionEntry,
+        // matching the ScrollView's horizontal margin (10).
+        ListaSugestoes.Margin = new Thickness(10, locationY + DescriptionEntry.Height, 10, 0);
     }
 }

@@ -180,6 +180,21 @@ namespace Service.Transaction
 
         private async Task PushAsync(TransactionDTO transaction)
         {
+            // AccountExternalId is [NotMapped] — it is not persisted in SQLite and is null
+            // when a scheduler-generated occurrence is loaded from the local database.
+            // Resolve it from the account record before building the API request.
+            int accountExternalId = transaction.AccountExternalId
+                ?? (await accountRepo.GetAsync())?.ExternalId
+                ?? throw new InvalidOperationException(
+                    $"Cannot push transaction {transaction.Id}: account has no ExternalId. " +
+                    "Ensure the account was synced before pushing transactions.");
+
+            // CategoryExternalId is also [NotMapped]. Use the navigation property loaded by
+            // GetByIdAsync (which does .Include(Category)), or fall back to CategoryExternalId
+            // if already set (e.g. on a freshly created transaction that hasn't been reloaded).
+            int? categoryExternalId = transaction.CategoryExternalId
+                ?? transaction.Category?.ExternalId;
+
             TransactionReq req = new()
             {
                 UpdatedAt = transaction.UpdatedAt,
@@ -191,10 +206,10 @@ namespace Service.Transaction
                 TotalInstallments = transaction.TotalInstallments,
                 InstallmentId = transaction.InstallmentId,
                 Installment = transaction.Installment,
-                CategoryId = transaction.CategoryExternalId,
+                CategoryId = categoryExternalId,
                 Type = transaction.Type,
                 Note = transaction.Note,
-                AccountId = transaction.AccountExternalId ?? 0,
+                AccountId = accountExternalId,
                 RecurringRuleId = transaction.RecurringRuleId,
                 IsCustomized = transaction.IsCustomized,
             };

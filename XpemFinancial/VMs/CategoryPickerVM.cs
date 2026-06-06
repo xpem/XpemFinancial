@@ -75,7 +75,7 @@ public partial class CategoryPickerVM(ICategoryService categoryService, IUserSes
         });
     }
 
-    private static List<CategoryDTO> FilterCategories(string searchText)
+    private List<CategoryDTO> FilterCategories(string searchText)
     {
         var normalizedSearch = RemoveDiacritics(searchText);
         var result = new List<CategoryDTO>(_cachedCategories.Count);

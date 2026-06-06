@@ -237,7 +237,7 @@
                     <VisualState x:Name="Normal" />
                     <VisualState x:Name="Disabled">
                         <VisualState.Setters>
-                            <Setter Property="TextColor" Value="{StaticResource Gray600}" />
+                            <Setter Property="TextColor" Value="{StaticResource Gray400}" />
                         </VisualState.Setters>
                     </VisualState>
                 </VisualStateGroup>

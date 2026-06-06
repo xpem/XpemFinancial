@@ -61,12 +61,27 @@ namespace XpemFinancial.VMs
 
         [ObservableProperty] private string note;
 
-        private EditScope EditScope;
+        /// <summary>
+        /// Scope selected via the inline radio buttons when editing a recurring occurrence.
+        /// Defaults to ThisOnly — the safest option.
+        /// </summary>
+        [ObservableProperty] private EditScope selectedEditScope = EditScope.ThisOnly;
+
+        /// <summary>
+        /// True when the transaction being edited belongs to a recurring rule.
+        /// Drives the visibility of the edit-scope radio button panel.
+        /// </summary>
+        public bool IsRecurring { get; private set; }
+
+        // Suppresses description suggestion search while the form is being populated
+        // programmatically (ApplyQueryAttributes). Avoids showing the dropdown on page open.
+        private bool _isLoading;
 
         #endregion
 
         partial void OnDescriptionChanged(string value)
         {
+            if (_isLoading) return;
             _ = LoadDescriptionSuggestionsAsync(value);
         }
 
@@ -108,6 +123,13 @@ namespace XpemFinancial.VMs
             SuggestionsVisible = false;
         }
 
+        [RelayCommand]
+        private void DismissSuggestions()
+        {
+            DescriptionSuggestions.Clear();
+            SuggestionsVisible = false;
+        }
+
         private async Task<string> ResolveCategoryDisplayNameAsync(CategoryDTO category)
         {
             if (category == null) return "Sem Categoria";
@@ -121,7 +143,7 @@ namespace XpemFinancial.VMs
         partial void OnSelectedTransactionTypeChanged(TransactionType value)
         {
             // Atualiza a cor com base no tipo de transação
-            TransactionTypeColor = value == TransactionType.Income ? "#2bbf69" : "#ef4444";
+            TransactionTypeColor = value == TransactionType.Income ? "#198754" : "#ef4444";
             OnPropertyChanged(nameof(IsIncome));
             OnPropertyChanged(nameof(TitleIcon));
         }
@@ -164,27 +186,32 @@ namespace XpemFinancial.VMs
 
                 if (transaction != null)
                 {
-                    IsEditing = true;
-                    TransactionId = transactionId;
-                    TransactionDate = transaction.Date;
-                    Description = transaction.Description;
-                    Amount = transaction.Amount.ToString("C", new System.Globalization.CultureInfo("pt-BR"));
-                    SelectedTransactionType = transaction.Type;
-                    SelectedRepetition = transaction.Repetition;
-                    Note = transaction.Note ?? string.Empty;
-                    NumberOfInstallments = transaction.TotalInstallments ?? 0;
-                    InitialInstallments = transaction.Installment ?? 0;
-                    SelectedCategory = transaction.Category ?? new CategoryDTO { Id = 1, Name = "Sem Categoria" };
-                    SelectedCategoryName = SelectedCategory.Name;
-                    _ = ResolveCategoryDisplayNameAsync(SelectedCategory).ContinueWith(t => SelectedCategoryName = t.Result, TaskScheduler.FromCurrentSynchronizationContext());
+                    _isLoading = true;
+                    try
+                    {
+                        IsEditing = true;
+                        TransactionId = transactionId;
+                        TransactionDate = transaction.Date;
+                        Description = transaction.Description;
+                        Amount = transaction.Amount.ToString("C", new System.Globalization.CultureInfo("pt-BR"));
+                        SelectedTransactionType = transaction.Type;
+                        SelectedRepetition = transaction.Repetition;
+                        Note = transaction.Note ?? string.Empty;
+                        NumberOfInstallments = transaction.TotalInstallments ?? 0;
+                        InitialInstallments = transaction.Installment ?? 0;
+                        SelectedCategory = transaction.Category ?? new CategoryDTO { Id = 1, Name = "Sem Categoria" };
+                        SelectedCategoryName = SelectedCategory.Name;
+                        _ = ResolveCategoryDisplayNameAsync(SelectedCategory).ContinueWith(t => SelectedCategoryName = t.Result, TaskScheduler.FromCurrentSynchronizationContext());
 
-                    if (transaction.Type == TransactionType.Income)
-                    {
-                        TransactionTypeColor = "#2bbf69";
+                        IsRecurring = transaction.RecurringRuleId.HasValue;
+                        SelectedEditScope = EditScope.ThisOnly;
+                        OnPropertyChanged(nameof(IsRecurring));
+
+                        TransactionTypeColor = transaction.Type == TransactionType.Income ? "#2bbf69" : "#f75c5c";
                     }
-                    else
+                    finally
                     {
-                        TransactionTypeColor = "#f75c5c";
+                        _isLoading = false;
                     }
                 }
             }
@@ -194,29 +221,6 @@ namespace XpemFinancial.VMs
                 TransactionDate = DateTime.Now;
                 SelectedTransactionType = TransactionType.Expense;
             }
-        }
-
-        private async Task<bool> HandleEditFlowAsync(TransactionDTO transaction, Page page)
-        {
-            string? scope = await page.DisplayActionSheetAsync(
-                "Como deseja editar?",
-                "Cancelar",
-                null,
-                "Editar apenas esta ocorrência",
-                "Editar esta e as futuras",
-                "Editar todas");
-
-            if (scope == null || scope == "Cancelar") return false;
-
-            EditScope = scope switch
-            {
-                "Editar apenas esta ocorrência" => EditScope.ThisOnly,
-                "Editar esta e as futuras" => EditScope.ThisAndFuture,
-                "Editar todas" => EditScope.All,
-                _ => EditScope.ThisOnly,
-            };
-
-            return true;
         }
 
         private async Task HandleDeleteRecurringAsync(TransactionDTO transaction, Page page)
@@ -399,13 +403,9 @@ namespace XpemFinancial.VMs
                 var existingTransaction = await transactionService.GetByIdAsync(TransactionId);
                 if (existingTransaction == null) return;
 
-                // Ocorrência recorrente: pergunta o escopo no momento do Confirmar
+                // Ocorrência recorrente: usa o escopo selecionado nos radio buttons
                 if (existingTransaction.RecurringRuleId != null)
                 {
-                    var page = Application.Current!.Windows[0].Page!;
-                    bool confirmed = await HandleEditFlowAsync(existingTransaction, page);
-                    if (!confirmed) return;
-
                     var result = await EditRecurrencyAsync(existingTransaction, amountValue);
                     if (!result.Success)
                     {
@@ -514,7 +514,7 @@ namespace XpemFinancial.VMs
             {
                 TransactionId = existingTransaction.Id,
                 RecurringRuleId = existingTransaction.RecurringRuleId!.Value,
-                Scope = EditScope,
+                Scope = SelectedEditScope,
                 UpdatedRule = updatedRule,
             };
 
