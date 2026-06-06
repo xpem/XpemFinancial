@@ -31,5 +31,17 @@ namespace Model.Resp.Api
         public string? Note { get; set; }
 
         public int AccountId { get; set; }
+
+        /// <summary>
+        /// Stable identifier of the recurring rule that originated this occurrence.
+        /// Populated by the server when the occurrence is a customized exception.
+        /// </summary>
+        public Guid? RecurringRuleId { get; set; }
+
+        /// <summary>
+        /// True when this occurrence has been individually edited and must survive
+        /// scheduler regeneration on any device.
+        /// </summary>
+        public bool IsCustomized { get; set; }
     }
 }

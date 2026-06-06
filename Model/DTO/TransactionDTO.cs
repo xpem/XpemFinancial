@@ -49,6 +49,14 @@ namespace Model.DTO
         public UserDTO User { get; set; }
 
         public int? ExternalId { get; set; }
+
+        /// <summary>
+        /// True when this recurring occurrence has been individually edited by the user
+        /// ("Apenas esta ocorrência"). Customized occurrences are physical transactions that
+        /// must be synced with the server so that other devices do not overwrite them with
+        /// a freshly generated projection.
+        /// </summary>
+        public bool IsCustomized { get; set; }
     }
 
     public enum TransactionType

@@ -38,7 +38,6 @@
             IsPassword="True"
             IsRequired="{Binding IsRequired}"
             LabelText="Senha" />
-
         <Button
             Margin="0,10,0,20"
             Command="{Binding SignInCommand}"

@@ -118,7 +118,16 @@ namespace Service.Transaction
             transaction.UpdatedAt = DateTime.Now;
             await transactionRepo.Update(transaction);
 
-            if (isOnline && transaction.ExternalId.HasValue)
+            if (!isOnline) return;
+
+            // Customized occurrence without a server record yet → POST to create it.
+            if (transaction.IsCustomized && !transaction.ExternalId.HasValue)
+            {
+                await PushAsync(transaction);
+                return;
+            }
+
+            if (transaction.ExternalId.HasValue)
             {
                 TransactionReq req = new()
                 {
@@ -135,6 +144,8 @@ namespace Service.Transaction
                     Type = transaction.Type,
                     Note = transaction.Note,
                     AccountId = transaction.AccountId ?? 0,
+                    RecurringRuleId = transaction.RecurringRuleId,
+                    IsCustomized = transaction.IsCustomized,
                 };
 
                 await transactionApiRepo.PutAsync(transaction.ExternalId.Value, req);
@@ -183,6 +194,8 @@ namespace Service.Transaction
                 Type = transaction.Type,
                 Note = transaction.Note,
                 AccountId = transaction.AccountExternalId ?? 0,
+                RecurringRuleId = transaction.RecurringRuleId,
+                IsCustomized = transaction.IsCustomized,
             };
 
             int serverId = await transactionApiRepo.PostAsync(req);
@@ -265,6 +278,8 @@ namespace Service.Transaction
                     CreatedAt = t.CreatedAt,
                     UpdatedAt = t.UpdatedAt,
                     UserId = uid,
+                    RecurringRuleId = t.RecurringRuleId,
+                    IsCustomized = t.IsCustomized,
                 };
 
                 await ApplyFromApiAsync(dto);

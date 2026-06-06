@@ -32,5 +32,17 @@ namespace Model.Req
         public string? Note { get; set; }
 
         public int AccountId { get; set; }
+
+        /// <summary>
+        /// Stable identifier of the recurring rule that originated this occurrence.
+        /// Sent to the server so it can associate the customized occurrence with its rule.
+        /// </summary>
+        public Guid? RecurringRuleId { get; set; }
+
+        /// <summary>
+        /// True when this occurrence has been individually edited and must not be
+        /// overwritten by scheduler projections on any device.
+        /// </summary>
+        public bool IsCustomized { get; set; }
     }
 }

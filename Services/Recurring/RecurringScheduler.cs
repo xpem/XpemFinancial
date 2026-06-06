@@ -37,16 +37,17 @@ namespace Service.Recurring
 
                 // Fetch existing occurrences for this rule
                 var existing = await transactionService.GetByRecurringRuleIdAsync(rule.RecurringRuleId);
+
+                // Dates already covered by a projection OR a customized exception — skip both.
+                // Customized occurrences are user-edited exceptions that must never be overwritten
+                // by a freshly generated projection.
                 var existingDates = new HashSet<DateTime>(
                     existing.Select(t => t.Date.Date)
                 );
 
-                // Generate missing occurrences in ascending order (Requirement 2.5)
-                // SYNC NOTE: occurrences generated here are local-only projections and should NOT
-                // be synchronized with the backend. They are regenerated from the RecurringRule on
-                // any device via PullAsync + scheduler. The exception is occurrences edited with
-                // EditScope.ThisOnly — those carry user-specific changes and MUST be synced.
-                // When implementing transaction sync, use a flag (e.g. IsCustomized) to distinguish them.
+                // Generate missing occurrences in ascending order.
+                // Dates already in existingDates are skipped — this covers both regular projections
+                // and customized exceptions pulled from the server, so neither is ever overwritten.
                 foreach (var date in expectedDates)
                 {
                     if (existingDates.Contains(date.Date))
