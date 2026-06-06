@@ -1,15 +1,11 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Model;
 using Model.DTO;
 using Service;
 using Service.Account;
 using Service.Recurring;
 using Service.Transaction;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Text;
 using XpemFinancial.Views;
 
 namespace XpemFinancial.VMs
