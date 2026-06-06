@@ -9,9 +9,11 @@ namespace XpemFinancial.VMs;
 
 public partial class CategoryPickerVM(ICategoryService categoryService, IUserSessionService userSessionService) : VMBase
 {
-    private static List<CategoryDTO> _cachedCategories;
-    // Nomes normalizados pré-computados para evitar RemoveDiacritics a cada keystroke
-    private static List<string> _cachedNormalizedNames;
+    // Instance-level cache: scoped to this navigation instance.
+    // Declared static previously, which caused stale data after logout/login with a different account.
+    private List<CategoryDTO> _cachedCategories = [];
+    // Pre-computed normalised names to avoid running RemoveDiacritics on every keystroke.
+    private List<string> _cachedNormalizedNames = [];
     private const int BatchSize = 20;
     private List<CategoryDTO> _currentSource = [];
     private int _loadedCount = 0;
@@ -99,14 +101,12 @@ public partial class CategoryPickerVM(ICategoryService categoryService, IUserSes
 
     public async Task InitializeAsync()
     {
-        if (_cachedCategories == null)
+        if (_cachedCategories.Count == 0)
         {
             _cachedCategories = await categoryService.GetAllAsync();
-            // Pré-computa os nomes normalizados uma única vez
+            // Pre-compute normalised names once per navigation instance.
             _cachedNormalizedNames = _cachedCategories.Select(x => RemoveDiacritics(x.Name)).ToList();
         }
-
-        if (Categories.Count > 0) return;
 
         await ReloadSourceAsync(_cachedCategories);
     }

@@ -39,9 +39,25 @@ namespace Service
         {
             await using var context = await DbCtx.CreateDbContextAsync();
 
-            // Recria o banco do zero em vez de remover tabela por tabela
-            await context.Database.EnsureDeletedAsync();
-            await context.Database.EnsureCreatedAsync();
+            // EnsureDeletedAsync tries to delete the .db file, which fails on Android/iOS
+            // when EF's connection pool still holds an open handle to it.
+            // Instead, wipe every table inside a single transaction — safe with live connections.
+            await using var tx = await context.Database.BeginTransactionAsync();
+
+            // Order matters: children before parents to satisfy FK constraints.
+            await context.Database.ExecuteSqlRawAsync("DELETE FROM \"SyncCursor\"");
+            await context.Database.ExecuteSqlRawAsync("DELETE FROM \"Transaction\"");
+            await context.Database.ExecuteSqlRawAsync("DELETE FROM \"RecurringRule\"");
+            await context.Database.ExecuteSqlRawAsync("DELETE FROM \"Account\"");
+            await context.Database.ExecuteSqlRawAsync("DELETE FROM \"Category\"");
+            await context.Database.ExecuteSqlRawAsync("DELETE FROM \"User\"");
+            await context.Database.ExecuteSqlRawAsync("DELETE FROM \"VersionDbTables\"");
+
+            await tx.CommitAsync();
+
+            // Re-insert the version row so InitAsync does not drop/recreate on the next launch.
+            context.VersionDbTables.Add(new VersionDbTablesDTO { Id = 0, Version = CurrentDbVersion });
+            await context.SaveChangesAsync();
         }
     }
 }
