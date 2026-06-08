@@ -18,5 +18,7 @@ namespace Model.DTO
         public UserDTO User { get; set; }
 
         public bool SystemDefault { get; set; }
+
+        public string? Icon { get; set; } = "House";
     }
 }

@@ -27,6 +27,7 @@
     <ContentPage.Resources>
         <utils:BoldConverter x:Key="BoldConverter" />
         <utils:IndentConverter x:Key="IndentConverter" />
+        <utils:IconResolver x:Key="IconResolver" />
     </ContentPage.Resources>
     <Grid RowDefinitions="Auto, *">
 
@@ -68,15 +69,23 @@
             SelectionMode="Single">
             <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="Models:CategoryDTO">
-                    <Grid Padding="15">
+                    <Grid Padding="15" ColumnDefinitions="Auto, *" ColumnSpacing="12">
                         <Grid.GestureRecognizers>
                             <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type vms:CategoryPickerVM}}, Path=SelectItemCommand}" CommandParameter="{Binding .}" />
                         </Grid.GestureRecognizers>
                         <Label
+                            Grid.Column="0"
+                            FontFamily="Icons"
+                            FontSize="16"
+                            Text="{Binding Icon, Converter={StaticResource IconResolver}}"
+                            VerticalOptions="Center" />
+                        <Label
+                            Grid.Column="1"
                             Margin="{Binding IsMainCategory, Converter={StaticResource IndentConverter}}"
                             FontAttributes="{Binding IsMainCategory, Converter={StaticResource BoldConverter}}"
                             FontSize="16"
-                            Text="{Binding Name}" />
+                            Text="{Binding Name}"
+                            VerticalOptions="Center" />
                         <VisualStateManager.VisualStateGroups>
                             <VisualStateGroup Name="CommonStates">
                                 <VisualState Name="Normal" />
