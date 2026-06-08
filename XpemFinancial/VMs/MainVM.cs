@@ -109,7 +109,7 @@ namespace XpemFinancial.VMs
         {
             SelectedDate = SelectedDate.AddMonths(1);
 
-            if (SelectedDate > DateTime.Today.AddMonths(3))
+            if (SelectedDate > DateTime.Today.AddMonths(6))
                 await recurringRuleService.RunSchedulerAsync(SelectedDate);
 
             await LoadTransactionsForMonthAsync(SelectedDate);

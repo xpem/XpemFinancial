@@ -46,7 +46,7 @@
     <Color x:Key="Transfer">#6cc8ef</Color>
     <Color x:Key="PrimaryAction">#3ca7f7</Color>
     <Color x:Key="UpdateAction">#ffcc00</Color>
-    <Color x:Key="DeleteAction">#ff0000</Color>
+    <Color x:Key="DeleteAction">#dc2626</Color>
     <Color x:Key="PageBackground">#10151e</Color>
     <Color x:Key="InputBackground">#2b3548</Color>
     <Color x:Key="HeaderBackground">#232c39</Color>
