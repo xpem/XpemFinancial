@@ -4,6 +4,7 @@ using Model.DTO;
 using Service;
 using Service.Category;
 using XpemFinancial.Utils;
+using XpemFinancial.Views;
 
 namespace XpemFinancial.VMs;
 
@@ -29,6 +30,9 @@ public partial class CategoryPickerVM(ICategoryService categoryService, IUserSes
 
     // Separado do IsBusy para não esconder a lista nem desabilitar o SearchBar durante a busca
     [ObservableProperty] private bool isSearching;
+
+    // Sinaliza que o cache deve ser recarregado na próxima navegação (ex: após criar categoria)
+    private bool _needsRefresh = false;
 
     /// <summary>
     /// Filtra a lista de categorias conforme o texto de busca é alterado.
@@ -101,11 +105,12 @@ public partial class CategoryPickerVM(ICategoryService categoryService, IUserSes
 
     public async Task InitializeAsync()
     {
-        if (_cachedCategories.Count == 0)
+        if (_cachedCategories.Count == 0 || _needsRefresh)
         {
             _cachedCategories = await categoryService.GetAllAsync();
             // Pre-compute normalised names once per navigation instance.
             _cachedNormalizedNames = _cachedCategories.Select(x => RemoveDiacritics(x.Name)).ToList();
+            _needsRefresh = false;
         }
 
         await ReloadSourceAsync(_cachedCategories);
@@ -159,6 +164,13 @@ public partial class CategoryPickerVM(ICategoryService categoryService, IUserSes
         var batch = _currentSource.Skip(_loadedCount).Take(BatchSize).ToList();
         _loadedCount += batch.Count;
         await MainThread.InvokeOnMainThreadAsync(() => Categories.AddRange(batch));
+    }
+
+    [RelayCommand]
+    private async Task AddCategory()
+    {
+        _needsRefresh = true;
+        await Shell.Current.GoToAsync(nameof(Views.CategoryEditPage));
     }
 
     [RelayCommand]
