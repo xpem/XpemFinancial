@@ -10,6 +10,7 @@ namespace Service.Category
     {
         Task<List<CategoryDTO>> GetAllAsync();
         Task UpsertAsync(CategoryDTO category);
+        Task AddLocalAsync(CategoryDTO category);
         Task<DateTime> GetLastUpdatedAtAsync();
         Task PullAsync(int uid, DateTime lastUpdatedAt);
     }
@@ -60,7 +61,7 @@ namespace Service.Category
             var all = await categoryRepo.GetAllAsync();
 
             var mainById = all
-                .Where(c => c.IsMainCategory)
+                .Where(c => c.IsMainCategory && c.ExternalId != null)
                 .ToDictionary(c => c.ExternalId, c => c.Name);
 
             return all
@@ -69,6 +70,9 @@ namespace Service.Category
                 .ThenBy(c => c.Name)
                 .ToList();
         }
+
+        public async Task AddLocalAsync(CategoryDTO category)
+            => await categoryRepo.AddAsync(category);
 
         public async Task UpsertAsync(CategoryDTO category)
         {

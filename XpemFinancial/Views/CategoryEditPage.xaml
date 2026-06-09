@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="XpemFinancial.Views.CategoryEditPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:Icons="clr-namespace:XpemFinancial.Resources"
+    xmlns:Models="clr-namespace:Model.DTO;assembly=Model"
+    xmlns:vms="clr-namespace:XpemFinancial.VMs"
+    x:DataType="vms:CategoryEditVM"
+    BackgroundColor="{StaticResource BodyBackground}">
+    <Shell.TitleView>
+        <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
+            <Label
+                FontFamily="Icons"
+                FontSize="17"
+                Text="{x:Static Icons:IconFont.Tag}"
+                TextColor="{StaticResource White}"
+                VerticalOptions="Center" />
+            <Label
+                FontSize="17"
+                Text="Nova Categoria"
+                TextColor="{StaticResource White}"
+                VerticalOptions="Center" />
+        </HorizontalStackLayout>
+    </Shell.TitleView>
+
+    <ScrollView Margin="16">
+        <VerticalStackLayout Spacing="16">
+
+            <!--  Nome  -->
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Nome" />
+                <Border BackgroundColor="{StaticResource InputBackground}">
+                    <Entry
+                        Placeholder="Nome da categoria"
+                        ReturnType="Done"
+                        Text="{Binding Name}" />
+                </Border>
+            </VerticalStackLayout>
+
+            <!--  Tipo  -->
+            <VerticalStackLayout Spacing="8">
+                <Label Text="Tipo" />
+                <Border Padding="0,5,0,0" BackgroundColor="{StaticResource InputBackground}">
+                    <HorizontalStackLayout RadioButtonGroup.GroupName="CategoryType" RadioButtonGroup.SelectedValue="{Binding IsMainCategory}">
+                        <RadioButton
+                            Margin="10,0"
+                            Content="Principal"
+                            IsChecked="True"
+                            Value="{x:Boolean True}" />
+                        <RadioButton
+                            Margin="10,0"
+                            Content="Subcategoria"
+                            IsChecked="False"
+                            Value="{x:Boolean False}" />
+                    </HorizontalStackLayout>
+                </Border>
+            </VerticalStackLayout>
+
+            <!--  Categoria pai — visível apenas quando é subcategoria  -->
+            <VerticalStackLayout IsVisible="{Binding IsSubcategory}" Spacing="4">
+                <Label Text="Categoria pai" />
+                <Border Padding="10" BackgroundColor="{StaticResource InputBackground}">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding SelectParentCommand}" />
+                    </Border.GestureRecognizers>
+                    <HorizontalStackLayout>
+                        <Label
+                            FontSize="16"
+                            Text="{Binding ParentCategoryName, TargetNullValue='Selecionar...'}"
+                            VerticalOptions="Center" />
+                        <!--<Label
+                            Margin="10,0,0,0"
+                            FontFamily="Icons"
+                            FontSize="15"
+                            Text="{x:Static Icons:IconFont.AngleRight}"
+                            VerticalOptions="Center" />-->
+                    </HorizontalStackLayout>
+                </Border>
+            </VerticalStackLayout>
+
+            <!--  Botão salvar  -->
+            <Button
+                Margin="0,8,0,0"
+                Command="{Binding SaveCommand}"
+                ContentLayout="Left, 10"
+                CornerRadius="5"
+                HorizontalOptions="End"
+                Style="{StaticResource SuccessButton}"
+                Text="Confirmar"
+                TextColor="White">
+                <Button.ImageSource>
+                    <FontImageSource
+                        FontFamily="Icons"
+                        Glyph="{x:Static Icons:IconFont.Check}"
+                        Size="13"
+                        Color="White" />
+                </Button.ImageSource>
+            </Button>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>
