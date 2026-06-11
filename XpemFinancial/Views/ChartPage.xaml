@@ -4,6 +4,8 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:Icons="clr-namespace:XpemFinancial.Resources"
+    xmlns:Utils="clr-namespace:XpemFinancial.Utils"
+    xmlns:dto="clr-namespace:Model.DTO;assembly=Model"
     xmlns:vms="clr-namespace:XpemFinancial.VMs"
     x:DataType="vms:ChartVM"
     Shell.FlyoutBehavior="Flyout">
@@ -25,86 +27,174 @@
     </Shell.TitleView>
 
     <ContentPage.Resources>
-        <Style x:Key="NavButton" TargetType="Button">
-            <Setter Property="BorderColor" Value="#9da9b9" />
-            <Setter Property="BorderWidth" Value="1" />
-            <Setter Property="CornerRadius" Value="0" />
-            <Setter Property="HeightRequest" Value="20" />
-            <Setter Property="BackgroundColor" Value="Transparent" />
-        </Style>
+        <ResourceDictionary>
+            <Utils:AmountToColorConverter x:Key="AmountToColorConverter" />
+            <Utils:IsRecurringConverter x:Key="IsRecurringConverter" />
+            <Utils:IsFutureDateConverter x:Key="IsFutureDateConverter" />
+
+            <Style x:Key="NavButton" TargetType="Button">
+                <Setter Property="BorderColor" Value="#9da9b9" />
+                <Setter Property="BorderWidth" Value="1" />
+                <Setter Property="CornerRadius" Value="0" />
+                <Setter Property="HeightRequest" Value="20" />
+                <Setter Property="BackgroundColor" Value="Transparent" />
+            </Style>
+        </ResourceDictionary>
     </ContentPage.Resources>
 
-    <VerticalStackLayout Padding="10" Spacing="10">
+    <ScrollView Margin="0">
+        <VerticalStackLayout Padding="10" Spacing="10">
 
-        <!--  Month navigator  -->
-        <HorizontalStackLayout>
-            <Button Command="{Binding LoadPreviousMonthCommand}" Style="{StaticResource NavButton}">
-                <Button.ImageSource>
-                    <FontImageSource
-                        FontFamily="Icons"
-                        Glyph="{x:Static Icons:IconFont.CaretLeft}"
-                        Size="20" />
-                </Button.ImageSource>
-            </Button>
-            <Border Margin="5,0" Stroke="#9da9b9">
-                <Label
-                    Margin="10"
-                    HeightRequest="20"
-                    Text="{Binding MonthYearDisplay}"
-                    TextColor="#d6e0eb" />
+            <!--  Month navigator  -->
+            <HorizontalStackLayout Margin="0,0,0,0">
+                <Button Command="{Binding LoadPreviousMonthCommand}" Style="{StaticResource NavButton}">
+                    <Button.ImageSource>
+                        <FontImageSource
+                            FontFamily="Icons"
+                            Glyph="{x:Static Icons:IconFont.CaretLeft}"
+                            Size="20" />
+                    </Button.ImageSource>
+                </Button>
+                <Border Margin="5,0" Stroke="#9da9b9">
+                    <Label
+                        Margin="10"
+                        HeightRequest="20"
+                        Text="{Binding MonthYearDisplay}"
+                        TextColor="#d6e0eb" />
+                </Border>
+                <Button Command="{Binding LoadNextMonthCommand}" Style="{StaticResource NavButton}">
+                    <Button.ImageSource>
+                        <FontImageSource
+                            FontFamily="Icons"
+                            Glyph="{x:Static Icons:IconFont.CaretRight}"
+                            Size="20" />
+                    </Button.ImageSource>
+                </Button>
+            </HorizontalStackLayout>
+
+            <!--  Loading indicator  -->
+            <ActivityIndicator
+                HorizontalOptions="Center"
+                IsRunning="{Binding IsBusy}"
+                IsVisible="{Binding IsBusy}"
+                Color="#2bbf69" />
+
+            <!--  Chart canvas  -->
+            <GraphicsView
+                x:Name="ChartCanvas"
+                HeightRequest="320"
+                HorizontalOptions="Fill" />
+
+            <!--  Legend  -->
+            <HorizontalStackLayout Spacing="16">
+                <HorizontalStackLayout Spacing="6">
+                    <BoxView
+                        CornerRadius="2"
+                        HeightRequest="10"
+                        VerticalOptions="Center"
+                        WidthRequest="20"
+                        Color="#2bbf69" />
+                    <Label
+                        FontSize="12"
+                        Text="Entradas acumuladas"
+                        TextColor="#d6e0eb"
+                        VerticalOptions="Center" />
+                </HorizontalStackLayout>
+                <HorizontalStackLayout Spacing="6">
+                    <BoxView
+                        CornerRadius="2"
+                        HeightRequest="10"
+                        VerticalOptions="Center"
+                        WidthRequest="20"
+                        Color="#f75c5c" />
+                    <Label
+                        FontSize="12"
+                        Text="Saídas acumuladas"
+                        TextColor="#d6e0eb"
+                        VerticalOptions="Center" />
+                </HorizontalStackLayout>
+            </HorizontalStackLayout>
+
+            <!--  Transaction list  -->
+            <Border
+                Margin="0,5,0,0"
+                Padding="0"
+                Stroke="#232c39"
+                StrokeShape="5">
+                <Grid RowDefinitions="Auto, *">
+
+                    <!--  Header  -->
+                    <Label
+                        Padding="10"
+                        BackgroundColor="#232c39"
+                        FontAttributes="Bold"
+                        FontSize="20"
+                        Text="Transações"
+                        TextColor="#d6e0eb" />
+
+                    <!--  List  -->
+                    <CollectionView
+                        Grid.Row="1"
+                        Margin="0,10,0,0"
+                        ItemsSource="{Binding Transactions}"
+                        SelectedItem="{Binding SelectedTransaction}"
+                        SelectionMode="Single">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="dto:TransactionDTO">
+                                <Grid
+                                    Padding="5,0,5,0"
+                                    ColumnDefinitions="2*, 1.2*, 1*, Auto"
+                                    RowSpacing="0"
+                                    VerticalOptions="Center">
+                                    <Label
+                                        LineBreakMode="TailTruncation"
+                                        Text="{Binding Description}"
+                                        TextColor="#d6e0eb"
+                                        VerticalOptions="Center" />
+                                    <Label
+                                        Grid.Column="1"
+                                        FontAttributes="{Binding Date, Converter={StaticResource IsFutureDateConverter}}"
+                                        HorizontalTextAlignment="Center"
+                                        Text="{Binding Date, StringFormat='{0:dd/MM}'}"
+                                        TextColor="#d6e0eb"
+                                        VerticalOptions="Center" />
+                                    <Label
+                                        Grid.Column="2"
+                                        FontAttributes="Bold"
+                                        HorizontalTextAlignment="End"
+                                        Text="{Binding Amount, StringFormat='{0:N2}'}"
+                                        TextColor="{Binding Amount, Converter={StaticResource AmountToColorConverter}}"
+                                        VerticalOptions="Center" />
+                                    <Image
+                                        Grid.Column="3"
+                                        Margin="4,0,0,0"
+                                        HeightRequest="12"
+                                        IsVisible="{Binding RecurringRuleId, Converter={StaticResource IsRecurringConverter}}"
+                                        VerticalOptions="Center"
+                                        WidthRequest="12">
+                                        <Image.Source>
+                                            <FontImageSource
+                                                FontFamily="Icons"
+                                                Glyph="{x:Static Icons:IconFont.ArrowsRotate}"
+                                                Size="12"
+                                                Color="#6cc8ef" />
+                                        </Image.Source>
+                                    </Image>
+                                </Grid>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                        <CollectionView.EmptyView>
+                            <Label
+                                Margin="20"
+                                HorizontalOptions="Center"
+                                Text="Nenhuma transação encontrada."
+                                TextColor="#758292" />
+                        </CollectionView.EmptyView>
+                    </CollectionView>
+
+                </Grid>
             </Border>
-            <Button Command="{Binding LoadNextMonthCommand}" Style="{StaticResource NavButton}">
-                <Button.ImageSource>
-                    <FontImageSource
-                        FontFamily="Icons"
-                        Glyph="{x:Static Icons:IconFont.CaretRight}"
-                        Size="20" />
-                </Button.ImageSource>
-            </Button>
-        </HorizontalStackLayout>
 
-        <!--  Loading indicator  -->
-        <ActivityIndicator
-            HorizontalOptions="Center"
-            IsRunning="{Binding IsBusy}"
-            IsVisible="{Binding IsBusy}"
-            Color="#2bbf69" />
-
-        <!--  Chart canvas  -->
-        <GraphicsView
-            x:Name="ChartCanvas"
-            HeightRequest="320"
-            HorizontalOptions="Fill" />
-
-        <!--  Legend  -->
-        <HorizontalStackLayout Spacing="16">
-            <HorizontalStackLayout Spacing="6">
-                <BoxView
-                    CornerRadius="2"
-                    HeightRequest="10"
-                    VerticalOptions="Center"
-                    WidthRequest="20"
-                    Color="#2bbf69" />
-                <Label
-                    FontSize="12"
-                    Text="Entradas acumuladas"
-                    TextColor="#d6e0eb"
-                    VerticalOptions="Center" />
-            </HorizontalStackLayout>
-            <HorizontalStackLayout Spacing="6">
-                <BoxView
-                    CornerRadius="2"
-                    HeightRequest="10"
-                    VerticalOptions="Center"
-                    WidthRequest="20"
-                    Color="#f75c5c" />
-                <Label
-                    FontSize="12"
-                    Text="Saídas acumuladas"
-                    TextColor="#d6e0eb"
-                    VerticalOptions="Center" />
-            </HorizontalStackLayout>
-        </HorizontalStackLayout>
-
-    </VerticalStackLayout>
+        </VerticalStackLayout>
+    </ScrollView>
 </ContentPage>

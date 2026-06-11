@@ -3,6 +3,8 @@ using CommunityToolkit.Mvvm.Input;
 using Model.DTO;
 using Service.Recurring;
 using Service.Transaction;
+using System.Collections.ObjectModel;
+using XpemFinancial.Views;
 
 namespace XpemFinancial.VMs
 {
@@ -16,6 +18,8 @@ namespace XpemFinancial.VMs
         IRecurringRuleService recurringRuleService) : VMBase
     {
         [ObservableProperty] private string monthYearDisplay = string.Empty;
+        [ObservableProperty] private ObservableCollection<TransactionDTO> transactions = [];
+        [ObservableProperty] private TransactionDTO? selectedTransaction;
 
         /// <summary>Cumulative income points, ordered by day.</summary>
         public List<ChartPoint> IncomePoints { get; private set; } = [];
@@ -37,6 +41,12 @@ namespace XpemFinancial.VMs
 
         private DateTime _selectedDate;
 
+        partial void OnSelectedTransactionChanged(TransactionDTO? oldValue, TransactionDTO? newValue)
+        {
+            if (newValue == null) return;
+            GoToTransactionEditCommand.Execute(newValue.Id);
+        }
+
         public async Task InitializeAsync()
         {
             _selectedDate = DateTime.Now;
@@ -50,40 +60,38 @@ namespace XpemFinancial.VMs
 
             try
             {
-                var transactions = await transactionService.GetByMonthYear(date);
+                var allTransactions = (await transactionService.GetByMonthYear(date)).ToList();
 
                 DaysInMonth = DateTime.DaysInMonth(date.Year, date.Month);
 
-                // Sum per day
-                var incomeByDay = transactions
+                // ── transaction list ──────────────────────────────────────────
+                Transactions = new ObservableCollection<TransactionDTO>(allTransactions);
+
+                // ── chart series ──────────────────────────────────────────────
+                var incomeByDay = allTransactions
                     .Where(t => t.Type == TransactionType.Income)
                     .GroupBy(t => t.Date.Day)
                     .ToDictionary(g => g.Key, g => g.Sum(t => t.Amount));
 
-                var expenseByDay = transactions
+                var expenseByDay = allTransactions
                     .Where(t => t.Type == TransactionType.Expense)
                     .GroupBy(t => t.Date.Day)
                     .ToDictionary(g => g.Key, g => g.Sum(t => Math.Abs(t.Amount)));
 
-                // Build cumulative series — only emit a point when there is activity on that day
                 var incomePoints = new List<ChartPoint>();
                 var expensePoints = new List<ChartPoint>();
-
                 decimal cumulativeIncome = 0;
                 decimal cumulativeExpense = 0;
 
                 for (int d = 1; d <= DaysInMonth; d++)
                 {
-                    bool hasIncome = incomeByDay.TryGetValue(d, out decimal dayIncome);
-                    bool hasExpense = expenseByDay.TryGetValue(d, out decimal dayExpense);
-
-                    if (hasIncome)
+                    if (incomeByDay.TryGetValue(d, out decimal dayIncome))
                     {
                         cumulativeIncome += dayIncome;
                         incomePoints.Add(new ChartPoint(d, cumulativeIncome));
                     }
 
-                    if (hasExpense)
+                    if (expenseByDay.TryGetValue(d, out decimal dayExpense))
                     {
                         cumulativeExpense += dayExpense;
                         expensePoints.Add(new ChartPoint(d, cumulativeExpense));
@@ -123,6 +131,16 @@ namespace XpemFinancial.VMs
                 await recurringRuleService.RunSchedulerAsync(_selectedDate);
 
             await LoadChartAsync(_selectedDate);
+        }
+
+        [RelayCommand]
+        private async Task GoToTransactionEdit(int? transactionId = null)
+        {
+            var route = transactionId is not null
+                ? $"{nameof(TransactionEditPage)}?TransactionId={transactionId}"
+                : nameof(TransactionEditPage);
+
+            await Shell.Current.GoToAsync(route);
         }
     }
 }

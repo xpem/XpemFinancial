@@ -4,6 +4,7 @@ using Service.Account;
 using Service.Category;
 using Service.Recurring;
 using Service.Transaction;
+using System.Diagnostics;
 
 namespace XpemFinancial.Utils
 {
@@ -19,26 +20,42 @@ namespace XpemFinancial.Utils
         IRecurringRuleService recurringRuleService,
         ITransactionService transactionService)
     {
-        // Global sync status — safe to be instance-level since the class is Singleton
-        public SyncStatus Synchronizing { get; private set; } = SyncStatus.Sleeping;
+        // ── sync status ───────────────────────────────────────────────────────
+        // Fix #3: use a volatile int so reads/writes from different threads are
+        // always visible and the compiler cannot reorder around them.
+        // Mapping: 0 = Sleeping, 1 = Processing, 2 = ServerOff, 3 = Unauthorized
+        private volatile int _syncStatus = (int)SyncStatus.Sleeping;
 
+        public SyncStatus Synchronizing
+        {
+            get => (SyncStatus)_syncStatus;
+            private set => Interlocked.Exchange(ref _syncStatus, (int)value);
+        }
+
+        // ── timer ─────────────────────────────────────────────────────────────
         public Timer? Timer { get; private set; }
 
         // 30 seconds
-        readonly int Interval = 30000;
+        private readonly int _interval = 30_000;
 
-        // 0 = not running, 1 = running — used with Interlocked to avoid race condition on startup
+        // 0 = not running, 1 = running
         private int _threadStarted = 0;
 
         public bool ThreadIsRunning => _threadStarted == 1;
 
+        /// <summary>
+        /// Raised on the thread-pool after each completed sync cycle (success or handled error).
+        /// Subscribers that need to update the UI should marshal back to the main thread themselves.
+        /// </summary>
+        public event Action? SyncCompleted;
+
+        // ── lifecycle ─────────────────────────────────────────────────────────
+
         public void StartThread()
         {
-            // Interlocked.CompareExchange ensures only one thread can transition 0 → 1
             if (Interlocked.CompareExchange(ref _threadStarted, 1, 0) == 0)
             {
                 Synchronizing = SyncStatus.Sleeping;
-
                 Thread thread = new(SetTimer) { IsBackground = true };
                 thread.Start();
             }
@@ -46,67 +63,94 @@ namespace XpemFinancial.Utils
 
         private void SetTimer()
         {
-            SyncLocalDb(null);
-            Timer = new Timer(SyncLocalDb, null, Interval, Timeout.Infinite);
+            // Run an immediate cycle, then schedule repeating ones.
+            // Fix #1: fire-and-forget is safe here because TimerCallback is the async boundary —
+            // we use a plain Task-returning method and attach a continuation that logs/swallows
+            // instead of letting the exception escape an async void.
+            FireAndForget(ExecSyncAsync());
+            Timer = new Timer(_ => FireAndForget(ExecSyncAsync()), null, _interval, Timeout.Infinite);
         }
 
-        // async void is required by TimerCallback signature.
-        // Exceptions are handled inside ExecSyncAsync — unhandled ones would crash the process.
-        public async void SyncLocalDb(object? state) => await ExecSyncAsync();
+        // Fix #1: replaces async void SyncLocalDb — all exceptions are caught here so they
+        // can never propagate unobserved and crash the process.
+        private static void FireAndForget(Task task)
+        {
+            task.ContinueWith(
+                t => Debug.WriteLine($"[SyncService] Unhandled exception: {t.Exception}"),
+                TaskContinuationOptions.OnlyOnFaulted);
+        }
+
+        // ── core sync ─────────────────────────────────────────────────────────
 
         public async Task ExecSyncAsync()
         {
             try
             {
-                UserDTO? user = await userSessionService.GetCurrentUserAsync();
+                UserDTO? user = await userSessionService.GetCurrentUserAsync().ConfigureAwait(false);
 
-                if (user != null && Synchronizing != SyncStatus.Processing)
+                // Fix #3: compare-exchange so only one concurrent invocation enters Processing
+                if (user == null || Interlocked.CompareExchange(ref _syncStatus,
+                        (int)SyncStatus.Processing,
+                        (int)SyncStatus.Sleeping) != (int)SyncStatus.Sleeping)
+                    return;
+
+                try
                 {
-                    Synchronizing = SyncStatus.Processing;
-
                     if (Connectivity.NetworkAccess == NetworkAccess.Internet)
                     {
-                        await userService.UpdateLastUpdate(user.Id);
+                        await userService.UpdateLastUpdate(user.Id).ConfigureAwait(false);
 
-                        DateTime categoryLastUpdate = await categoryService.GetLastUpdatedAtAsync();
-                        await categoryService.PullAsync(user.Id, categoryLastUpdate);
+                        DateTime categoryLastUpdate = await categoryService.GetLastUpdatedAtAsync().ConfigureAwait(false);
+                        await categoryService.PullAsync(user.Id, categoryLastUpdate).ConfigureAwait(false);
 
-                        DateTime accountLastUpdate = await accountService.GetLastUpdatedAtAsync();
-                        await accountService.PullAsync(user.Id, accountLastUpdate);
+                        DateTime accountLastUpdate = await accountService.GetLastUpdatedAtAsync().ConfigureAwait(false);
+                        await accountService.PullAsync(user.Id, accountLastUpdate).ConfigureAwait(false);
 
-                        DateTime recurringLastUpdate = await recurringRuleService.GetLastUpdatedAtAsync();
-                        await recurringRuleService.PullAsync(user.Id, recurringLastUpdate);
+                        DateTime recurringLastUpdate = await recurringRuleService.GetLastUpdatedAtAsync().ConfigureAwait(false);
+                        await recurringRuleService.PullAsync(user.Id, recurringLastUpdate).ConfigureAwait(false);
 
-                        DateTime transactionLastUpdate = await transactionService.GetLastUpdatedAtAsync();
-                        await transactionService.PullAsync(user.Id, transactionLastUpdate);
+                        DateTime transactionLastUpdate = await transactionService.GetLastUpdatedAtAsync().ConfigureAwait(false);
+                        await transactionService.PullAsync(user.Id, transactionLastUpdate).ConfigureAwait(false);
                     }
-
-                    Synchronizing = SyncStatus.Sleeping;
+                }
+                finally
+                {
+                    // Always leave Processing — only overwrite if we haven't been set to
+                    // Unauthorized by the catch block below.
+                    Interlocked.CompareExchange(ref _syncStatus,
+                        (int)SyncStatus.Sleeping,
+                        (int)SyncStatus.Processing);
                 }
             }
             catch (HttpRequestException ex)
             {
-                if (ex.InnerException != null && ex.InnerException.Message.Contains("No connection could be made because the target machine actively refused it."))
-                    Synchronizing = SyncStatus.ServerOff;
-                else
-                    throw;
+                bool refused = ex.InnerException?.Message.Contains(
+                    "No connection could be made because the target machine actively refused it.",
+                    StringComparison.OrdinalIgnoreCase) == true;
+
+                Synchronizing = refused ? SyncStatus.ServerOff : SyncStatus.Sleeping;
+
+                Debug.WriteLine($"[SyncService] HTTP error during sync: {ex.Message}");
             }
             catch (UnauthorizedAccessException)
             {
                 Synchronizing = SyncStatus.Unauthorized;
             }
-            catch
+            catch (Exception ex)
             {
-                throw;
+                // Fix #1: swallow unexpected exceptions at the async boundary — do NOT rethrow
+                // from a timer callback path, as that would crash the process via an unobserved
+                // task exception. Log and continue; the next timer tick will retry.
+                Synchronizing = SyncStatus.Sleeping;
+                Debug.WriteLine($"[SyncService] Unexpected sync error: {ex}");
             }
             finally
             {
-                // Timer is always rescheduled — even after unexpected exceptions — to keep sync alive.
-                // If this is undesirable after a fatal error, stop the timer before rethrowing above.
-                Timer?.Change(Interval, Timeout.Infinite);
+                // Reschedule the next tick unconditionally.
+                Timer?.Change(_interval, Timeout.Infinite);
 
-                if (Synchronizing != SyncStatus.Unauthorized)
-                    Synchronizing = SyncStatus.Sleeping;
+                // Fix #4: notify subscribers that the sync cycle ended so they can reload data.
+                SyncCompleted?.Invoke();
             }
         }
 

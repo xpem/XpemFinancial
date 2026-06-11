@@ -23,6 +23,7 @@ namespace Service.Recurring
         IRecurringRuleApiRepo recurringRuleApiRepo,
         ITransactionService transactionService,
         ICategoryRepo categoryRepo,
+        IAccountRepo accountRepo,
         ISyncCursorRepo syncCursorRepo) : IRecurringRuleService
     {
         public async Task<ServiceResp> SaveAsync(RecurringRuleDTO rule, bool isOnline)
@@ -248,6 +249,18 @@ namespace Service.Recurring
                     localCategoryId = localCategory?.Id ?? 0;
                 }
 
+                // Resolve local AccountId from the API's AccountId (which is the ExternalId).
+                // Without this, the scheduler would write the server's external ID as a FK into
+                // the local Transaction table, causing a FK constraint exception.
+                int? localAccountId = null;
+                if (res.AccountId.HasValue)
+                {
+                    var localAccount = await accountRepo.GetAsync();
+                    // There is currently only one account per user; match by ExternalId to be safe.
+                    if (localAccount?.ExternalId == res.AccountId)
+                        localAccountId = localAccount.Id;
+                }
+
                 RecurringRuleDTO dto = new()
                 {
                     ExternalId = res.Id,
@@ -257,7 +270,7 @@ namespace Service.Recurring
                     Type = (TransactionType)res.Type,
                     CategoryId = localCategoryId,
                     CategoryExternalId = res.CategoryId,
-                    AccountId = res.AccountId,
+                    AccountId = localAccountId,
                     Frequency = (Frequency)res.Frequency,
                     StartDate = res.StartDate,
                     EndDate = res.EndDate,
@@ -271,7 +284,12 @@ namespace Service.Recurring
                 upsertedRules.Add(dto);
             }
 
-            await recurringScheduler.GeneratePendingAsync(upsertedRules);
+            // Fix #2: only run the scheduler for rules that are active — inactive rules have
+            // had their occurrences soft-deleted already; regenerating them would be wasteful
+            // and could re-create occurrences that were intentionally cancelled.
+            var activeUpserted = upsertedRules.Where(r => !r.Inactive).ToList();
+            if (activeUpserted.Count > 0)
+                await recurringScheduler.GeneratePendingAsync(activeUpserted);
 
             // Advance the cursor using the highest server-side UpdatedAt in this batch.
             DateTime maxServerTs = results.Max(r => r.UpdatedAt);

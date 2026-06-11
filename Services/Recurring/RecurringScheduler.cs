@@ -1,7 +1,6 @@
 using Model.DTO;
 using Service.Transaction;
 using System.Diagnostics;
-using System.Linq;
 
 namespace Service.Recurring
 {
@@ -18,10 +17,10 @@ namespace Service.Recurring
     {
         private const int DefaultHorizonInMonths = 6;
 
-        /// <summary>
-        /// Generates all missing occurrences for the given rules up to the given horizon date.
-        /// If no horizon is provided, defaults to today + 6 months.
-        /// </summary>
+        // How far into the past we look for missing occurrences.
+        // Gaps older than this are assumed to be intentional deletions and are not regenerated.
+        private const int LookbackMonths = 1;
+
         public async Task GeneratePendingAsync(IEnumerable<RecurringRuleDTO> rules, DateTime? horizon = null)
         {
             if (rules == null || !rules.Any())
@@ -32,38 +31,43 @@ namespace Service.Recurring
                 ? horizon.Value
                 : defaultHorizon;
 
-            // FIX (N+1 Query): Fetch all existing transactions for all rules in a single batch.
-            // NOTE: This requires a new method on ITransactionService, like GetByRecurringRuleIdsAsync.
-            var ruleIds = rules.Select(r => r.RecurringRuleId).Distinct().ToList();
-            var allExistingTransactions = (await Task.WhenAll(
-                ruleIds.Select(ruleId => transactionService.GetByRecurringRuleIdAsync(ruleId))
-            )).SelectMany(t => t).ToList();
-            var transactionsByRuleId = allExistingTransactions.ToLookup(t => t.RecurringRuleId);
-
+            // Fix #1: sequential fetches instead of Task.WhenAll to avoid concurrent SQLite
+            // readers racing on the same connection pool under write load.
             foreach (var rule in rules)
             {
-                // FIX (Long Method): Delegate the processing of a single rule to a separate method.
-                await ProcessRuleAsync(rule, resolvedHorizon, transactionsByRuleId[rule.RecurringRuleId]);
+                var existingTransactions = await transactionService.GetByRecurringRuleIdAsync(rule.RecurringRuleId);
+                await ProcessRuleAsync(rule, resolvedHorizon, existingTransactions);
             }
         }
 
-        /// <summary>
-        /// Processes a single recurring rule to generate its missing occurrences.
-        /// </summary>
-        private async Task ProcessRuleAsync(RecurringRuleDTO rule, DateTime resolvedHorizon, IEnumerable<TransactionDTO> existingTransactions)
+        private async Task ProcessRuleAsync(
+            RecurringRuleDTO rule,
+            DateTime resolvedHorizon,
+            IEnumerable<TransactionDTO> existingTransactions)
         {
             if (rule.Inactive)
                 return;
 
-            // FIX (Complex Conditional): Simplified cutoff date calculation.
             DateTime cutoff = resolvedHorizon;
             if (rule.EndDate.HasValue && rule.EndDate.Value < cutoff)
-            {
                 cutoff = rule.EndDate.Value;
-            }
 
-            var expectedDates = ComputeExpectedDates(rule.StartDate, cutoff, rule.Frequency);
-            var existingDates = new HashSet<DateTime>(existingTransactions.Select(t => t.Date.Date));
+            // Fix #3: don't walk the entire history from StartDate.
+            // Start from max(StartDate, today - LookbackMonths) so ancient gaps that were
+            // intentionally deleted are never regenerated, and the loop stays short.
+            DateTime lookbackStart = DateTime.Today.AddMonths(-LookbackMonths);
+            DateTime effectiveStart = rule.StartDate.Date > lookbackStart
+                ? rule.StartDate.Date
+                : lookbackStart;
+
+            // Fix #2: exclude inactive (soft-deleted) occurrences from the seen-dates set so
+            // that a date whose occurrence was deleted is not permanently skipped.
+            var existingDates = new HashSet<DateTime>(
+                existingTransactions
+                    .Where(t => !t.Inactive)
+                    .Select(t => t.Date.Date));
+
+            var expectedDates = ComputeExpectedDates(rule.StartDate, effectiveStart, cutoff, rule.Frequency);
 
             foreach (var date in expectedDates)
             {
@@ -74,28 +78,42 @@ namespace Service.Recurring
                 {
                     var occurrence = BuildOccurrence(rule, date);
                     await transactionService.AddOccurrenceAsync(occurrence);
-                    existingDates.Add(date.Date); // Avoid trying to add the same date again in this run
+                    existingDates.Add(date.Date);
                 }
                 catch (Exception ex)
                 {
-                    // FIX (Generic Exception): Added a comment recommending a proper logging framework.
-                    // The exception is caught to allow other rules to be processed.
-                    // TODO: Replace with a robust logging framework (e.g., Serilog, NLog) for production.
-                    Debug.WriteLine($"[RecurringScheduler] Failed to add occurrence for rule {rule.RecurringRuleId} on {date:yyyy-MM-dd}: {ex.Message}");
+                    Debug.WriteLine(
+                        $"[RecurringScheduler] Failed to add occurrence for rule " +
+                        $"{rule.RecurringRuleId} on {date:yyyy-MM-dd}: {ex.Message}");
+                    throw;
                 }
             }
         }
 
-        // Returns dates in ascending order from startDate up to and including cutoff.
-        private static List<DateTime> ComputeExpectedDates(DateTime startDate, DateTime cutoff, Frequency frequency)
+        /// <summary>
+        /// Returns all dates produced by stepping from <paramref name="ruleStart"/> that fall
+        /// within [<paramref name="windowStart"/>, <paramref name="cutoff"/>], in ascending order.
+        ///
+        /// We still need <paramref name="ruleStart"/> to compute the correct phase of the
+        /// recurrence (e.g. a monthly rule starting on the 15th always lands on the 15th).
+        /// </summary>
+        private static List<DateTime> ComputeExpectedDates(
+            DateTime ruleStart,
+            DateTime windowStart,
+            DateTime cutoff,
+            Frequency frequency)
         {
             var dates = new List<DateTime>();
-            DateTime current = startDate.Date;
+            DateTime current = ruleStart.Date;
             DateTime cutoffDate = cutoff.Date;
+            DateTime windowStartDate = windowStart.Date;
 
+            // Advance from ruleStart until we reach the window, then collect.
             while (current <= cutoffDate)
             {
-                dates.Add(current);
+                if (current >= windowStartDate)
+                    dates.Add(current);
+
                 current = Step(current, frequency);
             }
 
@@ -113,12 +131,15 @@ namespace Service.Recurring
             Description = rule.Description ?? string.Empty,
             Amount = rule.Amount,
             Type = rule.Type,
-            CategoryId = rule.CategoryId,
+            // CategoryId = 0 is the sentinel for "no category" in RecurringRuleDTO (int, non-nullable).
+            // TransactionDTO.CategoryId is int? — translate 0 → null so we never write an invalid FK.
+            CategoryId = rule.CategoryId == 0 ? null : rule.CategoryId,
             AccountId = rule.AccountId,
             RecurringRuleId = rule.RecurringRuleId,
             Repetition = Repetition.Recurring,
             Date = date,
             UserId = rule.UserId,
+            
         };
     }
 }
