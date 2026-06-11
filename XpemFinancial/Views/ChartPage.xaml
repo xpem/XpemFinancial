@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="XpemFinancial.Views.ChartPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:Icons="clr-namespace:XpemFinancial.Resources"
+    xmlns:vms="clr-namespace:XpemFinancial.VMs"
+    x:DataType="vms:ChartVM"
+    Shell.FlyoutBehavior="Flyout">
+
+    <Shell.TitleView>
+        <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
+            <Label
+                FontFamily="Icons"
+                FontSize="17"
+                Text="{x:Static Icons:IconFont.ChartColumn}"
+                TextColor="{StaticResource White}"
+                VerticalOptions="Center" />
+            <Label
+                FontSize="17"
+                Text="Gráfico"
+                TextColor="{StaticResource White}"
+                VerticalOptions="Center" />
+        </HorizontalStackLayout>
+    </Shell.TitleView>
+
+    <ContentPage.Resources>
+        <Style x:Key="NavButton" TargetType="Button">
+            <Setter Property="BorderColor" Value="#9da9b9" />
+            <Setter Property="BorderWidth" Value="1" />
+            <Setter Property="CornerRadius" Value="0" />
+            <Setter Property="HeightRequest" Value="20" />
+            <Setter Property="BackgroundColor" Value="Transparent" />
+        </Style>
+    </ContentPage.Resources>
+
+    <VerticalStackLayout Padding="10" Spacing="10">
+
+        <!--  Month navigator  -->
+        <HorizontalStackLayout>
+            <Button Command="{Binding LoadPreviousMonthCommand}" Style="{StaticResource NavButton}">
+                <Button.ImageSource>
+                    <FontImageSource
+                        FontFamily="Icons"
+                        Glyph="{x:Static Icons:IconFont.CaretLeft}"
+                        Size="20" />
+                </Button.ImageSource>
+            </Button>
+            <Border Margin="5,0" Stroke="#9da9b9">
+                <Label
+                    Margin="10"
+                    HeightRequest="20"
+                    Text="{Binding MonthYearDisplay}"
+                    TextColor="#d6e0eb" />
+            </Border>
+            <Button Command="{Binding LoadNextMonthCommand}" Style="{StaticResource NavButton}">
+                <Button.ImageSource>
+                    <FontImageSource
+                        FontFamily="Icons"
+                        Glyph="{x:Static Icons:IconFont.CaretRight}"
+                        Size="20" />
+                </Button.ImageSource>
+            </Button>
+        </HorizontalStackLayout>
+
+        <!--  Loading indicator  -->
+        <ActivityIndicator
+            HorizontalOptions="Center"
+            IsRunning="{Binding IsBusy}"
+            IsVisible="{Binding IsBusy}"
+            Color="#2bbf69" />
+
+        <!--  Chart canvas  -->
+        <GraphicsView
+            x:Name="ChartCanvas"
+            HeightRequest="320"
+            HorizontalOptions="Fill" />
+
+        <!--  Legend  -->
+        <HorizontalStackLayout Spacing="16">
+            <HorizontalStackLayout Spacing="6">
+                <BoxView
+                    CornerRadius="2"
+                    HeightRequest="10"
+                    VerticalOptions="Center"
+                    WidthRequest="20"
+                    Color="#2bbf69" />
+                <Label
+                    FontSize="12"
+                    Text="Entradas acumuladas"
+                    TextColor="#d6e0eb"
+                    VerticalOptions="Center" />
+            </HorizontalStackLayout>
+            <HorizontalStackLayout Spacing="6">
+                <BoxView
+                    CornerRadius="2"
+                    HeightRequest="10"
+                    VerticalOptions="Center"
+                    WidthRequest="20"
+                    Color="#f75c5c" />
+                <Label
+                    FontSize="12"
+                    Text="Saídas acumuladas"
+                    TextColor="#d6e0eb"
+                    VerticalOptions="Center" />
+            </HorizontalStackLayout>
+        </HorizontalStackLayout>
+
+    </VerticalStackLayout>
+</ContentPage>
