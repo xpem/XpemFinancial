@@ -59,6 +59,10 @@
         <ShellContent ContentTemplate="{DataTemplate local:AccountPage}" />
     </FlyoutItem>
 
+    <FlyoutItem Title="Gráfico" Icon="{x:Static icons:IconFont.ChartColumn}">
+        <ShellContent ContentTemplate="{DataTemplate local:ChartPage}" />
+    </FlyoutItem>
+
     <Shell.FlyoutFooterTemplate>
         <DataTemplate>
             <StackLayout>

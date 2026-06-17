@@ -67,6 +67,7 @@ namespace XpemFinancial
             services.AddTransientWithShellRoute<Views.FirstSyncProcessPage, VMs.FirstSyncProcessVM>(nameof(Views.FirstSyncProcessPage));
             services.AddTransientWithShellRoute<Views.SignUpPage, VMs.SignUpVM>(nameof(Views.SignUpPage));
             services.AddTransientWithShellRoute<Views.UpdatePasswordPage, VMs.UpdatePasswordVM>(nameof(Views.UpdatePasswordPage));
+            services.AddTransientWithShellRoute<Views.ChartPage, VMs.ChartVM>(nameof(Views.ChartPage));
             return services;
         }
     }

@@ -47,7 +47,6 @@ namespace ApiRepo
                         break;
                 }
 
-
                 return new ApiResp()
                 {
                     Success = httpResponse.IsSuccessStatusCode,
@@ -56,9 +55,17 @@ namespace ApiRepo
                     Content = await httpResponse.Content.ReadAsStringAsync()
                 };
             }
-            catch (Exception)
+            catch (HttpRequestException)
             {
-                throw;
+                // Server is unreachable, no network, or connection refused.
+                // Return a failure response instead of throwing so callers can decide
+                // whether to retry later (e.g. background sync) without crashing the UI flow.
+                return new ApiResp() { Success = false, Error = ErrorTypes.ServerUnavaliable };
+            }
+            catch (TaskCanceledException)
+            {
+                // Request timed out.
+                return new ApiResp() { Success = false, Error = ErrorTypes.ServerUnavaliable };
             }
         }
     }

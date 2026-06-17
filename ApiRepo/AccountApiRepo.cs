@@ -24,6 +24,10 @@ namespace ApiRepo
             string json = JsonSerializer.Serialize(req);
             ApiResp resp = await userApiRepo.AuthRequestAsync(RequestsTypes.Post, ApiKeys.ApiAddress + "/financial/adjustAccountBalance", json);
 
+            // Server unreachable — local update already applied, sync will retry later.
+            if (resp.Error == ErrorTypes.ServerUnavaliable)
+                return req;
+
             if (!resp.Success || resp.Content is null)
                 throw new Exception($"Falha ao ajustar balanço na API: {resp.Error}");
 

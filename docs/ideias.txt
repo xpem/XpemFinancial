@@ -1,0 +1,7 @@
+todo
+
+gráfico com opção de visualização anual, e ter a opção de acumulado ou não
+
+lembrete de conta a ser paga tmbm no proximo mes.
+
+ícones nas categorias

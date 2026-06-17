@@ -60,9 +60,7 @@ namespace Service.Category
         {
             var all = await categoryRepo.GetAllAsync();
 
-            var mainById = all
-                .Where(c => c.IsMainCategory && c.ExternalId != null)
-                .ToDictionary(c => c.ExternalId, c => c.Name);
+            var mainById = all.Where(c => c.IsMainCategory && c.ExternalId != null).ToDictionary(c => c.ExternalId, c => c.Name);
 
             return all
                 .OrderBy(c => c.IsMainCategory ? c.Name : mainById.GetValueOrDefault(c.ParentExternalId ?? 0, string.Empty))
@@ -76,7 +74,11 @@ namespace Service.Category
 
         public async Task UpsertAsync(CategoryDTO category)
         {
-            var existingCategory = await categoryRepo.GetByExternalIdAsync(category.ExternalId!.Value);
+            CategoryDTO? existingCategory = null;
+            if (category.ExternalId.HasValue)
+            {
+                existingCategory = await categoryRepo.GetByExternalIdAsync(category.ExternalId.Value);
+            }
 
             if (existingCategory != null)
             {

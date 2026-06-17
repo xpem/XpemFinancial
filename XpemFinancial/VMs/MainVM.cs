@@ -73,6 +73,16 @@ namespace XpemFinancial.VMs
             await LoadTransactionsForMonthAsync(SelectedDate);
         }
 
+        /// <summary>
+        /// Silently refreshes the transaction list for the currently displayed month.
+        /// Called by the view after a background sync cycle completes (Fix #4).
+        /// Does nothing if a load is already in progress.
+        /// </summary>
+        public async Task RefreshTransactionsAsync()
+        {
+            if (IsBusy) return;
+            await LoadTransactionsForMonthAsync(SelectedDate);
+        }
         private async Task LoadTransactionsForMonthAsync(DateTime date)
         {
             MonthYearDisplay = date.ToString("MMMM/yyyy");
