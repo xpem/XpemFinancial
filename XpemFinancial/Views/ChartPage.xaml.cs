@@ -1,3 +1,4 @@
+using Service;
 using Service.Recurring;
 using Service.Transaction;
 using XpemFinancial.Utils;
@@ -10,11 +11,14 @@ namespace XpemFinancial.Views
         private readonly ChartVM _vm;
         private readonly LineChartDrawable _drawable = new();
 
-        public ChartPage(ITransactionService transactionService, IRecurringRuleService recurringRuleService)
+        public ChartPage(ITransactionService transactionService,
+            IRecurringRuleService recurringRuleService,
+            IUserSessionService userSessionService,
+            IUserService userService)
         {
             InitializeComponent();
 
-            _vm = new ChartVM(transactionService, recurringRuleService);
+            _vm = new ChartVM(transactionService, recurringRuleService, userSessionService, userService);
             BindingContext = _vm;
 
             // Wire the drawable to the GraphicsView

@@ -79,12 +79,26 @@
                 IsVisible="{Binding IsBusy}"
                 Color="#2bbf69" />
 
-            <!--  Chart canvas  -->
-            <GraphicsView
-                x:Name="ChartCanvas"
-                HeightRequest="320"
-                HorizontalOptions="Fill" />
+            <!--  Include previous balance  -->
+            <HorizontalStackLayout Spacing="0" VerticalOptions="Center">
+                <CheckBox IsChecked="{Binding IncludePreviousBalance}" Color="White" />
+                <Label
+                    Text="Incluir saldo anterior"
+                    TextColor="#d6e0eb"
+                    VerticalOptions="Center">
+                    <Label.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding ToggleIncludePreviousBalanceCommand}" />
+                    </Label.GestureRecognizers>
+                </Label>
+            </HorizontalStackLayout>
 
+            <Border>
+                <!--  Chart canvas  -->
+                <GraphicsView
+                    x:Name="ChartCanvas"
+                    HeightRequest="320"
+                    HorizontalOptions="Fill" />
+            </Border>
             <!--  Legend  -->
             <HorizontalStackLayout Spacing="16">
                 <HorizontalStackLayout Spacing="6">

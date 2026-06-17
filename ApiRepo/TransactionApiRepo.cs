@@ -41,6 +41,12 @@ namespace ApiRepo
                 ApiKeys.ApiAddress + "/financial/transaction",
                 json);
 
+            // Server unreachable — the local record is already saved.
+            // Return 0 so the caller knows there is no ExternalId yet;
+            // the background sync will push it later.
+            if (resp.Error == ErrorTypes.ServerUnavaliable)
+                return 0;
+
             if (!resp.Success || resp.Content is null)
                 throw new Exception($"Falha ao adicionar transação na API: {resp.Error}");
 
@@ -58,6 +64,10 @@ namespace ApiRepo
                 RequestsTypes.Put,
                 ApiKeys.ApiAddress + $"/financial/transaction/{externalId}",
                 json);
+
+            // Server unreachable — local update already applied, sync will retry later.
+            if (resp.Error == ErrorTypes.ServerUnavaliable)
+                return;
 
             if (!resp.Success)
                 throw new Exception($"Falha ao atualizar transação na API: {resp.Error}");

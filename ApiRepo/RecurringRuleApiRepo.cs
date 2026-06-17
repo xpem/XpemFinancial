@@ -39,6 +39,10 @@ namespace ApiRepo
                 ApiKeys.ApiAddress + "/financial/recurringrule",
                 json);
 
+            // Server unreachable — local rule already saved, sync will push it later.
+            if (resp.Error == ErrorTypes.ServerUnavaliable)
+                return 0;
+
             if (!resp.Success || resp.Content is null)
                 throw new Exception($"Falha ao adicionar regra recorrente na API: {resp.Error}");
 

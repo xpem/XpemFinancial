@@ -35,8 +35,8 @@
 		<ApplicationId>com.Xpem.XpemFinancial</ApplicationId>
 
 		<!-- Versions -->
-		<ApplicationDisplayVersion>9.0</ApplicationDisplayVersion>
-		<ApplicationVersion>9</ApplicationVersion>
+		<ApplicationDisplayVersion>11.0</ApplicationDisplayVersion>
+		<ApplicationVersion>11</ApplicationVersion>
 
 		<!-- To develop, package, and publish an app to the Microsoft Store, see: https://aka.ms/MauiTemplateUnpackaged -->
 		<WindowsPackageType>None</WindowsPackageType>

@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Model.DTO;
+using Service;
 using Service.Recurring;
 using Service.Transaction;
 using System.Collections.ObjectModel;
@@ -15,11 +16,14 @@ namespace XpemFinancial.VMs
 
     public partial class ChartVM(
         ITransactionService transactionService,
-        IRecurringRuleService recurringRuleService) : VMBase
+        IRecurringRuleService recurringRuleService,
+        IUserSessionService userSessionService,
+        IUserService userService) : VMBase
     {
         [ObservableProperty] private string monthYearDisplay = string.Empty;
         [ObservableProperty] private ObservableCollection<TransactionDTO> transactions = [];
         [ObservableProperty] private TransactionDTO? selectedTransaction;
+        [ObservableProperty] private bool includePreviousBalance;
 
         /// <summary>Cumulative income points, ordered by day.</summary>
         public List<ChartPoint> IncomePoints { get; private set; } = [];
@@ -40,6 +44,15 @@ namespace XpemFinancial.VMs
         public event Action? DataChanged;
 
         private DateTime _selectedDate;
+        private int? _currentUserId;
+
+        partial void OnIncludePreviousBalanceChanged(bool value)
+        {
+            if (_currentUserId.HasValue)
+                _ = userService.UpdateIncludePreviousBalanceAsync(value, _currentUserId.Value);
+
+            _ = LoadChartAsync(_selectedDate);
+        }
 
         partial void OnSelectedTransactionChanged(TransactionDTO? oldValue, TransactionDTO? newValue)
         {
@@ -49,6 +62,13 @@ namespace XpemFinancial.VMs
 
         public async Task InitializeAsync()
         {
+            var user = await userSessionService.GetCurrentUserAsync();
+            if (user != null)
+            {
+                _currentUserId = user.Id;
+                IncludePreviousBalance = user.IncludePreviousBalance;
+            }
+
             _selectedDate = DateTime.Now;
             await LoadChartAsync(_selectedDate);
         }
@@ -68,6 +88,10 @@ namespace XpemFinancial.VMs
                 Transactions = new ObservableCollection<TransactionDTO>(allTransactions);
 
                 // ── chart series ──────────────────────────────────────────────
+                decimal previousBalance = IncludePreviousBalance
+                    ? await transactionService.GetPreviousBalanceAsync(date)
+                    : 0;
+
                 var incomeByDay = allTransactions
                     .Where(t => t.Type == TransactionType.Income)
                     .GroupBy(t => t.Date.Day)
@@ -80,8 +104,8 @@ namespace XpemFinancial.VMs
 
                 var incomePoints = new List<ChartPoint>();
                 var expensePoints = new List<ChartPoint>();
-                decimal cumulativeIncome = 0;
-                decimal cumulativeExpense = 0;
+                decimal cumulativeIncome = previousBalance > 0 ? previousBalance : 0;
+                decimal cumulativeExpense = previousBalance < 0 ? Math.Abs(previousBalance) : 0;
 
                 for (int d = 1; d <= DaysInMonth; d++)
                 {
@@ -96,6 +120,16 @@ namespace XpemFinancial.VMs
                         cumulativeExpense += dayExpense;
                         expensePoints.Add(new ChartPoint(d, cumulativeExpense));
                     }
+                }
+
+                // Se incluímos saldo anterior, garantimos ponto inicial no dia 1
+                if (IncludePreviousBalance && previousBalance != 0)
+                {
+                    if (previousBalance > 0 && (incomePoints.Count == 0 || incomePoints[0].Day != 1))
+                        incomePoints.Insert(0, new ChartPoint(1, previousBalance > 0 ? previousBalance : 0));
+
+                    if (previousBalance < 0 && (expensePoints.Count == 0 || expensePoints[0].Day != 1))
+                        expensePoints.Insert(0, new ChartPoint(1, previousBalance < 0 ? Math.Abs(previousBalance) : 0));
                 }
 
                 IncomePoints = incomePoints;
@@ -131,6 +165,12 @@ namespace XpemFinancial.VMs
                 await recurringRuleService.RunSchedulerAsync(_selectedDate);
 
             await LoadChartAsync(_selectedDate);
+        }
+
+        [RelayCommand]
+        private void ToggleIncludePreviousBalance()
+        {
+            IncludePreviousBalance = !IncludePreviousBalance;
         }
 
         [RelayCommand]
