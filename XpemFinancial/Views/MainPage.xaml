@@ -101,6 +101,22 @@
                     </Button.ImageSource>
                 </Button>
             </FlexLayout>
+            <!--
+            <Border
+                Margin="5,0,5,10"
+                Padding="0"
+                BackgroundColor="#1c2530"
+                Stroke="#232c39"
+                StrokeShape="RoundRectangle 5">
+                <Picker
+                    ItemsSource="{Binding AccountFilterOptions}"
+                    ItemDisplayBinding="{Binding DisplayName}"
+                    SelectedItem="{Binding SelectedAccountFilter}"
+                    TextColor="#d6e0eb"
+                    Title="Filtrar por conta"
+                    TitleColor="#758292" />
+            </Border>-->
+
             <Border
                 Margin="0"
                 Padding="0"

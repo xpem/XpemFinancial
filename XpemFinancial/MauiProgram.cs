@@ -2,7 +2,9 @@
 using Microsoft.Extensions.Logging;
 using Service;
 using XpemFinancial.Utils;
+using XpemFinancial.Utils.Services;
 using XpemFinancial.Views;
+using XpemFinancial.Views.Account;
 using XpemFinancial.VMs;
 
 namespace XpemFinancial
@@ -62,7 +64,8 @@ namespace XpemFinancial
             services.AddTransientWithShellRoute<Views.TransactionEditPage, VMs.TransactionEditVM>(nameof(Views.TransactionEditPage));
             services.AddTransientWithShellRoute<Views.CategoryPicker, VMs.CategoryPickerVM>(nameof(Views.CategoryPicker));
             services.AddTransientWithShellRoute<Views.CategoryEditPage, VMs.CategoryEditVM>(nameof(Views.CategoryEditPage));
-            services.AddTransientWithShellRoute<Views.AccountPage, VMs.AccountVM>(nameof(Views.AccountPage));
+            services.AddTransientWithShellRoute<AccountsPage, VMs.AccountsVM>(nameof(AccountsPage));
+            services.AddTransientWithShellRoute<AccountEditPage, VMs.AccountEditVM>(nameof(AccountEditPage));
             services.AddTransientWithShellRoute<Views.SignInPage, VMs.SignInVM>(nameof(Views.SignInPage));
             services.AddTransientWithShellRoute<Views.FirstSyncProcessPage, VMs.FirstSyncProcessVM>(nameof(Views.FirstSyncProcessPage));
             services.AddTransientWithShellRoute<Views.SignUpPage, VMs.SignUpVM>(nameof(Views.SignUpPage));

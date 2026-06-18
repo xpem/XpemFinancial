@@ -22,8 +22,5 @@ namespace Model.DTO
 
         public bool IncludePreviousBalance { get; set; } = true;
 
-        //por enquanto, um usuário só tem uma conta, mas futuramente pode ter mais de uma
-        public AccountDTO? Account { get; set; }
-
     }
 }

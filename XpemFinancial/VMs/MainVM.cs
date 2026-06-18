@@ -6,7 +6,9 @@ using Service.Account;
 using Service.Recurring;
 using Service.Transaction;
 using System.Collections.ObjectModel;
+using XpemFinancial.Utils;
 using XpemFinancial.Views;
+using XpemFinancial.Views.Account;
 
 namespace XpemFinancial.VMs
 {
@@ -28,8 +30,19 @@ namespace XpemFinancial.VMs
         [ObservableProperty] private string monthYearDisplay;
         [ObservableProperty] private bool isRequired;
 
+        // ── Account filter (Task 12) ──
+        [ObservableProperty] private ObservableCollection<AccountFilterItem> accountFilterOptions = [];
+        [ObservableProperty] private AccountFilterItem? selectedAccountFilter;
+
+        /// <summary>
+        /// Preserves the selected account filter across VM re-creations within the same app session.
+        /// Reset on cold start (static field initializes to null).
+        /// </summary>
+        private static int? _sessionSelectedAccountId;
+
         private DateTime SelectedDate { get; set; }
         private int? _currentUserId;
+        private bool _isInitializing;
 
         partial void OnIncludePreviousBalanceChanged(bool value)
         {
@@ -52,8 +65,22 @@ namespace XpemFinancial.VMs
             GoToTransactionEditCommand.Execute(newValue.Id);
         }
 
+        partial void OnSelectedAccountFilterChanged(AccountFilterItem? value)
+        {
+            // Persist selection in session memory
+            _sessionSelectedAccountId = value?.AccountId;
+
+            // Skip reload during initialization (InitializeAsync handles the first load)
+            if (_isInitializing) return;
+
+            // Reload transactions with the new filter
+            _ = LoadTransactionsForMonthAsync(SelectedDate);
+        }
+
         public async Task InitializeAsync()
         {
+            _isInitializing = true;
+
             var user = await userSessionService.GetCurrentUserAsync();
 
             if (user == null)
@@ -66,11 +93,71 @@ namespace XpemFinancial.VMs
             _currentUserId = user.Id;
             IncludePreviousBalance = user.IncludePreviousBalance;
 
-            var existingAccount = await accountService.GetAsync();
-            IsNullAccount = existingAccount == null;
+            // Load active accounts for filter
+            await LoadAccountFilterOptionsAsync();
+
+            var existingAccounts = await accountService.GetActiveAsync(_currentUserId.Value);
+            IsNullAccount = existingAccounts.Count == 0;
             IsNotNullAccount = !IsNullAccount;
 
+            _isInitializing = false;
+
             await LoadTransactionsForMonthAsync(SelectedDate);
+        }
+
+        /// <summary>
+        /// Loads active accounts and builds the filter picker options.
+        /// Restores session selection or defaults to "Todas as Contas".
+        /// Reverts to consolidated if previously selected account was deactivated.
+        /// </summary>
+        private async Task LoadAccountFilterOptionsAsync()
+        {
+            if (!_currentUserId.HasValue) return;
+
+            var activeAccounts = await accountService.GetActiveAsync(_currentUserId.Value);
+
+            var options = new ObservableCollection<AccountFilterItem>
+            {
+                new AccountFilterItem
+                {
+                    AccountId = null,
+                    DisplayName = "Todas as Contas (Consolidado)"
+                }
+            };
+
+            // Sort active accounts alphabetically by Name (Req 6.1)
+            foreach (var account in activeAccounts.OrderBy(a => a.Name))
+            {
+                options.Add(new AccountFilterItem
+                {
+                    AccountId = account.Id,
+                    DisplayName = account.Name
+                });
+            }
+
+            AccountFilterOptions = options;
+
+            // Restore session selection or default to "Todas as Contas" (Req 6.5, 6.6, 6.7)
+            if (_sessionSelectedAccountId.HasValue)
+            {
+                var restoredItem = options.FirstOrDefault(o => o.AccountId == _sessionSelectedAccountId.Value);
+                if (restoredItem != null)
+                {
+                    // Account still active — restore selection
+                    SelectedAccountFilter = restoredItem;
+                }
+                else
+                {
+                    // Account was deactivated — revert to consolidated (Req 6.7)
+                    _sessionSelectedAccountId = null;
+                    SelectedAccountFilter = options[0];
+                }
+            }
+            else
+            {
+                // Cold start or no previous selection — default to "Todas as Contas" (Req 6.6)
+                SelectedAccountFilter = options[0];
+            }
         }
 
         /// <summary>
@@ -81,16 +168,23 @@ namespace XpemFinancial.VMs
         public async Task RefreshTransactionsAsync()
         {
             if (IsBusy) return;
+
+            // Reload filter options in case accounts changed during sync
+            await LoadAccountFilterOptionsAsync();
+
             await LoadTransactionsForMonthAsync(SelectedDate);
         }
+
         private async Task LoadTransactionsForMonthAsync(DateTime date)
         {
+            var accountId = SelectedAccountFilter?.AccountId;
+
             MonthYearDisplay = date.ToString("MMMM/yyyy");
-            PreviousBalance = await transactionService.GetPreviousBalanceAsync(date);
+            PreviousBalance = await transactionService.GetPreviousBalanceAsync(date, accountId);
             Transactions = [];
             Expense = Income = 0;
 
-            var transactionsFromService = await transactionService.GetByMonthYear(date);
+            var transactionsFromService = await transactionService.GetByMonthYear(date, accountId);
 
             foreach (var transaction in transactionsFromService)
             {
@@ -126,7 +220,7 @@ namespace XpemFinancial.VMs
         }
 
         [RelayCommand]
-        private async Task GoToAccountPage() => await Shell.Current.GoToAsync($"{nameof(Views.AccountPage)}");
+        private async Task GoToAccountPage() => await Shell.Current.GoToAsync($"{nameof(AccountsPage)}");
 
         [RelayCommand]
         private void ToggleIncludePreviousBalance()
@@ -137,9 +231,21 @@ namespace XpemFinancial.VMs
         [RelayCommand]
         private async Task GoToTransactionEdit(int? transactionId = null)
         {
-            var route = transactionId is not null
-                ? $"{nameof(Views.TransactionEditPage)}?TransactionId={transactionId}"
-                : nameof(Views.TransactionEditPage);
+            var accountParam = SelectedAccountFilter?.AccountId;
+
+            string route;
+            if (transactionId is not null)
+            {
+                route = accountParam.HasValue
+                    ? $"{nameof(Views.TransactionEditPage)}?TransactionId={transactionId}&DashboardAccountId={accountParam}"
+                    : $"{nameof(Views.TransactionEditPage)}?TransactionId={transactionId}";
+            }
+            else
+            {
+                route = accountParam.HasValue
+                    ? $"{nameof(Views.TransactionEditPage)}?DashboardAccountId={accountParam}"
+                    : nameof(Views.TransactionEditPage);
+            }
 
             await Shell.Current.GoToAsync(route);
         }

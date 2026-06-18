@@ -16,14 +16,15 @@ namespace Service.Transaction
         Task UpdateAsync(TransactionDTO transaction, bool isOnline);
         Task ApplyFromApiAsync(TransactionDTO transaction);
         Task<DateTime> GetLastUpdatedAtAsync();
-        Task<IEnumerable<TransactionDTO>> GetByMonthYear(DateTime monthYear);
-        Task<decimal> GetPreviousBalanceAsync(DateTime monthYear);
+        Task<IEnumerable<TransactionDTO>> GetByMonthYear(DateTime monthYear, int? accountId = null);
+        Task<decimal> GetPreviousBalanceAsync(DateTime monthYear, int? accountId = null);
         Task<decimal?> GetBalanceAsync(int accountId);
         Task<TransactionDTO> GetByIdAsync(int id);
         Task<IEnumerable<TransactionDTO>> GetByRecurringRuleIdAsync(Guid recurringRuleId);
         Task DeleteAsync(int transactionId, bool isOnline);
         Task DeleteFutureOccurrencesAsync(Guid recurringRuleId, DateTime fromDate);
         Task PullAsync(int uid, DateTime lastUpdatedAt);
+        Task PushPendingAsync(int userId);
         Task<List<TransactionDescriptionRes>> GetDescriptionSuggestionsAsync(string description);
     }
 
@@ -94,6 +95,8 @@ namespace Service.Transaction
                     if (isOnline)
                         await PushAsync(installment);
                 }
+
+                await RecalculateAccountBalanceAsync(transaction.AccountId);
             }
             else
             {
@@ -104,6 +107,8 @@ namespace Service.Transaction
 
                 if (isOnline)
                     await PushAsync(transaction);
+
+                await RecalculateAccountBalanceAsync(transaction.AccountId);
             }
         }
 
@@ -116,8 +121,17 @@ namespace Service.Transaction
 
         public async Task UpdateAsync(TransactionDTO transaction, bool isOnline)
         {
+            // Capture old AccountId before update to detect account changes
+            var existing = await transactionRepo.GetByIdAsync(transaction.Id);
+            int? oldAccountId = existing?.AccountId;
+
             transaction.UpdatedAt = DateTime.Now;
             await transactionRepo.Update(transaction);
+
+            // Recalculate balance for affected account(s)
+            await RecalculateAccountBalanceAsync(transaction.AccountId);
+            if (oldAccountId.HasValue && oldAccountId != transaction.AccountId)
+                await RecalculateAccountBalanceAsync(oldAccountId);
 
             if (!isOnline) return;
 
@@ -183,11 +197,18 @@ namespace Service.Transaction
             // AccountExternalId is [NotMapped] — it is not persisted in SQLite and is null
             // when a scheduler-generated occurrence is loaded from the local database.
             // Resolve it from the account record before building the API request.
-            int accountExternalId = transaction.AccountExternalId
-                ?? (await accountRepo.GetAsync())?.ExternalId
-                ?? throw new InvalidOperationException(
-                    $"Cannot push transaction {transaction.Id}: account has no ExternalId. " +
-                    "Ensure the account was synced before pushing transactions.");
+            AccountDTO? txAccount = transaction.AccountId.HasValue
+                ? await accountRepo.GetByIdAsync(transaction.AccountId.Value)
+                : null;
+            int? accountExternalId = transaction.AccountExternalId
+                ?? txAccount?.ExternalId;
+
+            if (accountExternalId is null)
+            {
+                // Conta não sincronizada — adiar push para próximo ciclo
+                System.Diagnostics.Debug.WriteLine($"[TransactionService] Deferring push of transaction {transaction.Id}: account has no ExternalId.");
+                return;
+            }
 
             // CategoryExternalId is also [NotMapped]. Use the navigation property loaded by
             // GetByIdAsync (which does .Include(Category)), or fall back to CategoryExternalId
@@ -209,7 +230,7 @@ namespace Service.Transaction
                 CategoryId = categoryExternalId,
                 Type = transaction.Type,
                 Note = transaction.Note,
-                AccountId = accountExternalId,
+                AccountId = accountExternalId.Value,
                 RecurringRuleId = transaction.RecurringRuleId,
                 IsCustomized = transaction.IsCustomized,
             };
@@ -225,16 +246,15 @@ namespace Service.Transaction
             return await transactionRepo.GetByIdAsync(id);
         }
 
-        public async Task<IEnumerable<TransactionDTO>> GetByMonthYear(DateTime monthYear)
+        public async Task<IEnumerable<TransactionDTO>> GetByMonthYear(DateTime monthYear, int? accountId = null)
         {
-            // Implement the logic to get transactions by month and year
-            return await transactionRepo.GetByMonthYear(monthYear);
+            return await transactionRepo.GetByMonthYear(monthYear, accountId);
         }
 
         //calculo do saldo anteior, que é o total das transações até o inicio do mes selecionado, considera todas as transações de ajuste, entrada e saída.
-        public async Task<decimal> GetPreviousBalanceAsync(DateTime monthYear)
+        public async Task<decimal> GetPreviousBalanceAsync(DateTime monthYear, int? accountId = null)
         {
-            return await transactionRepo.GetPreviousBalanceAsync(monthYear);
+            return await transactionRepo.GetPreviousBalanceAsync(monthYear, accountId);
         }
 
         public async Task<decimal?> GetBalanceAsync(int accountId)
@@ -244,6 +264,24 @@ namespace Service.Transaction
             DateTime nextMonth = new DateTime(now.Year, now.Month, 1).AddMonths(1);
 
             return await transactionRepo.GetBalanceAsync(accountId, nextMonth);
+        }
+
+        public async Task PushPendingAsync(int userId)
+        {
+            var pending = await transactionRepo.GetPendingPushAsync(userId);
+
+            foreach (var transaction in pending)
+            {
+                try
+                {
+                    await PushAsync(transaction);
+                }
+                catch
+                {
+                    // Push individual falhou — manter ExternalId atual, tentar no próximo ciclo.
+                    continue;
+                }
+            }
         }
 
         public async Task PullAsync(int uid, DateTime lastUpdatedAt)
@@ -323,6 +361,19 @@ namespace Service.Transaction
                 .Select(g => g.OrderByDescending(r => r.TransactionID).First())
                 .Take(5)
                 .ToList();
+        }
+
+        private async Task RecalculateAccountBalanceAsync(int? accountId)
+        {
+            if (!accountId.HasValue) return;
+
+            var account = await accountRepo.GetByIdAsync(accountId.Value);
+            if (account is null) return;
+
+            decimal sum = await transactionRepo.GetSumByAccountIdAsync(accountId.Value);
+            account.CurrentBalance = sum;
+            account.UpdatedAt = DateTime.UtcNow;
+            await accountRepo.Update(account);
         }
     }
 }

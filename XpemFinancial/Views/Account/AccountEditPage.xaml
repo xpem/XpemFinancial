@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="XpemFinancial.Views.Account.AccountEditPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:Components="clr-namespace:XpemFinancial.Components"
+    xmlns:Icons="clr-namespace:XpemFinancial.Resources"
+    xmlns:vms="clr-namespace:XpemFinancial.VMs"
+    x:DataType="vms:AccountEditVM"
+    BackgroundColor="{StaticResource BodyBackground}">
+    <Shell.TitleView>
+        <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
+            <Label
+                FontFamily="Icons"
+                FontSize="17"
+                Text="{x:Static Icons:IconFont.Wallet}"
+                TextColor="{StaticResource White}"
+                VerticalOptions="Center" />
+            <Label
+                FontSize="17"
+                Text="{Binding PageTitle}"
+                TextColor="{StaticResource White}"
+                VerticalOptions="Center" />
+        </HorizontalStackLayout>
+    </Shell.TitleView>
+
+    <ScrollView Margin="16">
+        <VerticalStackLayout Spacing="16">
+
+            <!--  Ajuste de Saldo (somente em edição de conta ativa)  -->
+            <VerticalStackLayout IsVisible="{Binding IsActiveAccount}" Spacing="4">
+                <Label Text="Balanço atual" TextColor="{StaticResource FontLight}" />
+                <Components:CurrencyEntry
+                    HorizontalOptions="Start"
+                    MinimumWidthRequest="100"
+                    Text="{Binding CurrentBalance}"
+                    VerticalOptions="Center" />
+            </VerticalStackLayout>
+
+            <!--  Nome  -->
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Nome" TextColor="{StaticResource FontLight}" />
+                <Border BackgroundColor="{StaticResource InputBackground}" StrokeShape="RoundRectangle 5">
+                    <Entry
+                        MaxLength="100"
+                        Placeholder="Nome da conta"
+                        ReturnType="Done"
+                        Text="{Binding Name}"
+                        TextColor="{StaticResource FontLight}" />
+                </Border>
+            </VerticalStackLayout>
+
+            <!--  Tipo  -->
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Tipo" TextColor="{StaticResource FontLight}" />
+                <Border BackgroundColor="{StaticResource InputBackground}" StrokeShape="RoundRectangle 5">
+                    <Picker
+                        ItemsSource="{Binding AccountTypeOptions}"
+                        SelectedIndex="{Binding SelectedTypeIndex}"
+                        TextColor="{StaticResource FontLight}" />
+                </Border>
+            </VerticalStackLayout>
+
+            <!--  Incluir no Saldo Geral  -->
+            <Grid Padding="0,8" ColumnDefinitions="*,Auto">
+                <Label
+                    Grid.Column="0"
+                    Text="Incluir no Saldo Geral"
+                    TextColor="{StaticResource FontLight}"
+                    VerticalOptions="Center" />
+                <Switch
+                    Grid.Column="1"
+                    IsToggled="{Binding IncludeInGeneralBalance}"
+                    OnColor="{StaticResource PrimaryAction}" />
+            </Grid>
+
+            <!--  Botões  -->
+            <VerticalStackLayout Spacing="10">
+                <!--  Salvar  -->
+                <Button
+                    Command="{Binding SaveCommand}"
+                    ContentLayout="Left, 10"
+                    CornerRadius="5"
+                    HorizontalOptions="End"
+                    Style="{StaticResource SuccessButton}"
+                    Text="Salvar"
+                    TextColor="White">
+                    <Button.ImageSource>
+                        <FontImageSource
+                            FontFamily="Icons"
+                            Glyph="{x:Static Icons:IconFont.Check}"
+                            Size="13"
+                            Color="White" />
+                    </Button.ImageSource>
+                </Button>
+            </VerticalStackLayout>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

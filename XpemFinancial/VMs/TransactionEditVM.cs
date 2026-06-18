@@ -41,6 +41,20 @@ namespace XpemFinancial.VMs
         [ObservableProperty] private TransactionType selectedTransactionType;
         [ObservableProperty] private bool isEditing = false;
 
+        // ── Account selection (Task 13) ──
+        [ObservableProperty] private List<AccountDTO> activeAccounts = [];
+        [ObservableProperty] private AccountDTO? selectedAccount;
+
+        /// <summary>
+        /// Stores the dashboard account ID passed via navigation parameter for pre-selection.
+        /// </summary>
+        private int? _preselectedAccountId;
+
+        /// <summary>
+        /// Stores the existing transaction's AccountId when editing, for pre-selection.
+        /// </summary>
+        private int? _editingTransactionAccountId;
+
         public ObservableCollection<CategoryDTO> FlattenedCategories { get; set; } = new();
 
         public ObservableCollection<TransactionDescriptionRes> DescriptionSuggestions { get; set; } = new();
@@ -130,6 +144,53 @@ namespace XpemFinancial.VMs
             SuggestionsVisible = false;
         }
 
+        /// <summary>
+        /// Loads active accounts and pre-selects based on navigation parameters or default.
+        /// Called from code-behind OnNavigatedTo.
+        /// </summary>
+        public async Task InitializeAccountsAsync()
+        {
+            var user = await userSessionService.GetCurrentUserAsync();
+            if (user is null) return;
+
+            var accounts = await accountService.GetActiveAsync(user.Id);
+            ActiveAccounts = accounts;
+
+            if (accounts.Count == 0) return;
+
+            // 1. Editing existing transaction → select the transaction's account
+            if (_editingTransactionAccountId.HasValue)
+            {
+                var match = accounts.FirstOrDefault(a => a.Id == _editingTransactionAccountId.Value);
+                SelectedAccount = match ?? accounts.First();
+                return;
+            }
+
+            // 2. Navigated from dashboard with specific account filter → pre-select that account (Req 7.2)
+            if (_preselectedAccountId.HasValue)
+            {
+                var match = accounts.FirstOrDefault(a => a.Id == _preselectedAccountId.Value);
+                if (match is not null)
+                {
+                    SelectedAccount = match;
+                    return;
+                }
+            }
+
+            // 3. Fallback: use default account (Req 7.3)
+            var defaultAccount = await accountService.GetDefaultAsync(user.Id);
+            if (defaultAccount is not null && defaultAccount.IsActive)
+            {
+                var match = accounts.FirstOrDefault(a => a.Id == defaultAccount.Id);
+                SelectedAccount = match ?? accounts.First();
+            }
+            else
+            {
+                // Default is inactive or null → first active account
+                SelectedAccount = accounts.First();
+            }
+        }
+
         private async Task<string> ResolveCategoryDisplayNameAsync(CategoryDTO category)
         {
             if (category == null) return "Sem Categoria";
@@ -177,6 +238,13 @@ namespace XpemFinancial.VMs
                 return;
             }
 
+            // Parse dashboard account filter parameter (Task 13 — Req 7.2)
+            if (query.TryGetValue("DashboardAccountId", out var dashAccountObj)
+                && int.TryParse(dashAccountObj?.ToString(), out int dashAccountId))
+            {
+                _preselectedAccountId = dashAccountId;
+            }
+
             if (query.TryGetValue("TransactionId", out var valTransactionId) && valTransactionId is string)
             {
                 int transactionId = Convert.ToInt32(valTransactionId);
@@ -208,6 +276,9 @@ namespace XpemFinancial.VMs
                         OnPropertyChanged(nameof(IsRecurring));
 
                         TransactionTypeColor = transaction.Type == TransactionType.Income ? "#2bbf69" : "#f75c5c";
+
+                        // Store account for pre-selection in InitializeAccountsAsync
+                        _editingTransactionAccountId = transaction.AccountId;
                     }
                     finally
                     {
@@ -350,6 +421,11 @@ namespace XpemFinancial.VMs
             {
                 isValid = false;
             }
+            else if (SelectedAccount is null)
+            {
+                isValid = false;
+                _ = VMBase.ShowMessage("Aviso", "Selecione uma conta para a transação!");
+            }
 
             if (!isValid)
                 IsRequired = true;
@@ -395,7 +471,6 @@ namespace XpemFinancial.VMs
                 amountValue = Math.Abs(amountValue);
 
             var user = await userSessionService.GetCurrentUserAsync();
-            var account = await accountService.GetAsync();
 
             // ── Edição de transação existente ────────────────────────────────
             if (IsEditing && TransactionId != 0)
@@ -426,6 +501,8 @@ namespace XpemFinancial.VMs
                 existingTransaction.CategoryId = SelectedCategory?.Id ?? existingTransaction.CategoryId;
                 existingTransaction.CategoryExternalId = SelectedCategory?.ExternalId;
                 existingTransaction.UpdatedAt = DateTime.Now;
+                existingTransaction.AccountId = SelectedAccount!.Id;
+                existingTransaction.AccountExternalId = SelectedAccount!.ExternalId;
 
                 await transactionService.UpdateAsync(existingTransaction, IsOn);
                 _ = VMBase.ShowMessage("Sucesso", "Transação atualizada com sucesso!");
@@ -445,7 +522,7 @@ namespace XpemFinancial.VMs
                     Type = SelectedTransactionType,
                     CategoryId = SelectedCategory?.Id ?? 0,
                     CategoryExternalId = SelectedCategory?.ExternalId,
-                    AccountId = account?.Id,
+                    AccountId = SelectedAccount!.Id,
                     Frequency = Frequency.Monthly,
                     StartDate = TransactionDate,
                     EndDate = null,
@@ -475,10 +552,10 @@ namespace XpemFinancial.VMs
                 Note = Note?.Trim(),
                 CategoryId = SelectedCategory?.Id ?? 0,
                 CategoryExternalId = SelectedCategory?.ExternalId,
-                AccountExternalId = account?.ExternalId,
+                AccountExternalId = SelectedAccount!.ExternalId,
                 UserId = user.Id,
                 CreatedAt = DateTime.UtcNow,
-                AccountId = account.Id
+                AccountId = SelectedAccount!.Id
             };
 
             if (transaction.Repetition == Repetition.Monthly)
@@ -504,7 +581,7 @@ namespace XpemFinancial.VMs
                 Type = SelectedTransactionType,
                 CategoryId = SelectedCategory?.Id ?? existingTransaction.CategoryId.Value,
                 CategoryExternalId = SelectedCategory?.ExternalId,
-                AccountId = existingTransaction.AccountId,
+                AccountId = SelectedAccount?.Id ?? existingTransaction.AccountId,
                 Frequency = Frequency.Monthly,
                 StartDate = TransactionDate,
                 UserId = existingTransaction.UserId,

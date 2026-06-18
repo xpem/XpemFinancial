@@ -137,6 +137,21 @@
                         </Border>
                     </VerticalStackLayout>
                 </Grid>
+
+                <!--  Account Picker (Task 13 — Req 7)  -->
+                <VerticalStackLayout Margin="0,10,0,0" Spacing="4">
+                    <Label Text="Conta" />
+                    <Border
+                        Padding="0"
+                        BackgroundColor="{StaticResource InputBackground}"
+                        StrokeShape="RoundRectangle 5">
+                        <Picker
+                            Title="Selecione a conta"
+                            ItemDisplayBinding="{Binding Name}"
+                            ItemsSource="{Binding ActiveAccounts}"
+                            SelectedItem="{Binding SelectedAccount}" />
+                    </Border>
+                </VerticalStackLayout>
                 <Components:RequiredEntry
                     x:Name="DescriptionEntry"
                     EntryValue="{Binding Description}"

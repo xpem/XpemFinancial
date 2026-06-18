@@ -1,0 +1,62 @@
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using Model.DTO;
+using Service;
+using Service.Account;
+using Service.Transaction;
+using XpemFinancial.Views.Account;
+
+namespace XpemFinancial.VMs;
+
+public partial class AccountsVM(
+    IAccountService accountService,
+    IUserSessionService userSessionService,
+    ITransactionService transactionService) : VMBase
+{
+    [ObservableProperty]
+    private List<AccountDTO> activeAccounts = [];
+
+    [ObservableProperty]
+    private List<AccountDTO> inactiveAccounts = [];
+
+    [ObservableProperty]
+    private bool hasInactiveAccounts;
+
+    public async Task InitializeAsync()
+    {
+        IsBusy = true;
+        try
+        {
+            var user = await userSessionService.GetCurrentUserAsync();
+            if (user is null) return;
+
+            var all = await accountService.GetAllAsync(user.Id);
+
+            // Calcular saldo real de cada conta via transações
+            foreach (var account in all)
+            {
+                account.CurrentBalance = await transactionService.GetBalanceAsync(account.Id) ?? 0;
+            }
+
+            ActiveAccounts = all.Where(a => a.IsActive).OrderBy(a => a.Name).ToList();
+            InactiveAccounts = all.Where(a => !a.IsActive).OrderBy(a => a.Name).ToList();
+            HasInactiveAccounts = InactiveAccounts.Count > 0;
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task AddAccount()
+    {
+        await Shell.Current.GoToAsync(nameof(AccountEditPage));
+    }
+
+    [RelayCommand]
+    private async Task EditAccount(AccountDTO account)
+    {
+        await Shell.Current.GoToAsync($"{nameof(AccountEditPage)}?accountId={account.Id}");
+    }
+}

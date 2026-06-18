@@ -12,6 +12,12 @@ public partial class TransactionEditPage : ContentPage
         transactionEditVM.PropertyChanged += OnVMPropertyChanged;
     }
 
+    protected override async void OnNavigatedTo(NavigatedToEventArgs args)
+    {
+        base.OnNavigatedTo(args);
+        await ((TransactionEditVM)BindingContext).InitializeAccountsAsync();
+    }
+
     protected override void OnAppearing()
     {
         base.OnAppearing();

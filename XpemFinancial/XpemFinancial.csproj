@@ -96,6 +96,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<Compile Update="Views\Account\AccountEditPage.xaml.cs">
+		  <DependentUpon>AccountEditPage.xaml</DependentUpon>
+		</Compile>
 		<Compile Update="Views\AccountPage.xaml.cs">
 			<DependentUpon>AccountPage.xaml</DependentUpon>
 		</Compile>

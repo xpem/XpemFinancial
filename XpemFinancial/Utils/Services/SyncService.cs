@@ -6,7 +6,7 @@ using Service.Recurring;
 using Service.Transaction;
 using System.Diagnostics;
 
-namespace XpemFinancial.Utils
+namespace XpemFinancial.Utils.Services
 {
     /// <summary>
     /// Singleton service responsible for periodically syncing the local database with the server.
@@ -103,11 +103,22 @@ namespace XpemFinancial.Utils
                         DateTime categoryLastUpdate = await categoryService.GetLastUpdatedAtAsync().ConfigureAwait(false);
                         await categoryService.PullAsync(user.Id, categoryLastUpdate).ConfigureAwait(false);
 
-                        DateTime accountLastUpdate = await accountService.GetLastUpdatedAtAsync().ConfigureAwait(false);
-                        await accountService.PullAsync(user.Id, accountLastUpdate).ConfigureAwait(false);
+                        try
+                        {
+                            await accountService.PushAsync(user.Id).ConfigureAwait(false);
+                            await accountService.PullAsync(user.Id).ConfigureAwait(false);
+                        }
+                        catch (Exception ex)
+                        {
+                            // Account sync falhou → interromper RecurringRules e Transactions (Req 9.4)
+                            Debug.WriteLine($"[SyncService] Account sync failed, skipping dependents: {ex.Message}");
+                            return;
+                        }
 
                         DateTime recurringLastUpdate = await recurringRuleService.GetLastUpdatedAtAsync().ConfigureAwait(false);
                         await recurringRuleService.PullAsync(user.Id, recurringLastUpdate).ConfigureAwait(false);
+
+                        await transactionService.PushPendingAsync(user.Id).ConfigureAwait(false);
 
                         DateTime transactionLastUpdate = await transactionService.GetLastUpdatedAtAsync().ConfigureAwait(false);
                         await transactionService.PullAsync(user.Id, transactionLastUpdate).ConfigureAwait(false);

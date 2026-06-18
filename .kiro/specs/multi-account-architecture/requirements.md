@@ -69,7 +69,7 @@ Evolução do XpemFinancial de um modelo de conta única para uma arquitetura mu
 3. THE Sistema_App SHALL executar a migração de forma idempotente: se já existir pelo menos uma Conta no banco local, nenhuma ContaPadrão adicional será criada e nenhum AccountId já preenchido será sobrescrito.
 4. WHEN a migração local for concluída com sucesso, THE Sistema_App SHALL enviar a ContaPadrão ao Sistema_API na próxima sincronização seguindo a ordem definida no Requisito 9, e o Sistema_API SHALL persistir a Conta e retornar o Id gerado sem rejeitar as transações migradas vinculadas a ela.
 5. IF a criação da ContaPadrão ou a atualização de AccountId nas transações falhar durante a migração, THEN THE Sistema_App SHALL reverter todas as alterações da migração (rollback) e tentar novamente na próxima inicialização, preservando os dados originais intactos.
-6. WHEN o BuildDbService incrementar a versão do banco local, THE Sistema_App SHALL migrar o schema preservando os dados existentes em vez de deletar e recriar o banco, garantindo que transações e demais registros permaneçam íntegros após a atualização.
+6. WHEN o BuildDbService incrementar a versão do banco local (CurrentDbVersion), THE Sistema_App SHALL recriar o banco conforme o padrão atual (EnsureDeleted + EnsureCreated). A ContaPadrão será criada na primeira inicialização pós-login quando o banco estiver vazio, garantindo que transações sincronizadas do servidor na sequência sejam vinculadas corretamente. A migração de dados legados aplica-se apenas a cenários onde o banco já contém transações sem AccountId (ex: atualização de versão sem drop do banco).
 
 ### Requisito 5: Cálculo de Saldo por Conta
 

@@ -2,7 +2,7 @@
 using Service.Account;
 using Service.Recurring;
 using Service.Transaction;
-using XpemFinancial.Utils;
+using XpemFinancial.Utils.Services;
 using XpemFinancial.VMs;
 
 namespace XpemFinancial.Views

@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="XpemFinancial.Views.Account.AccountsPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:Icons="clr-namespace:XpemFinancial.Resources"
+    xmlns:Models="clr-namespace:Model.DTO;assembly=Model"
+    xmlns:Utils="clr-namespace:XpemFinancial.Utils"
+    xmlns:vms="clr-namespace:XpemFinancial.VMs"
+    x:DataType="vms:AccountsVM"
+    BackgroundColor="{StaticResource BodyBackground}">
+    <ContentPage.Resources>
+        <Utils:AccountTypeConverter x:Key="AccountTypeConverter" />
+    </ContentPage.Resources>
+    <Shell.TitleView>
+        <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
+            <Label
+                FontFamily="Icons"
+                FontSize="17"
+                Text="{x:Static Icons:IconFont.Wallet}"
+                TextColor="{StaticResource White}"
+                VerticalOptions="Center" />
+            <Label
+                FontSize="17"
+                Text="Contas"
+                TextColor="{StaticResource White}"
+                VerticalOptions="Center" />
+        </HorizontalStackLayout>
+    </Shell.TitleView>
+
+    <Grid RowDefinitions="*,Auto">
+        <ScrollView Grid.Row="0" Margin="16">
+            <VerticalStackLayout Spacing="16">
+                <!--  Contas Ativas  -->
+                <VerticalStackLayout Spacing="8">
+                    <Label
+                        FontAttributes="Bold"
+                        FontSize="16"
+                        Text="Contas Ativas"
+                        TextColor="{StaticResource FontLight}" />
+                    <CollectionView ItemsSource="{Binding ActiveAccounts}">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="Models:AccountDTO">
+                                <StackLayout>
+                                    <Border
+                                        Margin="5"
+                                        Padding="12"
+                                        BackgroundColor="{StaticResource InputBackground}"
+                                        StrokeShape="RoundRectangle 8">
+                                        <Border.GestureRecognizers>
+                                            <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type vms:AccountsVM}}, Path=EditAccountCommand}" CommandParameter="{Binding .}" />
+                                        </Border.GestureRecognizers>
+                                        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+                                            <Label
+                                                Grid.Row="0"
+                                                Grid.Column="0"
+                                                FontAttributes="Bold"
+                                                FontSize="15"
+                                                Text="{Binding Name}"
+                                                TextColor="{StaticResource FontLight}" />
+                                            <Label
+                                                Grid.Row="0"
+                                                Grid.Column="1"
+                                                FontAttributes="Bold"
+                                                FontSize="15"
+                                                Text="{Binding CurrentBalance, StringFormat='{0:C}'}"
+                                                TextColor="{StaticResource FontLight}" />
+                                            <Label
+                                                Grid.Row="1"
+                                                Grid.Column="0"
+                                                FontSize="13"
+                                                Text="{Binding Type, Converter={StaticResource AccountTypeConverter}}"
+                                                TextColor="{StaticResource FontDark}" />
+                                        </Grid>
+                                    </Border>
+                                </StackLayout>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </VerticalStackLayout>
+
+                <!--  Contas Inativas  -->
+                <VerticalStackLayout IsVisible="{Binding HasInactiveAccounts}" Spacing="8">
+                    <Label
+                        FontAttributes="Bold"
+                        FontSize="16"
+                        Text="Contas Inativas"
+                        TextColor="{StaticResource FontDark}" />
+
+                    <CollectionView ItemsSource="{Binding InactiveAccounts}">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="Models:AccountDTO">
+                                <Border
+                                    Margin="0,4"
+                                    Padding="12"
+                                    BackgroundColor="{StaticResource InputBackground}"
+                                    Opacity="0.6"
+                                    StrokeShape="RoundRectangle 8">
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type vms:AccountsVM}}, Path=EditAccountCommand}" CommandParameter="{Binding .}" />
+                                    </Border.GestureRecognizers>
+                                    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+                                        <Label
+                                            Grid.Row="0"
+                                            Grid.Column="0"
+                                            FontAttributes="Bold"
+                                            FontSize="15"
+                                            Text="{Binding Name}"
+                                            TextColor="{StaticResource FontDark}" />
+                                        <Label
+                                            Grid.Row="0"
+                                            Grid.Column="1"
+                                            FontAttributes="Bold"
+                                            FontSize="15"
+                                            Text="{Binding CurrentBalance, StringFormat='{0:C}'}"
+                                            TextColor="{StaticResource FontDark}" />
+                                        <HorizontalStackLayout
+                                            Grid.Row="1"
+                                            Grid.Column="0"
+                                            Spacing="6">
+                                            <Label
+                                                FontSize="13"
+                                                Text="{Binding Type, Converter={StaticResource AccountTypeConverter}}"
+                                                TextColor="{StaticResource FontDark}" />
+                                            <Label
+                                                FontSize="12"
+                                                Text="(Inativa)"
+                                                TextColor="{StaticResource Expense}" />
+                                        </HorizontalStackLayout>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </VerticalStackLayout>
+
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <!--  FAB - Add Account Button  -->
+        <Button
+            Grid.Row="1"
+            Margin="16"
+            Command="{Binding AddAccountCommand}"
+            ContentLayout="Left, 10"
+            CornerRadius="25"
+            HeightRequest="50"
+            HorizontalOptions="End"
+            Style="{StaticResource SuccessButton}"
+            Text="Nova Conta"
+            TextColor="White"
+            VerticalOptions="End">
+            <Button.ImageSource>
+                <FontImageSource
+                    FontFamily="Icons"
+                    Glyph="{x:Static Icons:IconFont.Plus}"
+                    Size="15"
+                    Color="White" />
+            </Button.ImageSource>
+        </Button>
+    </Grid>
+</ContentPage>

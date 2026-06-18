@@ -255,9 +255,8 @@ namespace Service.Recurring
                 int? localAccountId = null;
                 if (res.AccountId.HasValue)
                 {
-                    var localAccount = await accountRepo.GetAsync();
-                    // There is currently only one account per user; match by ExternalId to be safe.
-                    if (localAccount?.ExternalId == res.AccountId)
+                    var localAccount = await accountRepo.GetByExternalIdAsync(res.AccountId.Value);
+                    if (localAccount is not null)
                         localAccountId = localAccount.Id;
                 }
 

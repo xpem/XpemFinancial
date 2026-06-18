@@ -10,13 +10,16 @@ namespace Repo
         Task Update(TransactionDTO transaction);
         Task<TransactionDTO?> GetByExternalIdAsync(int externalId);
         Task<DateTime> GetMaxUpdatedAtAsync();
-        Task<IEnumerable<TransactionDTO>> GetByMonthYear(DateTime monthYear);
-        Task<decimal> GetPreviousBalanceAsync(DateTime monthYear);
+        Task<IEnumerable<TransactionDTO>> GetByMonthYear(DateTime monthYear, int? accountId = null);
+        Task<decimal> GetPreviousBalanceAsync(DateTime monthYear, int? accountId = null);
         Task<decimal?> GetBalanceAsync(int accountId, DateTime dateLimit);
         Task<TransactionDTO> GetByIdAsync(int transactionId);
         Task<IEnumerable<TransactionDTO>> GetByRecurringRuleIdAsync(Guid recurringRuleId);
+        Task<decimal> GetSumByAccountIdAsync(int accountId);
+        Task AssignAccountToOrphansAsync(int accountId);
 
         Task<List<TransactionDescriptionRes>> GetTransactionDescription(string description);
+        Task<List<TransactionDTO>> GetPendingPushAsync(int userId);
     }
 
     public class TransactionRepo(IDbContextFactory<DbCtx> DbCtx) : ITransactionRepo
@@ -38,25 +41,34 @@ namespace Repo
             await db.SaveChangesAsync();
         }
 
-        public async Task<IEnumerable<TransactionDTO>> GetByMonthYear(DateTime monthYear)
+        public async Task<IEnumerable<TransactionDTO>> GetByMonthYear(DateTime monthYear, int? accountId = null)
         {
             using var db = await DbCtx.CreateDbContextAsync();
-            return await db.Transaction
+            var query = db.Transaction
                 .Where(t => t.Date.Month == monthYear.Month
                          && t.Date.Year == monthYear.Year
                          && t.Type != TransactionType.Adjustment
-                         && !t.Inactive)
+                         && !t.Inactive);
+
+            if (accountId.HasValue)
+                query = query.Where(t => t.AccountId == accountId.Value);
+
+            return await query
                 .OrderByDescending(t => t.Date)
                 .ToListAsync();
         }
 
         //calculo do saldo anteior, que é o total das transações até o inicio do mes selecionado, considera todas as transações de ajuste, entrada e saída.
-        public async Task<decimal> GetPreviousBalanceAsync(DateTime monthYear)
+        public async Task<decimal> GetPreviousBalanceAsync(DateTime monthYear, int? accountId = null)
         {
             using var db = await DbCtx.CreateDbContextAsync();
-            var previousTransactions = await db.Transaction
-                .Where(t => t.Date < new DateTime(monthYear.Year, monthYear.Month, 1) && !t.Inactive)
-                .ToListAsync();
+            var query = db.Transaction
+                .Where(t => t.Date < new DateTime(monthYear.Year, monthYear.Month, 1) && !t.Inactive);
+
+            if (accountId.HasValue)
+                query = query.Where(t => t.AccountId == accountId.Value);
+
+            var previousTransactions = await query.ToListAsync();
             return previousTransactions.Sum(t => t.Amount);
         }
 
@@ -96,6 +108,29 @@ namespace Repo
                 .ToListAsync();
         }
 
+        public async Task<decimal> GetSumByAccountIdAsync(int accountId)
+        {
+            using var db = await DbCtx.CreateDbContextAsync();
+            return await db.Transaction
+                .Where(t => t.AccountId == accountId && !t.Inactive)
+                .SumAsync(t => t.Amount);
+        }
+
+        public async Task AssignAccountToOrphansAsync(int accountId)
+        {
+            using var db = await DbCtx.CreateDbContextAsync();
+            var orphans = await db.Transaction
+                .Where(t => t.AccountId == null)
+                .ToListAsync();
+
+            foreach (var t in orphans)
+            {
+                t.AccountId = accountId;
+            }
+
+            await db.SaveChangesAsync();
+        }
+
         /// <summary>
         /// para construir a lista de recomendações de auto preenchimento da transação
         /// </summary>
@@ -116,6 +151,14 @@ namespace Repo
                 })
                 .ToListAsync();
             return list;
+        }
+
+        public async Task<List<TransactionDTO>> GetPendingPushAsync(int userId)
+        {
+            using var db = await DbCtx.CreateDbContextAsync();
+            return await db.Transaction
+                .Where(t => t.UserId == userId && t.ExternalId == null && !t.Inactive)
+                .ToListAsync();
         }
     }
 }
