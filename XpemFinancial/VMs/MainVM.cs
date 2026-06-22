@@ -25,6 +25,7 @@ namespace XpemFinancial.VMs
         [ObservableProperty] private decimal income;
         [ObservableProperty] private decimal expense;
         [ObservableProperty] private decimal total;
+        //[ObservableProperty] private decimal generalBalance;
         [ObservableProperty] private bool isNullAccount = false;
         [ObservableProperty] private bool isNotNullAccount = false;
         [ObservableProperty] private string monthYearDisplay;
@@ -103,6 +104,8 @@ namespace XpemFinancial.VMs
             _isInitializing = false;
 
             await LoadTransactionsForMonthAsync(SelectedDate);
+
+            //GeneralBalance = await accountService.GetGeneralBalanceAsync(_currentUserId.Value);
         }
 
         /// <summary>
@@ -173,6 +176,9 @@ namespace XpemFinancial.VMs
             await LoadAccountFilterOptionsAsync();
 
             await LoadTransactionsForMonthAsync(SelectedDate);
+
+            //if (_currentUserId.HasValue)
+            //    GeneralBalance = await accountService.GetGeneralBalanceAsync(_currentUserId.Value);
         }
 
         private async Task LoadTransactionsForMonthAsync(DateTime date)

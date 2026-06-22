@@ -31,6 +31,28 @@
     <Grid RowDefinitions="*,Auto">
         <ScrollView Grid.Row="0" Margin="16">
             <VerticalStackLayout Spacing="16">
+
+                <!--  Saldo Geral  -->
+                <Border
+                    Padding="12"
+                    BackgroundColor="{StaticResource InputBackground}"
+                    StrokeShape="RoundRectangle 8">
+                    <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
+                        <Label
+                            FontAttributes="Bold"
+                            FontSize="16"
+                            Text="Saldo Geral:"
+                            TextColor="{StaticResource FontLight}"
+                            VerticalOptions="Center" />
+                        <Label
+                            FontAttributes="Bold"
+                            FontSize="16"
+                            Text="{Binding GeneralBalance, StringFormat='{0:C}'}"
+                            TextColor="{StaticResource Income}"
+                            VerticalOptions="Center" />
+                    </HorizontalStackLayout>
+                </Border>
+
                 <!--  Contas Ativas  -->
                 <VerticalStackLayout Spacing="8">
                     <Label

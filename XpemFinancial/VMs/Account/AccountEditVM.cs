@@ -104,7 +104,7 @@ public partial class AccountEditVM(
                 _existingAccount.Name = trimmedName;
                 _existingAccount.Type = type;
                 _existingAccount.IncludeInGeneralBalance = IncludeInGeneralBalance;
-                await accountService.UpdateAsync(_existingAccount);
+                await accountService.UpdateAsync(_existingAccount, IsOn);
 
                 // Ajustar saldo se o valor foi alterado
                 if (_existingAccount.IsActive && CurrentBalance != _originalBalance.ToString("C"))
@@ -124,7 +124,7 @@ public partial class AccountEditVM(
                     initialBalance = parsed;
                 }
 
-                await accountService.CreateAsync(user.Id, trimmedName, type, IncludeInGeneralBalance, initialBalance);
+                await accountService.CreateAsync(user.Id, trimmedName, type, IncludeInGeneralBalance, IsOn, initialBalance);
                 await ShowMessage("Sucesso", "Conta criada com sucesso.");
             }
 
@@ -146,7 +146,7 @@ public partial class AccountEditVM(
         if (_existingAccount is null) return;
 
         var page = Application.Current!.Windows[0].Page!;
-        bool confirm = await page.DisplayAlert(
+        bool confirm = await page.DisplayAlertAsync(
             "Desativar Conta",
             $"Tem certeza que deseja desativar a conta \"{_existingAccount.Name}\"? Transações existentes serão mantidas para consulta histórica.",
             "Desativar",

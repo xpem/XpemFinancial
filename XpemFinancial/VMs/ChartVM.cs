@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Model.DTO;
 using Service;
+using Service.Account;
 using Service.Recurring;
 using Service.Transaction;
 using System.Collections.ObjectModel;
@@ -18,12 +19,14 @@ namespace XpemFinancial.VMs
         ITransactionService transactionService,
         IRecurringRuleService recurringRuleService,
         IUserSessionService userSessionService,
-        IUserService userService) : VMBase
+        IUserService userService,
+        IAccountService accountService) : VMBase
     {
         [ObservableProperty] private string monthYearDisplay = string.Empty;
         [ObservableProperty] private ObservableCollection<TransactionDTO> transactions = [];
         [ObservableProperty] private TransactionDTO? selectedTransaction;
         [ObservableProperty] private bool includePreviousBalance;
+        //[ObservableProperty] private decimal generalBalance;
 
         /// <summary>Cumulative income points, ordered by day.</summary>
         public List<ChartPoint> IncomePoints { get; private set; } = [];
@@ -67,6 +70,7 @@ namespace XpemFinancial.VMs
             {
                 _currentUserId = user.Id;
                 IncludePreviousBalance = user.IncludePreviousBalance;
+                //GeneralBalance = await accountService.GetGeneralBalanceAsync(user.Id);
             }
 
             _selectedDate = DateTime.Now;

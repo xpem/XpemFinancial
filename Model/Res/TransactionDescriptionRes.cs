@@ -13,5 +13,7 @@ namespace Model.Res
         public int? CategoryId { get; set; }
 
         public string CategoryName { get; set; }
+
+        public int? AccountId { get; set; }
     }
 }

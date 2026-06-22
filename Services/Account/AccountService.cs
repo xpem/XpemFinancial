@@ -3,14 +3,15 @@ using Model.DTO;
 using Model.Req;
 using Model.Resp.Api;
 using Repo;
+using Service.Transaction;
 
 namespace Service.Account
 {
     public interface IAccountService
     {
         // CRUD
-        Task<AccountDTO> CreateAsync(int userId, string name, AccountType type, bool includeInGeneralBalance, decimal initialBalance = 0);
-        Task UpdateAsync(AccountDTO account);
+        Task<AccountDTO> CreateAsync(int userId, string name, AccountType type, bool includeInGeneralBalance,bool isOnline, decimal initialBalance = 0);
+        Task UpdateAsync(AccountDTO account, bool isOnline);
         Task DeactivateAsync(int accountId);
 
         // Consultas
@@ -20,7 +21,6 @@ namespace Service.Account
         Task<AccountDTO?> GetDefaultAsync(int userId);
 
         // Saldo
-        Task RecalculateBalanceAsync(int accountId);
         Task<decimal> GetGeneralBalanceAsync(int userId);
         Task AdjustAccountBalanceAsync(int accountId, decimal newBalance, decimal oldbalance, bool isOnline);
 
@@ -29,19 +29,12 @@ namespace Service.Account
 
         // Sincronização multi-conta
         Task PullAsync(int uid);
-        Task PushAsync(int uid);
-
-        // ── Legacy (mantidos para compatibilidade com callers existentes até Tasks 9-10) ──
-        Task<AccountDTO?> GetAsync();
-        Task<DateTime> GetLastUpdatedAtAsync();
-        Task PullAsync(int uid, DateTime lastUpdatedAt);
-        Task AdjustAccountBalanceAsync(AccountDTO account, decimal oldbalance, decimal newbalance, bool isOnline);
-        Task UpdateExternalIdsAsync(int localAccountId, int serverAccountId, int localTransactionId, int serverTransactionId);
+        Task PushPendingAsync(int uid);
     }
 
     public class AccountService(
         IAccountRepo accountRepo,
-        ITransactionRepo transactionRepo,
+        ITransactionService transactionService,
         IAccountApiRepo accountApiRepo,
         ISyncCursorRepo syncCursorRepo) : IAccountService
     {
@@ -51,7 +44,7 @@ namespace Service.Account
         // CRUD
         // ═══════════════════════════════════════════════════════════════════════
 
-        public async Task<AccountDTO> CreateAsync(int userId, string name, AccountType type, bool includeInGeneralBalance, decimal initialBalance = 0)
+        public async Task<AccountDTO> CreateAsync(int userId, string name, AccountType type, bool includeInGeneralBalance, bool isOn, decimal initialBalance = 0)
         {
             int activeCount = await accountRepo.GetActiveCountAsync(userId);
             if (activeCount >= MaxActiveAccounts)
@@ -71,6 +64,9 @@ namespace Service.Account
 
             await accountRepo.Add(account);
 
+            if (isOn)
+                await Push(account);
+
             if (initialBalance != 0)
             {
                 var initialTransaction = new TransactionDTO
@@ -87,16 +83,21 @@ namespace Service.Account
                     CategoryId = null,
                 };
 
-                await transactionRepo.Add(initialTransaction);
+                await transactionService.AddAsync(initialTransaction, isOn);
             }
 
             return account;
         }
 
-        public async Task UpdateAsync(AccountDTO account)
+        public async Task UpdateAsync(AccountDTO account, bool isOnline)
         {
             account.UpdatedAt = DateTime.UtcNow;
             await accountRepo.Update(account);
+
+            if (isOnline)
+            {
+                await Push(account);
+            }
         }
 
         public async Task DeactivateAsync(int accountId)
@@ -133,23 +134,17 @@ namespace Service.Account
         // Saldo
         // ═══════════════════════════════════════════════════════════════════════
 
-        public async Task RecalculateBalanceAsync(int accountId)
-        {
-            var account = await accountRepo.GetByIdAsync(accountId)
-                ?? throw new InvalidOperationException($"Conta com Id {accountId} não encontrada.");
-
-            decimal sum = await transactionRepo.GetSumByAccountIdAsync(accountId);
-            account.CurrentBalance = sum;
-            account.UpdatedAt = DateTime.UtcNow;
-            await accountRepo.Update(account);
-        }
-
         public async Task<decimal> GetGeneralBalanceAsync(int userId)
         {
-            var accounts = await accountRepo.GetActiveAsync(userId);
-            return accounts
-                .Where(a => a.IncludeInGeneralBalance)
-                .Sum(a => a.CurrentBalance);
+            var activeAccounts = await accountRepo.GetActiveAsync(userId);
+            decimal total = 0;
+
+            foreach (var account in activeAccounts.Where(a => a.IncludeInGeneralBalance))
+            {
+                total += await transactionService.GetBalanceAsync(account.Id) ?? 0;
+            }
+
+            return total;
         }
 
         public async Task AdjustAccountBalanceAsync(int accountId, decimal newBalance, decimal oldbalance, bool isOnline)
@@ -169,7 +164,7 @@ namespace Service.Account
             {
                 UserId = account.UserId,
                 Amount = adjustmentAmount,
-                Date = DateTime.UtcNow,
+                Date = DateTime.MinValue,
                 Description = "Ajuste de saldo",
                 AccountId = accountId,
                 Type = TransactionType.Adjustment,
@@ -179,13 +174,16 @@ namespace Service.Account
                 CategoryId = null,
             };
 
-            await transactionRepo.Add(adjustmentTransaction);
+            //somente insere local, transação de ajsute será cadastrada como AdjustAccountBalance
+            await transactionService.AddAsync(adjustmentTransaction, !isOnline);
 
             account.CurrentBalance = newBalance;
             account.UpdatedAt = DateTime.UtcNow;
             await accountRepo.Update(account);
 
             if (!isOnline) return;
+
+            await Push(account);
 
             AdjustAccountBalanceReq req = new()
             {
@@ -233,14 +231,14 @@ namespace Service.Account
             await accountRepo.Add(defaultAccount);
 
             // Assign orphan transactions (AccountId == null) to the newly created default account
-            await transactionRepo.AssignAccountToOrphansAsync(defaultAccount.Id);
+            await transactionService.AssignAccountToOrphansAsync(defaultAccount.Id);
         }
 
         // ═══════════════════════════════════════════════════════════════════════
         // Sincronização multi-conta
         // ═══════════════════════════════════════════════════════════════════════
 
-        public async Task PushAsync(int uid)
+        public async Task PushPendingAsync(int uid)
         {
             DateTime cursor = await syncCursorRepo.GetAsync(SyncCursorKeys.Account);
             var pending = await accountRepo.GetPendingPushAsync(uid, cursor);
@@ -249,37 +247,37 @@ namespace Service.Account
             {
                 try
                 {
-                    var req = new AccountReq
-                    {
-                        Id = account.ExternalId,
-                        Name = account.Name,
-                        Type = account.Type,
-                        IncludeInGeneralBalance = account.IncludeInGeneralBalance,
-                        Inactive = account.Inactive,
-                        UpdatedAt = account.UpdatedAt,
-                    };
-
-                    AccountApiRes res;
-
-                    if (account.ExternalId is null)
-                    {
-                        res = await accountApiRepo.PostAccountAsync(req);
-                    }
-                    else
-                    {
-                        res = await accountApiRepo.PutAccountAsync(account.ExternalId.Value, req);
-                    }
-
-                    account.ExternalId = res.Id;
-                    await accountRepo.Update(account);
+                   await Push(account);
                 }
                 catch
                 {
-                    // Push individual falhou — manter ExternalId atual, tentar no próximo ciclo.
-                    // Não interrompe push das demais contas (Req 10.7).
                     continue;
                 }
             }
+        }
+
+        public async Task Push(AccountDTO accountDTO)
+        {
+            var req = new AccountReq
+            {
+                Id = accountDTO.ExternalId,
+                Name = accountDTO.Name,
+                Type = accountDTO.Type,
+                IncludeInGeneralBalance = accountDTO.IncludeInGeneralBalance,
+                Inactive = accountDTO.Inactive,
+                UpdatedAt = accountDTO.UpdatedAt,
+            };
+            AccountApiRes res;
+            if (accountDTO.ExternalId is null)
+            {
+                res = await accountApiRepo.PostAccountAsync(req);
+            }
+            else
+            {
+                res = await accountApiRepo.PutAccountAsync(accountDTO.ExternalId.Value, req);
+            }
+            accountDTO.ExternalId = res.Id;
+            await accountRepo.Update(accountDTO);
         }
 
         public async Task PullAsync(int uid)
@@ -339,61 +337,7 @@ namespace Service.Account
         // Serão removidos/refatorados nas Tasks 9-10.
         // ═══════════════════════════════════════════════════════════════════════
 
-        public async Task<AccountDTO?> GetAsync()
-        {
-            // Legacy: returns the first account found (single-account behavior)
-            var all = await accountRepo.GetAllAsync(0);
-            if (all.Count > 0) return all[0];
-
-            // Fallback: try to find any account regardless of userId (legacy had no userId filter)
-            return await accountRepo.GetByIdAsync(1);
-        }
-
-        public async Task<DateTime> GetLastUpdatedAtAsync()
-            => await syncCursorRepo.GetAsync(SyncCursorKeys.Account);
-
-        public async Task PullAsync(int uid, DateTime lastUpdatedAt)
-        {
-            var apiAccount = await accountApiRepo.GetAccountAsync(lastUpdatedAt);
-
-            if (apiAccount is null) return;
-
-            await UpsertFromApiAsync(uid, apiAccount.Id, apiAccount.UpdatedAt, apiAccount.Inactive);
-
-            DateTime current = await syncCursorRepo.GetAsync(SyncCursorKeys.Account);
-            if (apiAccount.UpdatedAt > current)
-                await syncCursorRepo.SaveAsync(SyncCursorKeys.Account, apiAccount.UpdatedAt);
-        }
-
-        public async Task AdjustAccountBalanceAsync(AccountDTO account, decimal oldbalance, decimal newbalance, bool isOnline)
-        {
-            (int localAccountId, int localTransactionId) = await AdjustBalanceLocalLegacyAsync(account, oldbalance, newbalance);
-
-            if (!isOnline) return;
-
-            AdjustAccountBalanceReq req = new()
-            {
-                UpdatedAt = DateTime.UtcNow,
-                Inactive = account.Inactive,
-                Transaction = new TransactionReq
-                {
-                    Description = "Ajuste de saldo",
-                    Date = DateTime.MinValue,
-                    Amount = newbalance - oldbalance,
-                    Repetition = Repetition.None,
-                    Type = TransactionType.Adjustment,
-                }
-            };
-
-            var result = await accountApiRepo.PostAdjustAccountBalance(req);
-
-            int serverAccountId = result.Id ?? throw new Exception("API não retornou o Id da conta.");
-            int serverTransactionId = result.Transaction.Id ?? throw new Exception("API não retornou o Id da transação.");
-
-            await UpdateExternalIdsAsync(localAccountId, serverAccountId, localTransactionId, serverTransactionId);
-        }
-
-        public async Task UpdateExternalIdsAsync(int localAccountId, int serverAccountId, int localTransactionId, int serverTransactionId)
+        private async Task UpdateExternalIdsAsync(int localAccountId, int serverAccountId, int localTransactionId, int serverTransactionId)
         {
             var account = await accountRepo.GetByIdAsync(localAccountId);
             if (account is not null)
@@ -402,84 +346,11 @@ namespace Service.Account
                 await accountRepo.Update(account);
             }
 
-            var transaction = await transactionRepo.GetByIdAsync(localTransactionId);
+            var transaction = await transactionService.GetByIdAsync(localTransactionId);
             transaction.ExternalId = serverTransactionId;
-            await transactionRepo.Update(transaction);
+            await transactionService.UpdateAsync(transaction, true);
         }
 
         // ── Private helpers ───────────────────────────────────────────────────
-
-        private async Task UpsertFromApiAsync(int uid, int externalId, DateTime updatedAt, bool inactive)
-        {
-            var localAccount = await accountRepo.GetByExternalIdAsync(externalId);
-
-            if (localAccount is null)
-            {
-                // Check if any account exists for this user — if so, update the first one
-                var allAccounts = await accountRepo.GetAllAsync(uid);
-                if (allAccounts.Count > 0)
-                {
-                    var first = allAccounts[0];
-                    if (first.ExternalId is null)
-                    {
-                        first.ExternalId = externalId;
-                        first.UpdatedAt = updatedAt;
-                        first.Inactive = inactive;
-                        await accountRepo.Update(first);
-                        return;
-                    }
-                }
-
-                await accountRepo.Add(new AccountDTO
-                {
-                    Name = "Conta Principal",
-                    UserId = uid,
-                    ExternalId = externalId,
-                    Inactive = inactive,
-                    UpdatedAt = updatedAt,
-                    CreatedAt = DateTime.UtcNow,
-                });
-            }
-            else if (updatedAt > localAccount.UpdatedAt)
-            {
-                localAccount.UpdatedAt = updatedAt;
-                localAccount.Inactive = inactive;
-                await accountRepo.Update(localAccount);
-            }
-        }
-
-        private async Task<(int localAccountId, int localTransactionId)> AdjustBalanceLocalLegacyAsync(AccountDTO account, decimal oldbalance, decimal newbalance)
-        {
-            var existingAccount = await accountRepo.GetByIdAsync(account.Id);
-
-            if (existingAccount == null)
-            {
-                account.CreatedAt = DateTime.UtcNow;
-                account.UpdatedAt = DateTime.UtcNow;
-                await accountRepo.Add(account);
-                existingAccount = account;
-            }
-
-            account.Id = existingAccount.Id;
-
-            TransactionDTO adjustmentTransaction = new()
-            {
-                UserId = account.UserId,
-                Amount = newbalance - oldbalance,
-                Date = DateTime.MinValue,
-                Description = "Ajuste de saldo",
-                AccountId = existingAccount.Id,
-                Type = TransactionType.Adjustment,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow,
-                Repetition = Repetition.None,
-                CategoryId = null,
-            };
-
-            await transactionRepo.Add(adjustmentTransaction);
-            await accountRepo.Update(account);
-
-            return (account.Id, adjustmentTransaction.Id);
-        }
     }
 }

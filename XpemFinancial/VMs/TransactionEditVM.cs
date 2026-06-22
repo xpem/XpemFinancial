@@ -133,6 +133,13 @@ namespace XpemFinancial.VMs
                 }
             }
 
+            if (suggestion.AccountId.HasValue)
+            {
+                var account = ActiveAccounts.FirstOrDefault(a => a.Id == suggestion.AccountId.Value);
+                if (account is not null)
+                    SelectedAccount = account;
+            }
+
             DescriptionSuggestions.Clear();
             SuggestionsVisible = false;
         }
@@ -413,13 +420,15 @@ namespace XpemFinancial.VMs
                 isValid = false;
                 _ = VMBase.ShowMessage("Aviso", "Defina uma descrição ou selecione uma categoria!");
             }
-            else if (string.IsNullOrWhiteSpace(Amount) || !decimal.TryParse(Amount, System.Globalization.NumberStyles.Currency, new System.Globalization.CultureInfo("pt-BR"), out _))
+            else if (string.IsNullOrWhiteSpace(Amount) || !decimal.TryParse(Amount, System.Globalization.NumberStyles.Currency, new System.Globalization.CultureInfo("pt-BR"), out decimal parsedAmount))
             {
                 isValid = false;
+                _ = VMBase.ShowMessage("Aviso", "Informe um valor válido para a transação!");
             }
-            else if (!decimal.TryParse(Amount, System.Globalization.NumberStyles.Currency, new System.Globalization.CultureInfo("pt-BR"), out decimal _amount))
+            else if (parsedAmount == 0)
             {
                 isValid = false;
+                _ = VMBase.ShowMessage("Aviso", "O valor da transação não pode ser zero!");
             }
             else if (SelectedAccount is null)
             {

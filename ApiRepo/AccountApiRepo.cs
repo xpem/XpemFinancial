@@ -1,7 +1,6 @@
 ﻿using Model.Req;
 using Model.Resp.Api;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace ApiRepo
 {
@@ -20,8 +19,7 @@ namespace ApiRepo
     {
         private static readonly JsonSerializerOptions _jsonOptions = new()
         {
-            PropertyNameCaseInsensitive = true,
-            Converters = { new JsonStringEnumConverter() }
+            PropertyNameCaseInsensitive = true
         };
 
         public async Task<AdjustAccountBalanceReq> PostAdjustAccountBalance(AdjustAccountBalanceReq req)

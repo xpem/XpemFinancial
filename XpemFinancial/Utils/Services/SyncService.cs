@@ -98,6 +98,9 @@ namespace XpemFinancial.Utils.Services
                 {
                     if (Connectivity.NetworkAccess == NetworkAccess.Internet)
                     {
+                        // Crash recovery: registros travados em "Pushing" voltam para "Pending"
+                        await transactionService.ResetStuckPushingAsync().ConfigureAwait(false);
+
                         await userService.UpdateLastUpdate(user.Id).ConfigureAwait(false);
 
                         DateTime categoryLastUpdate = await categoryService.GetLastUpdatedAtAsync().ConfigureAwait(false);
@@ -105,7 +108,7 @@ namespace XpemFinancial.Utils.Services
 
                         try
                         {
-                            await accountService.PushAsync(user.Id).ConfigureAwait(false);
+                            await accountService.PushPendingAsync(user.Id).ConfigureAwait(false);
                             await accountService.PullAsync(user.Id).ConfigureAwait(false);
                         }
                         catch (Exception ex)

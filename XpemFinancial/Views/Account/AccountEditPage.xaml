@@ -26,17 +26,6 @@
 
     <ScrollView Margin="16">
         <VerticalStackLayout Spacing="16">
-
-            <!--  Ajuste de Saldo (somente em edição de conta ativa)  -->
-            <VerticalStackLayout IsVisible="{Binding IsActiveAccount}" Spacing="4">
-                <Label Text="Balanço atual" TextColor="{StaticResource FontLight}" />
-                <Components:CurrencyEntry
-                    HorizontalOptions="Start"
-                    MinimumWidthRequest="100"
-                    Text="{Binding CurrentBalance}"
-                    VerticalOptions="Center" />
-            </VerticalStackLayout>
-
             <!--  Nome  -->
             <VerticalStackLayout Spacing="4">
                 <Label Text="Nome" TextColor="{StaticResource FontLight}" />
@@ -73,6 +62,17 @@
                     IsToggled="{Binding IncludeInGeneralBalance}"
                     OnColor="{StaticResource PrimaryAction}" />
             </Grid>
+
+            <!--  Ajuste de Saldo (somente em edição de conta ativa)  -->
+            <VerticalStackLayout IsVisible="{Binding IsActiveAccount}" Spacing="4">
+                <Label Text="Balanço atual" TextColor="{StaticResource FontLight}" />
+                <Components:CurrencyEntry
+                    HorizontalOptions="Start"
+                    MinimumWidthRequest="100"
+                    Text="{Binding CurrentBalance}"
+                    VerticalOptions="Center" />
+            </VerticalStackLayout>
+
 
             <!--  Botões  -->
             <VerticalStackLayout Spacing="10">

@@ -22,6 +22,9 @@ public partial class AccountsVM(
     [ObservableProperty]
     private bool hasInactiveAccounts;
 
+    [ObservableProperty]
+    private decimal generalBalance;
+
     public async Task InitializeAsync()
     {
         IsBusy = true;
@@ -41,6 +44,10 @@ public partial class AccountsVM(
             ActiveAccounts = all.Where(a => a.IsActive).OrderBy(a => a.Name).ToList();
             InactiveAccounts = all.Where(a => !a.IsActive).OrderBy(a => a.Name).ToList();
             HasInactiveAccounts = InactiveAccounts.Count > 0;
+
+            GeneralBalance = ActiveAccounts
+                .Where(a => a.IncludeInGeneralBalance)
+                .Sum(a => a.CurrentBalance);
         }
         finally
         {

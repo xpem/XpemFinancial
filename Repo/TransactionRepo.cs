@@ -20,6 +20,8 @@ namespace Repo
 
         Task<List<TransactionDescriptionRes>> GetTransactionDescription(string description);
         Task<List<TransactionDTO>> GetPendingPushAsync(int userId);
+        Task ResetStuckPushingAsync();
+        Task SetSyncStatusAsync(int transactionId, TransactionSyncStatus status);
     }
 
     public class TransactionRepo(IDbContextFactory<DbCtx> DbCtx) : ITransactionRepo
@@ -147,7 +149,8 @@ namespace Repo
                     TransactionID = t.Id,
                     Description = t.Description,
                     CategoryId = t.CategoryId,
-                    CategoryName = t.Category.Name
+                    CategoryName = t.Category.Name,
+                    AccountId = t.AccountId
                 })
                 .ToListAsync();
             return list;
@@ -157,8 +160,31 @@ namespace Repo
         {
             using var db = await DbCtx.CreateDbContextAsync();
             return await db.Transaction
-                .Where(t => t.UserId == userId && t.ExternalId == null && !t.Inactive)
+                .Where(t => t.UserId == userId && t.SyncStatus == TransactionSyncStatus.Pending)
                 .ToListAsync();
+        }
+
+        public async Task ResetStuckPushingAsync()
+        {
+            using var db = await DbCtx.CreateDbContextAsync();
+            var stuck = await db.Transaction
+                .Where(t => t.SyncStatus == TransactionSyncStatus.Pushing)
+                .ToListAsync();
+
+            foreach (var t in stuck)
+                t.SyncStatus = TransactionSyncStatus.Pending;
+
+            await db.SaveChangesAsync();
+        }
+
+        public async Task SetSyncStatusAsync(int transactionId, TransactionSyncStatus status)
+        {
+            using var db = await DbCtx.CreateDbContextAsync();
+            var transaction = await db.Transaction.FirstOrDefaultAsync(t => t.Id == transactionId);
+            if (transaction is null) return;
+
+            transaction.SyncStatus = status;
+            await db.SaveChangesAsync();
         }
     }
 }
