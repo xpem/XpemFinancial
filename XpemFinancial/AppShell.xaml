@@ -56,7 +56,7 @@
     </ShellItem>
 
     <FlyoutItem Title="Contas" Icon="{x:Static icons:IconFont.Wallet}">
-        <ShellContent ContentTemplate="{DataTemplate local:AccountPage}" />
+        <ShellContent ContentTemplate="{DataTemplate local:Account.AccountsPage}" />
     </FlyoutItem>
 
     <FlyoutItem Title="Gráfico" Icon="{x:Static icons:IconFont.ChartColumn}">

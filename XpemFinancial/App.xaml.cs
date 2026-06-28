@@ -4,7 +4,7 @@ using Service;
 using Service.Account;
 using Service.Category;
 using Service.Recurring;
-using XpemFinancial.Utils;
+using XpemFinancial.Utils.Services;
 using XpemFinancial.VMs;
 
 namespace XpemFinancial

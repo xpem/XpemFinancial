@@ -101,6 +101,22 @@
                     </Button.ImageSource>
                 </Button>
             </FlexLayout>
+            <!--
+            <Border
+                Margin="5,0,5,10"
+                Padding="0"
+                BackgroundColor="#1c2530"
+                Stroke="#232c39"
+                StrokeShape="RoundRectangle 5">
+                <Picker
+                    ItemsSource="{Binding AccountFilterOptions}"
+                    ItemDisplayBinding="{Binding DisplayName}"
+                    SelectedItem="{Binding SelectedAccountFilter}"
+                    TextColor="#d6e0eb"
+                    Title="Filtrar por conta"
+                    TitleColor="#758292" />
+            </Border>-->
+
             <Border
                 Margin="0"
                 Padding="0"
@@ -202,6 +218,35 @@
                     </Grid>
                 </Grid>
             </Border>
+
+            <!--  Saldo Geral  -->
+            <!--<Border
+                Margin="0,10,0,0"
+                Padding="10"
+                Stroke="#232c39"
+                StrokeShape="5">
+                <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
+                    <Label
+                        FontFamily="Icons"
+                        FontSize="15"
+                        Text="{x:Static Icons:IconFont.Wallet}"
+                        TextColor="#6cc8ef"
+                        VerticalOptions="Center" />
+                    <Label
+                        FontAttributes="Bold"
+                        FontSize="15"
+                        Text="Saldo Geral:"
+                        TextColor="#d6e0eb"
+                        VerticalOptions="Center" />
+                    <Label
+                        FontAttributes="Bold"
+                        FontSize="Large"
+                        Text="{Binding GeneralBalance, StringFormat='{}{0:N2}'}"
+                        TextColor="{StaticResource Income}"
+                        VerticalOptions="Center" />
+                </HorizontalStackLayout>
+            </Border>-->
+
             <Border
                 Margin="0,10,0,0"
                 Padding="0"

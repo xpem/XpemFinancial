@@ -145,8 +145,28 @@
                     LabelText="Descrição"
                     SizeChanged="OnDescriptionEntrySizeChanged" />
 
-                <Label Padding="0,10,0,0" Text="Valor" />
-                <Components:CurrencyEntry Text="{Binding Amount}" />
+                <Grid
+                    Grid.Column="2"
+                    Padding="0,10,0,0"
+                    ColumnDefinitions="*,*"
+                    ColumnSpacing="10">
+                    <VerticalStackLayout>
+                        <Label Text="Valor" />
+                        <Components:CurrencyEntry Text="{Binding Amount}" />
+                    </VerticalStackLayout>
+                    <VerticalStackLayout Grid.Column="1">
+                        <Label Text="Conta" />
+                        <Border
+                            Padding="0"
+                            BackgroundColor="{StaticResource InputBackground}"
+                            StrokeShape="RoundRectangle 5">
+                            <Picker
+                                ItemDisplayBinding="{Binding Name}"
+                                ItemsSource="{Binding ActiveAccounts}"
+                                SelectedItem="{Binding SelectedAccount}" />
+                        </Border>
+                    </VerticalStackLayout>
+                </Grid>
                 <Border Margin="0,10,0,10" Padding="0,5,0,0">
                     <HorizontalStackLayout
                         x:Name="Repetition"

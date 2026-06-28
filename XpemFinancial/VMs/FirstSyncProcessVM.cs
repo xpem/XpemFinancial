@@ -6,7 +6,7 @@ using Service.Category;
 using Service.Recurring;
 using Service.Transaction;
 using XpemFinancial.Messages;
-using XpemFinancial.Utils;
+using XpemFinancial.Utils.Services;
 using XpemFinancial.Views;
 
 namespace XpemFinancial.VMs
@@ -47,7 +47,7 @@ namespace XpemFinancial.VMs
                 await categoryService.PullAsync(user.Id, mindate);
                 Progress = 0.2;
 
-                await accountService.PullAsync(user.Id, mindate);
+                await accountService.PullAsync(user.Id);
                 Progress = 0.4;
 
                 await recurringRuleService.PullAsync(user.Id, mindate);

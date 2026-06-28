@@ -1,72 +1,189 @@
 ﻿using ApiRepo;
 using Model.DTO;
 using Model.Req;
+using Model.Resp.Api;
 using Repo;
+using Service.Transaction;
+
 namespace Service.Account
 {
     public interface IAccountService
     {
-        Task<AccountDTO?> GetAsync();
-        Task<DateTime> GetLastUpdatedAtAsync();
-        Task PullAsync(int uid, DateTime lastUpdatedAt);
-        Task UpsertFromApiAsync(int uid, int externalId, DateTime updatedAt, bool inactive);
-        Task AdjustAccountBalanceAsync(AccountDTO account, decimal oldbalance, decimal newbalance, bool isOnline);
-        Task UpdateExternalIdsAsync(int localAccountId, int serverAccountId, int localTransactionId, int serverTransactionId);
+        // CRUD
+        Task<AccountDTO> CreateAsync(int userId, string name, AccountType type, bool includeInGeneralBalance,bool isOnline, decimal initialBalance = 0);
+        Task UpdateAsync(AccountDTO account, bool isOnline);
+        Task DeactivateAsync(int accountId);
+
+        // Consultas
+        Task<List<AccountDTO>> GetAllAsync(int userId);
+        Task<List<AccountDTO>> GetActiveAsync(int userId);
+        Task<AccountDTO?> GetByIdAsync(int id);
+        Task<AccountDTO?> GetDefaultAsync(int userId);
+
+        // Saldo
+        Task<decimal> GetGeneralBalanceAsync(int userId);
+        Task AdjustAccountBalanceAsync(int accountId, decimal newBalance, decimal oldbalance, bool isOnline);
+
+        // Migração
+        Task EnsureDefaultAccountAsync(int userId);
+
+        // Sincronização multi-conta
+        Task PullAsync(int uid);
+        Task PushPendingAsync(int uid);
     }
 
     public class AccountService(
         IAccountRepo accountRepo,
-        ITransactionRepo transactionRepo,
+        ITransactionService transactionService,
         IAccountApiRepo accountApiRepo,
         ISyncCursorRepo syncCursorRepo) : IAccountService
     {
-        public async Task<AccountDTO?> GetAsync() => await accountRepo.GetAsync();
+        private const int MaxActiveAccounts = 50;
 
-        public async Task<DateTime> GetLastUpdatedAtAsync()
-            => await syncCursorRepo.GetAsync(SyncCursorKeys.Account);
+        // ═══════════════════════════════════════════════════════════════════════
+        // CRUD
+        // ═══════════════════════════════════════════════════════════════════════
 
-        public async Task PullAsync(int uid, DateTime lastUpdatedAt)
+        public async Task<AccountDTO> CreateAsync(int userId, string name, AccountType type, bool includeInGeneralBalance, bool isOn, decimal initialBalance = 0)
         {
-            var apiAccount = await accountApiRepo.GetAccountAsync(lastUpdatedAt);
+            int activeCount = await accountRepo.GetActiveCountAsync(userId);
+            if (activeCount >= MaxActiveAccounts)
+                throw new InvalidOperationException("Limite de 50 contas ativas atingido.");
 
-            if (apiAccount is null) return;
-
-            await UpsertFromApiAsync(uid, apiAccount.Id, apiAccount.UpdatedAt, apiAccount.Inactive);
-
-            // Advance the cursor to the server-side UpdatedAt of the returned account record.
-            DateTime current = await syncCursorRepo.GetAsync(SyncCursorKeys.Account);
-            if (apiAccount.UpdatedAt > current)
-                await syncCursorRepo.SaveAsync(SyncCursorKeys.Account, apiAccount.UpdatedAt);
-        }
-
-        public async Task UpsertFromApiAsync(int uid, int externalId, DateTime updatedAt, bool inactive)
-        {
-            var localAccount = await accountRepo.GetAsync();
-
-            if (localAccount is null)
+            var account = new AccountDTO
             {
-                await accountRepo.Add(new AccountDTO
+                Name = name,
+                Type = type,
+                IncludeInGeneralBalance = includeInGeneralBalance,
+                IsActive = true,
+                CurrentBalance = initialBalance,
+                UserId = userId,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+            };
+
+            await accountRepo.Add(account);
+
+            if (isOn)
+                await Push(account);
+
+            if (initialBalance != 0)
+            {
+                var initialTransaction = new TransactionDTO
                 {
-                    UserId = uid,
-                    ExternalId = externalId,
-                    Inactive = inactive,
-                    UpdatedAt = updatedAt,
-                    CreatedAt = DateTime.Now,
-                });
+                    UserId = userId,
+                    Amount = initialBalance,
+                    Date = DateTime.UtcNow,
+                    Description = "Saldo inicial",
+                    AccountId = account.Id,
+                    Type = TransactionType.Adjustment,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow,
+                    Repetition = Repetition.None,
+                    CategoryId = null,
+                };
+
+                await transactionService.AddAsync(initialTransaction, isOn);
             }
-            else if (localAccount.ExternalId != externalId)
+
+            return account;
+        }
+
+        public async Task UpdateAsync(AccountDTO account, bool isOnline)
+        {
+            account.UpdatedAt = DateTime.UtcNow;
+            await accountRepo.Update(account);
+
+            if (isOnline)
             {
-                localAccount.ExternalId = externalId;
-                localAccount.UpdatedAt = updatedAt;
-                await accountRepo.Update(localAccount);
+                await Push(account);
             }
         }
 
-        public async Task AdjustAccountBalanceAsync(AccountDTO account, decimal oldbalance, decimal newbalance, bool isOnline)
+        public async Task DeactivateAsync(int accountId)
         {
-            (int localAccountId, int localTransactionId) = await AdjustBalanceLocalAsync(account, oldbalance, newbalance);
+            var account = await accountRepo.GetByIdAsync(accountId)
+                ?? throw new InvalidOperationException($"Conta com Id {accountId} não encontrada.");
+
+            int activeCount = await accountRepo.GetActiveCountAsync(account.UserId);
+            if (activeCount <= 1)
+                throw new InvalidOperationException("Não é possível desativar a última conta ativa.");
+
+            account.IsActive = false;
+            account.UpdatedAt = DateTime.UtcNow;
+            await accountRepo.Update(account);
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // Consultas
+        // ═══════════════════════════════════════════════════════════════════════
+
+        public async Task<List<AccountDTO>> GetAllAsync(int userId)
+            => await accountRepo.GetAllAsync(userId);
+
+        public async Task<List<AccountDTO>> GetActiveAsync(int userId)
+            => await accountRepo.GetActiveAsync(userId);
+
+        public async Task<AccountDTO?> GetByIdAsync(int id)
+            => await accountRepo.GetByIdAsync(id);
+
+        public async Task<AccountDTO?> GetDefaultAsync(int userId)
+            => await accountRepo.GetDefaultAsync(userId);
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // Saldo
+        // ═══════════════════════════════════════════════════════════════════════
+
+        public async Task<decimal> GetGeneralBalanceAsync(int userId)
+        {
+            var activeAccounts = await accountRepo.GetActiveAsync(userId);
+            decimal total = 0;
+
+            foreach (var account in activeAccounts.Where(a => a.IncludeInGeneralBalance))
+            {
+                total += await transactionService.GetBalanceAsync(account.Id) ?? 0;
+            }
+
+            return total;
+        }
+
+        public async Task AdjustAccountBalanceAsync(int accountId, decimal newBalance, decimal oldbalance, bool isOnline)
+        {
+            var account = await accountRepo.GetByIdAsync(accountId)
+                ?? throw new InvalidOperationException($"Conta com Id {accountId} não encontrada.");
+
+            if (!account.IsActive)
+                throw new InvalidOperationException("Ajustes de saldo só são permitidos em contas ativas.");
+
+            if (newBalance == oldbalance)
+                return;
+
+            decimal adjustmentAmount = newBalance - oldbalance;
+
+            var adjustmentTransaction = new TransactionDTO
+            {
+                UserId = account.UserId,
+                Amount = adjustmentAmount,
+                Date = DateTime.MinValue,
+                Description = "Ajuste de saldo",
+                AccountId = accountId,
+                Type = TransactionType.Adjustment,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                Repetition = Repetition.None,
+                CategoryId = null,
+            };
+
+            //somente insere local, transação de ajsute será cadastrada como AdjustAccountBalance
+            await transactionService.AddAsync(adjustmentTransaction, !isOnline);
+
+            account.CurrentBalance = newBalance;
+            account.UpdatedAt = DateTime.UtcNow;
+            await accountRepo.Update(account);
 
             if (!isOnline) return;
+
+            await Push(account);
 
             AdjustAccountBalanceReq req = new()
             {
@@ -76,7 +193,7 @@ namespace Service.Account
                 {
                     Description = "Ajuste de saldo",
                     Date = DateTime.MinValue,
-                    Amount = newbalance - oldbalance,
+                    Amount = adjustmentAmount,
                     Repetition = Repetition.None,
                     Type = TransactionType.Adjustment,
                 }
@@ -87,55 +204,153 @@ namespace Service.Account
             int serverAccountId = result.Id ?? throw new Exception("API não retornou o Id da conta.");
             int serverTransactionId = result.Transaction.Id ?? throw new Exception("API não retornou o Id da transação.");
 
-            await UpdateExternalIdsAsync(localAccountId, serverAccountId, localTransactionId, serverTransactionId);
+            await UpdateExternalIdsAsync(account.Id, serverAccountId, adjustmentTransaction.Id, serverTransactionId);
         }
 
-        private async Task<(int localAccountId, int localTransactionId)> AdjustBalanceLocalAsync(AccountDTO account, decimal oldbalance, decimal newbalance)
-        {
-            var existingAccount = await accountRepo.GetAsync();
+        // ═══════════════════════════════════════════════════════════════════════
+        // Migração
+        // ═══════════════════════════════════════════════════════════════════════
 
-            if (existingAccount == null)
+        public async Task EnsureDefaultAccountAsync(int userId)
+        {
+            var accounts = await accountRepo.GetAllAsync(userId);
+            if (accounts.Count > 0) return; // idempotente
+
+            var defaultAccount = new AccountDTO
             {
-                await accountRepo.Add(account);
-                existingAccount = account;
+                Name = "Conta Principal",
+                Type = AccountType.Checking,
+                IncludeInGeneralBalance = true,
+                IsActive = true,
+                UserId = userId,
+                CurrentBalance = 0,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+            };
+
+            await accountRepo.Add(defaultAccount);
+
+            // Assign orphan transactions (AccountId == null) to the newly created default account
+            await transactionService.AssignAccountToOrphansAsync(defaultAccount.Id);
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // Sincronização multi-conta
+        // ═══════════════════════════════════════════════════════════════════════
+
+        public async Task PushPendingAsync(int uid)
+        {
+            DateTime cursor = await syncCursorRepo.GetAsync(SyncCursorKeys.Account);
+            var pending = await accountRepo.GetPendingPushAsync(uid, cursor);
+
+            foreach (var account in pending)
+            {
+                try
+                {
+                   await Push(account);
+                }
+                catch
+                {
+                    continue;
+                }
+            }
+        }
+
+        public async Task Push(AccountDTO accountDTO)
+        {
+            var req = new AccountReq
+            {
+                Id = accountDTO.ExternalId,
+                Name = accountDTO.Name,
+                Type = accountDTO.Type,
+                IncludeInGeneralBalance = accountDTO.IncludeInGeneralBalance,
+                Inactive = accountDTO.Inactive,
+                UpdatedAt = accountDTO.UpdatedAt,
+            };
+            AccountApiRes res;
+            if (accountDTO.ExternalId is null)
+            {
+                res = await accountApiRepo.PostAccountAsync(req);
+            }
+            else
+            {
+                res = await accountApiRepo.PutAccountAsync(accountDTO.ExternalId.Value, req);
+            }
+            accountDTO.ExternalId = res.Id;
+            await accountRepo.Update(accountDTO);
+        }
+
+        public async Task PullAsync(int uid)
+        {
+            DateTime cursor = await syncCursorRepo.GetAsync(SyncCursorKeys.Account);
+            var serverAccounts = await accountApiRepo.GetAccountsAsync(cursor);
+
+            DateTime maxUpdatedAt = cursor;
+
+            foreach (var res in serverAccounts)
+            {
+                var local = await accountRepo.GetByExternalIdAsync(res.Id);
+
+                if (local is null)
+                {
+                    var newAccount = new AccountDTO
+                    {
+                        Name = res.Name,
+                        Type = res.Type,
+                        CurrentBalance = res.CurrentBalance,
+                        IncludeInGeneralBalance = res.IncludeInGeneralBalance,
+                        IsActive = !res.Inactive,
+                        Inactive = res.Inactive,
+                        ExternalId = res.Id,
+                        UserId = uid,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = res.UpdatedAt,
+                    };
+                    await accountRepo.Add(newAccount);
+                }
+                else if (res.UpdatedAt > local.UpdatedAt)
+                {
+                    local.Name = res.Name;
+                    local.Type = res.Type;
+                    local.CurrentBalance = res.CurrentBalance;
+                    local.IncludeInGeneralBalance = res.IncludeInGeneralBalance;
+                    local.IsActive = !res.Inactive;
+                    local.Inactive = res.Inactive;
+                    local.UpdatedAt = res.UpdatedAt;
+                    await accountRepo.Update(local);
+                }
+
+                if (res.UpdatedAt > maxUpdatedAt)
+                    maxUpdatedAt = res.UpdatedAt;
             }
 
-            account.Id = existingAccount.Id;
+            if (maxUpdatedAt > cursor)
+                await syncCursorRepo.SaveAsync(SyncCursorKeys.Account, maxUpdatedAt);
 
-            TransactionDTO adjustmentTransaction = BuildAdjustmentTransaction(account.UserId, oldbalance, newbalance, existingAccount.Id);
-
-            await transactionRepo.Add(adjustmentTransaction);
-            await accountRepo.Update(account);
-
-            return (account.Id, adjustmentTransaction.Id);
+            // Garantir que pelo menos uma conta padrão exista após o pull
+            await EnsureDefaultAccountAsync(uid);
         }
 
-        public async Task UpdateExternalIdsAsync(int localAccountId, int serverAccountId, int localTransactionId, int serverTransactionId)
+        // ═══════════════════════════════════════════════════════════════════════
+        // Legacy — mantidos para compatibilidade com callers existentes
+        // (MainVM, AccountVM, TransactionEditVM, SyncService, FirstSyncProcessVM)
+        // Serão removidos/refatorados nas Tasks 9-10.
+        // ═══════════════════════════════════════════════════════════════════════
+
+        private async Task UpdateExternalIdsAsync(int localAccountId, int serverAccountId, int localTransactionId, int serverTransactionId)
         {
-            var account = await accountRepo.GetAsync();
-            if (account is not null && account.Id == localAccountId)
+            var account = await accountRepo.GetByIdAsync(localAccountId);
+            if (account is not null)
             {
                 account.ExternalId = serverAccountId;
                 await accountRepo.Update(account);
             }
 
-            var transaction = await transactionRepo.GetByIdAsync(localTransactionId);
+            var transaction = await transactionService.GetByIdAsync(localTransactionId);
             transaction.ExternalId = serverTransactionId;
-            await transactionRepo.Update(transaction);
+            await transactionService.UpdateAsync(transaction, true);
         }
 
-        private static TransactionDTO BuildAdjustmentTransaction(int userId, decimal oldbalance, decimal newbalance, int accountId) =>
-            new()
-            {
-                UserId = userId,
-                Amount = newbalance - oldbalance,
-                Date = DateTime.MinValue,
-                Description = "Ajuste de saldo",
-                AccountId = accountId,
-                Type = TransactionType.Adjustment,
-                CreatedAt = DateTime.Now,
-                Repetition = Repetition.None,
-                CategoryId = null,
-            };
+        // ── Private helpers ───────────────────────────────────────────────────
     }
 }

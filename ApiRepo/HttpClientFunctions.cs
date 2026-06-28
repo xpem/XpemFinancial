@@ -6,6 +6,8 @@ namespace ApiRepo
 {
     public class HttpClientFunctions()
     {
+        private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(8);
+
         public static async Task<ApiResp> Request(RequestsTypes requestsType, string url, string? userToken = null, string? jsonContent = null)
         {
             try
@@ -14,7 +16,10 @@ namespace ApiRepo
                 {
                     SslProtocols = System.Security.Authentication.SslProtocols.Tls12
                                | System.Security.Authentication.SslProtocols.Tls13
-                });
+                })
+                {
+                    Timeout = RequestTimeout
+                };
 
                 if (userToken is not null)
                     httpClient.DefaultRequestHeaders.Add("authorization", "bearer " + userToken);
