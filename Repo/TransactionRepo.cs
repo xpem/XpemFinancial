@@ -22,6 +22,7 @@ namespace Repo
         Task<List<TransactionDTO>> GetPendingPushAsync(int userId);
         Task ResetStuckPushingAsync();
         Task SetSyncStatusAsync(int transactionId, TransactionSyncStatus status);
+        Task SetExternalIdAndSyncedAsync(int transactionId, int externalId);
     }
 
     public class TransactionRepo(IDbContextFactory<DbCtx> DbCtx) : ITransactionRepo
@@ -184,6 +185,17 @@ namespace Repo
             if (transaction is null) return;
 
             transaction.SyncStatus = status;
+            await db.SaveChangesAsync();
+        }
+
+        public async Task SetExternalIdAndSyncedAsync(int transactionId, int externalId)
+        {
+            using var db = await DbCtx.CreateDbContextAsync();
+            var transaction = await db.Transaction.FirstOrDefaultAsync(t => t.Id == transactionId);
+            if (transaction is null) return;
+
+            transaction.ExternalId = externalId;
+            transaction.SyncStatus = TransactionSyncStatus.Synced;
             await db.SaveChangesAsync();
         }
     }

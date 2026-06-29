@@ -10,6 +10,7 @@ namespace Repo
     {
         Task AddAsync(CategoryDTO category);
         Task<List<CategoryDTO>> GetAllAsync();
+        Task<CategoryDTO?> GetByIdAsync(int id);
         Task UpdateAsync(Model.DTO.CategoryDTO category);
         Task<Model.DTO.CategoryDTO?> GetByExternalIdAsync(int externalId);
         Task<DateTime> GetMaxUpdatedAtAsync();
@@ -21,6 +22,12 @@ namespace Repo
         {
             using var db = await DbCtx.CreateDbContextAsync();
             return await db.Category.ToListAsync();
+        }
+
+        public async Task<CategoryDTO?> GetByIdAsync(int id)
+        {
+            using var db = await DbCtx.CreateDbContextAsync();
+            return await db.Category.FirstOrDefaultAsync(c => c.Id == id);
         }
 
         public async Task AddAsync(Model.DTO.CategoryDTO category)
