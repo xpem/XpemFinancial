@@ -263,11 +263,15 @@ namespace Service.Transaction
                 return;
             }
 
-            // CategoryExternalId is also [NotMapped]. Use the navigation property loaded by
-            // GetByIdAsync (which does .Include(Category)), or fall back to CategoryExternalId
-            // if already set (e.g. on a freshly created transaction that hasn't been reloaded).
+            // CategoryExternalId is [NotMapped] and won't be available when the transaction
+            // is loaded from GetPendingPushAsync (no .Include). Resolve it from the local
+            // CategoryId the same way we resolve AccountExternalId above.
+            CategoryDTO? txCategory = transaction.CategoryId.HasValue
+                ? await categoryRepo.GetByIdAsync(transaction.CategoryId.Value)
+                : null;
             int? categoryExternalId = transaction.CategoryExternalId
-                ?? transaction.Category?.ExternalId;
+                ?? transaction.Category?.ExternalId
+                ?? txCategory?.ExternalId;
 
             // ═══════════════════════════════════════════════════════════════════════
             // Marca como Pushing — pull deve ignorar este registro enquanto estiver neste estado
@@ -317,9 +321,7 @@ namespace Service.Transaction
                 return;
             }
 
-            transaction.ExternalId = serverId;
-            transaction.SyncStatus = TransactionSyncStatus.Synced;
-            await transactionRepo.Update(transaction);
+            await transactionRepo.SetExternalIdAndSyncedAsync(transaction.Id, serverId);
         }
 
         public async Task<TransactionDTO> GetByIdAsync(int id)
