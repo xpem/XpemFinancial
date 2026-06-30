@@ -2,6 +2,12 @@ namespace Model.Resp.Api
 {
     public class TransactionApiRes
     {
+        /// <summary>
+        /// Stable cross-device identifier for sync matching.
+        /// Nullable because older servers might not return it.
+        /// </summary>
+        public Guid? TransactionId { get; set; }
+
         public int Id { get; set; }
 
         public DateTime CreatedAt { get; set; }

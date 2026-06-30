@@ -9,6 +9,7 @@ namespace Repo
         Task Add(TransactionDTO transaction);
         Task Update(TransactionDTO transaction);
         Task<TransactionDTO?> GetByExternalIdAsync(int externalId);
+        Task<TransactionDTO?> GetByTransactionIdAsync(Guid transactionId);
         Task<DateTime> GetMaxUpdatedAtAsync();
         Task<IEnumerable<TransactionDTO>> GetByMonthYear(DateTime monthYear, int? accountId = null);
         Task<decimal> GetPreviousBalanceAsync(DateTime monthYear, int? accountId = null);
@@ -88,6 +89,14 @@ namespace Repo
         {
             using var db = await DbCtx.CreateDbContextAsync();
             return await db.Transaction.FirstOrDefaultAsync(t => t.ExternalId == externalId);
+        }
+
+        public async Task<TransactionDTO?> GetByTransactionIdAsync(Guid transactionId)
+        {
+            if (transactionId == Guid.Empty) return null;
+
+            using var db = await DbCtx.CreateDbContextAsync();
+            return await db.Transaction.FirstOrDefaultAsync(t => t.TransactionId == transactionId);
         }
 
         public async Task<DateTime> GetMaxUpdatedAtAsync()

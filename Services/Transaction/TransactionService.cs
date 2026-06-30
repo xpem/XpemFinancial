@@ -42,7 +42,19 @@ namespace Service.Transaction
 
         public async Task ApplyFromApiAsync(TransactionDTO transaction)
         {
-            var existing = await transactionRepo.GetByExternalIdAsync(transaction.ExternalId!.Value);
+            TransactionDTO? existing = null;
+
+            // 1. Try to match by TransactionId first (if non-empty)
+            if (transaction.TransactionId != Guid.Empty)
+            {
+                existing = await transactionRepo.GetByTransactionIdAsync(transaction.TransactionId);
+            }
+
+            // 2. If no match by TransactionId, fall back to ExternalId lookup
+            if (existing is null && transaction.ExternalId.HasValue)
+            {
+                existing = await transactionRepo.GetByExternalIdAsync(transaction.ExternalId.Value);
+            }
 
             if (existing is not null)
             {
@@ -53,6 +65,7 @@ namespace Service.Transaction
                     return;
                 }
 
+                // Last-writer-wins: update only if pulled UpdatedAt > local UpdatedAt
                 if (existing.UpdatedAt < transaction.UpdatedAt)
                 {
                     transaction.Id = existing.Id;
@@ -62,6 +75,7 @@ namespace Service.Transaction
             }
             else
             {
+                // No match by TransactionId or ExternalId — insert new record
                 transaction.SyncStatus = TransactionSyncStatus.Synced;
                 await transactionRepo.Add(transaction);
             }
@@ -102,6 +116,9 @@ namespace Service.Transaction
                         UpdatedAt = DateTime.Now,
                     };
 
+                    if (installment.TransactionId == Guid.Empty)
+                        installment.TransactionId = Guid.NewGuid();
+
                     await transactionRepo.Add(installment);
 
                     if (isOnline)
@@ -116,6 +133,9 @@ namespace Service.Transaction
             {
                 transaction.CreatedAt = DateTime.Now;
                 transaction.UpdatedAt = DateTime.Now;
+
+                if (transaction.TransactionId == Guid.Empty)
+                    transaction.TransactionId = Guid.NewGuid();
 
                 await transactionRepo.Add(transaction);
 
@@ -133,6 +153,10 @@ namespace Service.Transaction
             occurrence.CreatedAt = DateTime.Now;
             occurrence.UpdatedAt = DateTime.Now;
             occurrence.SyncStatus = TransactionSyncStatus.Pending;
+
+            if (occurrence.TransactionId == Guid.Empty)
+                occurrence.TransactionId = Guid.NewGuid();
+
             await transactionRepo.Add(occurrence);
         }
 
@@ -195,6 +219,7 @@ namespace Service.Transaction
                     AccountId = accountExternalId.Value,
                     RecurringRuleId = transaction.RecurringRuleId,
                     IsCustomized = transaction.IsCustomized,
+                    TransactionId = transaction.TransactionId == Guid.Empty ? null : transaction.TransactionId,
                 };
 
                 try
@@ -295,6 +320,7 @@ namespace Service.Transaction
                 AccountId = accountExternalId.Value,
                 RecurringRuleId = transaction.RecurringRuleId,
                 IsCustomized = transaction.IsCustomized,
+                TransactionId = transaction.TransactionId == Guid.Empty ? null : transaction.TransactionId,
             };
 
             int serverId;
@@ -401,6 +427,7 @@ namespace Service.Transaction
                 TransactionDTO dto = new()
                 {
                     ExternalId = t.Id,
+                    TransactionId = t.TransactionId ?? Guid.Empty,
                     Description = t.Description,
                     Date = t.Date,
                     Amount = t.Amount,
