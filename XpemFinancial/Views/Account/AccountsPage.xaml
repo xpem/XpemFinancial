@@ -31,7 +31,6 @@
     <Grid RowDefinitions="*,Auto">
         <ScrollView Grid.Row="0" Margin="16">
             <VerticalStackLayout Spacing="16">
-
                 <!--  Saldo Geral  -->
                 <Border
                     Padding="12"
@@ -106,8 +105,7 @@
                     <Label
                         FontAttributes="Bold"
                         FontSize="16"
-                        Text="Contas Inativas"
-                        TextColor="{StaticResource FontDark}" />
+                        Text="Contas Inativas" />
 
                     <CollectionView ItemsSource="{Binding InactiveAccounts}">
                         <CollectionView.ItemTemplate>
@@ -127,23 +125,18 @@
                                             Grid.Column="0"
                                             FontAttributes="Bold"
                                             FontSize="15"
-                                            Text="{Binding Name}"
-                                            TextColor="{StaticResource FontDark}" />
+                                            Text="{Binding Name}" />
                                         <Label
                                             Grid.Row="0"
                                             Grid.Column="1"
                                             FontAttributes="Bold"
                                             FontSize="15"
-                                            Text="{Binding CurrentBalance, StringFormat='{0:C}'}"
-                                            TextColor="{StaticResource FontDark}" />
+                                            Text="{Binding CurrentBalance, StringFormat='{0:C}'}" />
                                         <HorizontalStackLayout
                                             Grid.Row="1"
                                             Grid.Column="0"
                                             Spacing="6">
-                                            <Label
-                                                FontSize="13"
-                                                Text="{Binding Type, Converter={StaticResource AccountTypeConverter}}"
-                                                TextColor="{StaticResource FontDark}" />
+                                            <Label FontSize="13" Text="{Binding Type, Converter={StaticResource AccountTypeConverter}}" />
                                             <Label
                                                 FontSize="12"
                                                 Text="(Inativa)"

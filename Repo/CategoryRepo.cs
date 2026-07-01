@@ -11,9 +11,11 @@ namespace Repo
         Task AddAsync(CategoryDTO category);
         Task<List<CategoryDTO>> GetAllAsync();
         Task<CategoryDTO?> GetByIdAsync(int id);
+        Task<CategoryDTO?> GetByCategoryIdAsync(Guid categoryId);
         Task UpdateAsync(Model.DTO.CategoryDTO category);
         Task<Model.DTO.CategoryDTO?> GetByExternalIdAsync(int externalId);
         Task<DateTime> GetMaxUpdatedAtAsync();
+        Task<List<CategoryDTO>> GetPendingPushAsync();
     }
 
     public class CategoryRepo(IDbContextFactory<DbCtx> DbCtx) : ICategoryRepo
@@ -28,6 +30,14 @@ namespace Repo
         {
             using var db = await DbCtx.CreateDbContextAsync();
             return await db.Category.FirstOrDefaultAsync(c => c.Id == id);
+        }
+
+        public async Task<CategoryDTO?> GetByCategoryIdAsync(Guid categoryId)
+        {
+            if (categoryId == Guid.Empty) return null;
+
+            using var db = await DbCtx.CreateDbContextAsync();
+            return await db.Category.FirstOrDefaultAsync(c => c.CategoryId == categoryId);
         }
 
         public async Task AddAsync(Model.DTO.CategoryDTO category)
@@ -56,6 +66,14 @@ namespace Repo
             return await db.Category.AnyAsync()
                 ? await db.Category.MaxAsync(c => c.UpdatedAt)
                 : DateTime.MinValue;
+        }
+
+        public async Task<List<CategoryDTO>> GetPendingPushAsync()
+        {
+            using var db = await DbCtx.CreateDbContextAsync();
+            return await db.Category
+                .Where(c => c.CategoryId != Guid.Empty && c.ExternalId == null)
+                .ToListAsync();
         }
     }
 }

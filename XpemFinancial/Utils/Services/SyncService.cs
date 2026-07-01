@@ -103,6 +103,7 @@ namespace XpemFinancial.Utils.Services
 
                         await userService.UpdateLastUpdate(user.Id).ConfigureAwait(false);
 
+                        await categoryService.PushAsync().ConfigureAwait(false);
                         DateTime categoryLastUpdate = await categoryService.GetLastUpdatedAtAsync().ConfigureAwait(false);
                         await categoryService.PullAsync(user.Id, categoryLastUpdate).ConfigureAwait(false);
 

@@ -34,6 +34,12 @@ namespace Repo
                 entity.Property(t => t.TransactionId)
                     .HasDefaultValue(Guid.Empty);
             });
+
+            modelBuilder.Entity<CategoryDTO>(entity =>
+            {
+                entity.Property(c => c.CategoryId)
+                    .HasDefaultValue(Guid.Empty);
+            });
         }
     }
 }
