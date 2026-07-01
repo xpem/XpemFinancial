@@ -1,4 +1,5 @@
 using Model.DTO;
+using Repo;
 using Service.Transaction;
 using System.Diagnostics;
 
@@ -13,7 +14,7 @@ namespace Service.Recurring
         Task GeneratePendingAsync(IEnumerable<RecurringRuleDTO> rules, DateTime? horizon = null);
     }
 
-    public class RecurringScheduler(ITransactionService transactionService) : IRecurringScheduler
+    public class RecurringScheduler(ITransactionService transactionService, ITransactionRepo transactionRepo) : IRecurringScheduler
     {
         private const int DefaultHorizonInMonths = 6;
 
@@ -77,6 +78,26 @@ namespace Service.Recurring
                 try
                 {
                     var occurrence = BuildOccurrence(rule, date);
+
+                    // Req 6.4: Skip generation if deterministic Guid derivation returned Guid.Empty
+                    // (indicates invalid RecurringRuleId or default DateTime)
+                    if (occurrence.TransactionId == Guid.Empty)
+                    {
+                        Debug.WriteLine(
+                            $"[RecurringScheduler] Skipping occurrence for rule " +
+                            $"{rule.RecurringRuleId} on {date:yyyy-MM-dd}: invalid inputs for deterministic Guid.");
+                        continue;
+                    }
+
+                    // Req 6.3: Deduplication by TransactionId — if a record with this
+                    // deterministic Guid already exists, skip generation
+                    var existing = await transactionRepo.GetByTransactionIdAsync(occurrence.TransactionId);
+                    if (existing is not null)
+                    {
+                        existingDates.Add(date.Date);
+                        continue;
+                    }
+
                     await transactionService.AddOccurrenceAsync(occurrence);
                     existingDates.Add(date.Date);
                 }
@@ -139,7 +160,7 @@ namespace Service.Recurring
             Repetition = Repetition.Recurring,
             Date = date,
             UserId = rule.UserId,
-            
+            TransactionId = DeterministicGuid.FromRecurringRule(rule.RecurringRuleId, date),
         };
     }
 }

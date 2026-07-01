@@ -34,6 +34,13 @@ namespace Model.Req
         public int AccountId { get; set; }
 
         /// <summary>
+        /// Stable cross-device identifier assigned at creation time.
+        /// Used by the server for upsert-based deduplication instead of heuristic matching.
+        /// Nullable for backward compatibility with older clients.
+        /// </summary>
+        public Guid? TransactionId { get; set; }
+
+        /// <summary>
         /// Stable identifier of the recurring rule that originated this occurrence.
         /// Sent to the server so it can associate the customized occurrence with its rule.
         /// </summary>

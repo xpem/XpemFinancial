@@ -9,6 +9,13 @@ namespace Model.DTO
     [Table("Transaction")]
     public class TransactionDTO : BaseDTO
     {
+        /// <summary>
+        /// Stable cross-device identifier assigned at creation time.
+        /// Used as the primary key for sync matching.
+        /// Default: Guid.Empty for legacy records (backward-compatible).
+        /// </summary>
+        public Guid TransactionId { get; set; }
+
         [StringLength(250)]
         public required string Description { get; set; }
 
