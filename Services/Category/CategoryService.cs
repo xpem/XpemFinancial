@@ -13,6 +13,7 @@ namespace Service.Category
         Task AddLocalAsync(CategoryDTO category);
         Task<DateTime> GetLastUpdatedAtAsync();
         Task PullAsync(int uid, DateTime lastUpdatedAt);
+        Task PushAsync();
     }
 
     public class CategoryService(ICategoryRepo categoryRepo, ICategoryApiRepo categoryApiRepo, ISyncCursorRepo syncCursorRepo) : ICategoryService
@@ -37,16 +38,49 @@ namespace Service.Category
             {
                 if (category == null) continue;
 
-                await UpsertAsync(new CategoryDTO
+                CategoryDTO? local = null;
+
+                // 1. Match by CategoryId if present
+                if (category.CategoryId is not null && category.CategoryId != Guid.Empty)
+                    local = await categoryRepo.GetByCategoryIdAsync(category.CategoryId.Value);
+
+                // 2. Fallback to ExternalId
+                if (local is null && category.Id > 0)
+                    local = await categoryRepo.GetByExternalIdAsync(category.Id);
+
+                if (local is not null)
                 {
-                    ExternalId = category.Id,
-                    Name = category.Name,
-                    Inactive = category.Inactive,
-                    SystemDefault = category.SystemDefault,
-                    IsMainCategory = category.IsMainTransactionCategory,
-                    ParentExternalId = category.ParentTransactionCategoryId,
-                    UserId = uid
-                });
+                    // Last-writer-wins: update only if pulled UpdatedAt > local UpdatedAt
+                    if (category.UpdatedAt > local.UpdatedAt)
+                    {
+                        local.Name = category.Name;
+                        local.Inactive = category.Inactive;
+                        local.SystemDefault = category.SystemDefault;
+                        local.IsMainCategory = category.IsMainTransactionCategory;
+                        local.ParentExternalId = category.ParentTransactionCategoryId;
+                        local.ExternalId = category.Id;
+                        local.UpdatedAt = category.UpdatedAt;
+                        if (category.CategoryId is not null && category.CategoryId != Guid.Empty)
+                            local.CategoryId = category.CategoryId.Value;
+                        await categoryRepo.UpdateAsync(local);
+                    }
+                }
+                else
+                {
+                    // Insert new record
+                    await categoryRepo.AddAsync(new CategoryDTO
+                    {
+                        CategoryId = category.CategoryId ?? Guid.Empty,
+                        ExternalId = category.Id,
+                        Name = category.Name,
+                        Inactive = category.Inactive,
+                        SystemDefault = category.SystemDefault,
+                        IsMainCategory = category.IsMainTransactionCategory,
+                        ParentExternalId = category.ParentTransactionCategoryId,
+                        UserId = uid,
+                        UpdatedAt = category.UpdatedAt
+                    });
+                }
             }
 
             // Advance the cursor to the highest server-side UpdatedAt in this batch.
@@ -70,7 +104,42 @@ namespace Service.Category
         }
 
         public async Task AddLocalAsync(CategoryDTO category)
-            => await categoryRepo.AddAsync(category);
+        {
+            if (category.CategoryId == Guid.Empty)
+                category.CategoryId = Guid.NewGuid();
+
+            await categoryRepo.AddAsync(category);
+        }
+
+        public async Task PushAsync()
+        {
+            var pending = await categoryRepo.GetPendingPushAsync();
+            foreach (var category in pending)
+            {
+                try
+                {
+                    var response = await categoryApiRepo.PostCategoryAsync(new Model.Req.CategoryReq
+                    {
+                        CategoryId = category.CategoryId,
+                        Name = category.Name,
+                        IsMainTransactionCategory = category.IsMainCategory,
+                        ParentTransactionCategoryId = category.ParentExternalId,
+                        Inactive = category.Inactive,
+                        Color = null
+                    });
+
+                    if (response.Id > 0)
+                    {
+                        category.ExternalId = response.Id;
+                        await categoryRepo.UpdateAsync(category);
+                    }
+                }
+                catch
+                {
+                    // Continue with remaining records — failed one retries next cycle
+                }
+            }
+        }
 
         public async Task UpsertAsync(CategoryDTO category)
         {

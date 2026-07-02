@@ -15,5 +15,7 @@ namespace Model.Req
         public bool IncludeInGeneralBalance { get; set; } = true;
 
         public bool Inactive { get; set; }
+
+        public Guid? AccountId { get; set; }
     }
 }

@@ -9,6 +9,8 @@ namespace Model.Resp.Api
     {
         public int Id { get; set; }
 
+        public Guid? CategoryId { get; set; }
+
         public DateTime UpdatedAt { get; set; }
 
         public bool SystemDefault { get; set; }

@@ -5,6 +5,13 @@ namespace Model.DTO
     [Table("Category")]
     public class CategoryDTO : BaseDTO
     {
+        /// <summary>
+        /// Stable cross-device identifier assigned at creation time.
+        /// Used as the primary key for sync matching.
+        /// Default: Guid.Empty for legacy records (backward-compatible).
+        /// </summary>
+        public Guid CategoryId { get; set; }
+
         public int? ExternalId { get; set; }
 
         public string Name { get; set; }
