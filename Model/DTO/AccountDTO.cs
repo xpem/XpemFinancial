@@ -21,5 +21,7 @@ namespace Model.DTO
         public bool IsActive { get; set; } = true;
 
         public required int UserId { get; set; }
+
+        public Guid AccountId { get; set; }
     }
 }

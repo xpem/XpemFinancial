@@ -1,0 +1,50 @@
+name: Deploy Android to Google Play (.NET 10)
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - closed
+
+jobs:
+  build-and-release:
+    if: github.event.pull_request.merged == true
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Install MAUI Workload
+        run: dotnet workload install maui-android
+
+      - name: Decode Android Keystore
+        shell: bash
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > app.keystore
+
+      - name: Build and Publish (Generate AAB)
+        run: |
+          dotnet publish XpemFinancial/XpemFinancial.csproj -c Release -f net10.0-android `
+            /p:ApplicationVersion=${{ github.run_number }} `
+            /p:AndroidKeyStore=true `
+            /p:AndroidSigningKeyStore=../app.keystore `
+            /p:AndroidSigningKeyAlias=${{ secrets.ANDROID_KEY_ALIAS }} `
+            /p:AndroidSigningKeyPass=${{ secrets.ANDROID_KEY_PASSWORD }} `
+            /p:AndroidSigningStorePass=${{ secrets.ANDROID_KEY_PASSWORD }}
+
+      - name: Upload to Google Play
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.Xpem.XpemFinancial
+          releaseFiles: |
+            **/*.aab
+          track: internal
+          status: completed

@@ -40,6 +40,16 @@ namespace Repo
                 entity.Property(c => c.CategoryId)
                     .HasDefaultValue(Guid.Empty);
             });
+
+            modelBuilder.Entity<AccountDTO>(entity =>
+            {
+                entity.HasIndex(a => a.AccountId)
+                    .IsUnique()
+                    .HasFilter("\"AccountId\" != '00000000-0000-0000-0000-000000000000'");
+
+                entity.Property(a => a.AccountId)
+                    .HasDefaultValue(Guid.Empty);
+            });
         }
     }
 }

@@ -60,6 +60,7 @@ namespace Service.Account
                 UserId = userId,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
+                AccountId = Guid.NewGuid(),
             };
 
             await accountRepo.Add(account);
@@ -91,6 +92,11 @@ namespace Service.Account
 
         public async Task UpdateAsync(AccountDTO account, bool isOnline)
         {
+            // Defensive: never overwrite a non-empty AccountId with a different value
+            var current = await accountRepo.GetByIdAsync(account.Id);
+            if (current is not null && current.AccountId != Guid.Empty)
+                account.AccountId = current.AccountId;
+
             account.UpdatedAt = DateTime.UtcNow;
             await accountRepo.Update(account);
 
@@ -226,6 +232,7 @@ namespace Service.Account
                 CurrentBalance = 0,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
+                AccountId = Guid.NewGuid(),
             };
 
             await accountRepo.Add(defaultAccount);
@@ -266,17 +273,34 @@ namespace Service.Account
                 IncludeInGeneralBalance = accountDTO.IncludeInGeneralBalance,
                 Inactive = accountDTO.Inactive,
                 UpdatedAt = accountDTO.UpdatedAt,
+                AccountId = accountDTO.AccountId == Guid.Empty ? null : accountDTO.AccountId,
             };
+
             AccountApiRes res;
-            if (accountDTO.ExternalId is null)
+            if (accountDTO.AccountId != Guid.Empty)
             {
+                // AccountId-based upsert: always POST — server handles dedup
+                res = await accountApiRepo.PostAccountAsync(req);
+            }
+            else if (accountDTO.ExternalId is null)
+            {
+                // Legacy: no AccountId, no ExternalId → POST (new record)
                 res = await accountApiRepo.PostAccountAsync(req);
             }
             else
             {
+                // Legacy: has ExternalId → PUT (update existing)
                 res = await accountApiRepo.PutAccountAsync(accountDTO.ExternalId.Value, req);
             }
-            accountDTO.ExternalId = res.Id;
+
+            // Persist ExternalId from server response
+            if (res.Id > 0)
+                accountDTO.ExternalId = res.Id;
+
+            // Persist AccountId from server response if non-empty
+            if (res.AccountId is not null && res.AccountId.Value != Guid.Empty)
+                accountDTO.AccountId = res.AccountId.Value;
+
             await accountRepo.Update(accountDTO);
         }
 
@@ -289,10 +313,19 @@ namespace Service.Account
 
             foreach (var res in serverAccounts)
             {
-                var local = await accountRepo.GetByExternalIdAsync(res.Id);
+                AccountDTO? local = null;
+
+                // 1. Try matching by AccountId first
+                if (res.AccountId is not null && res.AccountId.Value != Guid.Empty)
+                    local = await accountRepo.GetByAccountIdAsync(res.AccountId.Value);
+
+                // 2. Fall back to ExternalId lookup
+                if (local is null)
+                    local = await accountRepo.GetByExternalIdAsync(res.Id);
 
                 if (local is null)
                 {
+                    // No match — insert new record with both AccountId and ExternalId
                     var newAccount = new AccountDTO
                     {
                         Name = res.Name,
@@ -305,11 +338,15 @@ namespace Service.Account
                         UserId = uid,
                         CreatedAt = DateTime.UtcNow,
                         UpdatedAt = res.UpdatedAt,
+                        AccountId = res.AccountId is not null && res.AccountId.Value != Guid.Empty
+                            ? res.AccountId.Value
+                            : Guid.NewGuid(),
                     };
                     await accountRepo.Add(newAccount);
                 }
                 else if (res.UpdatedAt > local.UpdatedAt)
                 {
+                    // Last-writer-wins: update local record
                     local.Name = res.Name;
                     local.Type = res.Type;
                     local.CurrentBalance = res.CurrentBalance;
@@ -317,7 +354,22 @@ namespace Service.Account
                     local.IsActive = !res.Inactive;
                     local.Inactive = res.Inactive;
                     local.UpdatedAt = res.UpdatedAt;
+                    local.ExternalId = res.Id;
+
+                    // Persist AccountId from response if non-empty
+                    if (res.AccountId is not null && res.AccountId.Value != Guid.Empty)
+                        local.AccountId = res.AccountId.Value;
+
                     await accountRepo.Update(local);
+                }
+                else
+                {
+                    // UpdatedAt <= local — skip update but still persist AccountId if missing
+                    if (res.AccountId is not null && res.AccountId.Value != Guid.Empty && local.AccountId == Guid.Empty)
+                    {
+                        local.AccountId = res.AccountId.Value;
+                        await accountRepo.Update(local);
+                    }
                 }
 
                 if (res.UpdatedAt > maxUpdatedAt)
@@ -327,7 +379,6 @@ namespace Service.Account
             if (maxUpdatedAt > cursor)
                 await syncCursorRepo.SaveAsync(SyncCursorKeys.Account, maxUpdatedAt);
 
-            // Garantir que pelo menos uma conta padrão exista após o pull
             await EnsureDefaultAccountAsync(uid);
         }
 

@@ -17,6 +17,9 @@ namespace Repo
         Task<AccountDTO?> GetDefaultAsync(int userId);
         Task<int> GetActiveCountAsync(int userId);
 
+        // Guid-based lookup
+        Task<AccountDTO?> GetByAccountIdAsync(Guid accountId);
+
         // Sync helpers
         Task<int> GetLocalIdByExternalIdAsync(int externalId);
         Task<List<AccountDTO>> GetPendingPushAsync(int userId, DateTime lastSyncCursor);
@@ -78,6 +81,14 @@ namespace Repo
         {
             using var db = await DbCtx.CreateDbContextAsync();
             return await db.Account.CountAsync(a => a.UserId == userId && a.IsActive);
+        }
+
+        public async Task<AccountDTO?> GetByAccountIdAsync(Guid accountId)
+        {
+            if (accountId == Guid.Empty) return null;
+
+            using var db = await DbCtx.CreateDbContextAsync();
+            return await db.Account.FirstOrDefaultAsync(a => a.AccountId == accountId);
         }
 
         public async Task<int> GetLocalIdByExternalIdAsync(int externalId)
