@@ -155,7 +155,6 @@ Introduce a stable `AccountId` (Guid) across client and server to enable determi
     - If pulled `AccountId` is null/empty: match by `ExternalId` only (backward-compatible)
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 1.3, 7.1, 7.3_
 
-
   - [x] 7.2 Write property test for pull AccountId matching with last-writer-wins
     - **Property 5: Pull AccountId Matching with Last-Writer-Wins**
     - Verify update occurs only when pulled `UpdatedAt > local.UpdatedAt`
