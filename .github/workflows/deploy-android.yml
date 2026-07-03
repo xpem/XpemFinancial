@@ -1,6 +1,9 @@
 name: Deploy Android to Google Play (.NET 10)
 
 on:
+  push:
+    branches:
+      - '**'
   pull_request:
     branches:
       - main
@@ -9,7 +12,7 @@ on:
 
 jobs:
   build-and-release:
-    if: github.event.pull_request.merged == true
+    if: github.event_name == 'push' || github.event.pull_request.merged == true
     runs-on: ubuntu-latest # No seu Gitea, isso já aponta para a máquina local
 
     steps:
