@@ -54,7 +54,7 @@ jobs:
       - name: Build and Publish (Generate AAB)
         run: |
           dotnet publish XpemFinancial/XpemFinancial.csproj -c Release -f net10.0-android \
-            /p:ApplicationVersion=${{ github.run_number }} \
+            /p:ApplicationVersion=$(( ${{ github.run_number }} + 18 )) \
             /p:AndroidKeyStore=true \
             /p:AndroidSigningKeyStore=${{ github.workspace }}/app.keystore \
             /p:AndroidSigningKeyAlias=${{ secrets.ANDROID_KEY_ALIAS }} \
