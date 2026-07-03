@@ -13,32 +13,34 @@ on:
 jobs:
   build-and-release:
     if: github.event_name == 'push' || github.event.pull_request.merged == true
-    runs-on: ubuntu-latest # No seu Gitea, isso já aponta para a máquina local
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      # Ajustado para v4.0.0 (Garante o uso de Node 20)
+      - name: Setup Java (Requisito para o Android SDK)
+        uses: actions/setup-java@v4.0.0
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      # Ajustado para v3.0.0 (Garante o uso de Node 20)
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3.0.0
+
       - name: Install MAUI Android Workload
         run: dotnet workload install maui-android
-
-      - name: Set Android SDK path
-        run: |
-          echo "ANDROID_HOME=/opt/android-sdk" >> $GITHUB_ENV
-          echo "ANDROID_SDK_ROOT=/opt/android-sdk" >> $GITHUB_ENV
 
       - name: Decode Android Keystore
         run: |
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > ${{ github.workspace }}/app.keystore          
 
       - name: Build and Publish (Generate AAB)
-        env:
-          ANDROID_HOME: /opt/android-sdk
-          ANDROID_SDK_ROOT: /opt/android-sdk
         run: |
           dotnet publish XpemFinancial/XpemFinancial.csproj -c Release -f net10.0-android \
             /p:ApplicationVersion=${{ github.run_number }} \
-            /p:AndroidSdkDirectory=/opt/android-sdk \
             /p:AndroidKeyStore=true \
             /p:AndroidSigningKeyStore=${{ github.workspace }}/app.keystore \
             /p:AndroidSigningKeyAlias=${{ secrets.ANDROID_KEY_ALIAS }} \
