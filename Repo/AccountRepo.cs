@@ -17,7 +17,6 @@ namespace Repo
         Task<AccountDTO?> GetDefaultAsync(int userId);
         Task<int> GetActiveCountAsync(int userId);
 
-        // Guid-based lookup
         Task<AccountDTO?> GetByAccountIdAsync(Guid accountId);
 
         // Sync helpers
