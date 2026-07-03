@@ -32,6 +32,9 @@ jobs:
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > ${{ github.workspace }}/app.keystore          
 
       - name: Build and Publish (Generate AAB)
+        env:
+          ANDROID_HOME: /opt/android-sdk
+          ANDROID_SDK_ROOT: /opt/android-sdk
         run: |
           dotnet publish XpemFinancial/XpemFinancial.csproj -c Release -f net10.0-android \
             /p:ApplicationVersion=${{ github.run_number }} \
