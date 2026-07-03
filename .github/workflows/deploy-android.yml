@@ -22,6 +22,11 @@ jobs:
       - name: Install MAUI Android Workload
         run: dotnet workload install maui-android
 
+      - name: Set Android SDK path
+        run: |
+          echo "ANDROID_HOME=/opt/android-sdk" >> $GITHUB_ENV
+          echo "ANDROID_SDK_ROOT=/opt/android-sdk" >> $GITHUB_ENV
+
       - name: Decode Android Keystore
         run: |
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > ${{ github.workspace }}/app.keystore          
