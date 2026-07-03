@@ -33,6 +33,20 @@ jobs:
       - name: Install MAUI Android Workload
         run: dotnet workload install maui-android
 
+      - name: Generate ApiKeys.cs
+        run: |
+          cat > ApiRepo/ApiKeys.cs << 'EOF'
+          namespace ApiRepo
+          {
+              internal static class ApiKeys
+              {
+                  public const string ApiAddress = "${{ secrets.API_ADDRESS }}";
+                  public const string KEY32 = "${{ secrets.KEY32 }}";
+                  public const string IV16 = "${{ secrets.IV16 }}";
+              }
+          }
+          EOF
+
       - name: Decode Android Keystore
         run: |
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > ${{ github.workspace }}/app.keystore          
