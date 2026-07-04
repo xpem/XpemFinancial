@@ -7,10 +7,7 @@ using Service.Transaction;
 
 namespace XpemFinancial.VMs;
 
-public partial class AccountEditVM(
-    IAccountService accountService,
-    IUserSessionService userSessionService,
-    ITransactionService transactionService) : VMBase, IQueryAttributable
+public partial class AccountEditVM(IAccountService accountService, IUserSessionService userSessionService, ITransactionService transactionService) : VMBase, IQueryAttributable
 {
     private int? _accountId;
     private AccountDTO? _existingAccount;
