@@ -342,6 +342,7 @@ namespace Service.Account
                             ? res.AccountId.Value
                             : Guid.NewGuid(),
                     };
+
                     await accountRepo.Add(newAccount);
                 }
                 else if (res.UpdatedAt > local.UpdatedAt)

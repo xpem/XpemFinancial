@@ -1,6 +1,9 @@
 name: Deploy Android to Google Play (.NET 10)
 
 on:
+  # push:
+  #   branches:
+  #     - '**'
   pull_request:
     branches:
       - main
@@ -9,14 +12,40 @@ on:
 
 jobs:
   build-and-release:
-    if: github.event.pull_request.merged == true
-    runs-on: ubuntu-latest # No seu Gitea, isso já aponta para a máquina local
+    if: github.event_name == 'push' || github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # Removido o "setup-dotnet" e "workload install" pois a máquina local já gerencia isso
+      # Ajustado para v4.0.0 (Garante o uso de Node 20)
+      - name: Setup Java (Requisito para o Android SDK)
+        uses: actions/setup-java@v4.0.0
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      # Ajustado para v3.0.0 (Garante o uso de Node 20)
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3.0.0
+
+      - name: Install MAUI Android Workload
+        run: dotnet workload install maui-android
+
+      - name: Generate ApiKeys.cs
+        run: |
+          cat > ApiRepo/ApiKeys.cs << 'EOF'
+          namespace ApiRepo
+          {
+              internal static class ApiKeys
+              {
+                  public const string ApiAddress = "${{ secrets.API_ADDRESS }}";
+                  public const string KEY32 = "${{ secrets.KEY32 }}";
+                  public const string IV16 = "${{ secrets.IV16 }}";
+              }
+          }
+          EOF
 
       - name: Decode Android Keystore
         run: |
@@ -25,7 +54,7 @@ jobs:
       - name: Build and Publish (Generate AAB)
         run: |
           dotnet publish XpemFinancial/XpemFinancial.csproj -c Release -f net10.0-android \
-            /p:ApplicationVersion=${{ github.run_number }} \
+            /p:ApplicationVersion=$(( ${{ github.run_number }} + 18 )) \
             /p:AndroidKeyStore=true \
             /p:AndroidSigningKeyStore=${{ github.workspace }}/app.keystore \
             /p:AndroidSigningKeyAlias=${{ secrets.ANDROID_KEY_ALIAS }} \
@@ -33,7 +62,7 @@ jobs:
             /p:AndroidSigningStorePass=${{ secrets.ANDROID_KEY_PASSWORD }}          
 
       - name: Upload to Google Play
-        uses: r0adkll/upload-google-play@v1
+        uses: r0adkll/upload-google-play@v1.1.3
         with:
           serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
           packageName: com.Xpem.XpemFinancial
