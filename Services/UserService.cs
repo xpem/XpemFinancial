@@ -1,5 +1,4 @@
 ﻿using ApiRepo;
-using ApiRepo.Handlers;
 using Model.DTO;
 using Model.Resp;
 using Model.Resp.Api;
@@ -42,40 +41,47 @@ namespace Service
 
             var apiresp = await userApiRepo.GetTokenAsync(email, password);
 
-            if (apiresp.Success && apiresp.Content is not null and string newToken)
+            if (apiresp.Success && apiresp.Content is not null)
             {
-                ApiResp resp = await userApiRepo.GetAsync(newToken);
+                JsonNode? tokenResp = JsonNode.Parse(apiresp.Content);
+                string? newToken = tokenResp?["token"]?.GetValue<string>();
+                string? refreshToken = tokenResp?["refreshToken"]?.GetValue<string>();
 
-                if (resp.Success && resp.Content != null)
+                if (newToken is not null)
                 {
-                    JsonNode? userResponse = JsonNode.Parse(resp.Content);
-                    if (userResponse is not null)
+                    ApiResp resp = await userApiRepo.GetAsync(newToken);
+
+                    if (resp.Success && resp.Content != null)
                     {
-                        UserDTO user = new()
+                        JsonNode? userResponse = JsonNode.Parse(resp.Content);
+                        if (userResponse is not null)
                         {
-                            Id = userResponse["id"]?.GetValue<int>() ?? 0,
-                            Name = userResponse["name"]?.GetValue<string>(),
-                            Email = userResponse["email"]?.GetValue<string>(),
-                            Token = newToken,
-                            Password = EncryptionHandler.Encrypt(password)
-                        };
-
-                        UserDTO? actualUser = await userRepo.GetAsync();
-
-                        if (actualUser != null)
-                        {
-                            if (actualUser.Id == user.Id)
-                                await userRepo.UpdateAsync(user);
-                            else
+                            UserDTO user = new()
                             {
-                                await buildDbService.CleanLocalDatabaseAsync();
-                                await userRepo.AddAsync(user);
-                            }
-                        }
-                        else
-                            await userRepo.AddAsync(user);
+                                Id = userResponse["id"]?.GetValue<int>() ?? 0,
+                                Name = userResponse["name"]?.GetValue<string>(),
+                                Email = userResponse["email"]?.GetValue<string>(),
+                                Token = newToken,
+                                RefreshToken = refreshToken
+                            };
 
-                        return new ServiceResp(true, user);
+                            UserDTO? actualUser = await userRepo.GetAsync();
+
+                            if (actualUser != null)
+                            {
+                                if (actualUser.Id == user.Id)
+                                    await userRepo.UpdateAsync(user);
+                                else
+                                {
+                                    await buildDbService.CleanLocalDatabaseAsync();
+                                    await userRepo.AddAsync(user);
+                                }
+                            }
+                            else
+                                await userRepo.AddAsync(user);
+
+                            return new ServiceResp(true, user);
+                        }
                     }
                 }
             }

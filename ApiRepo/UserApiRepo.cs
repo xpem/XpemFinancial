@@ -1,5 +1,4 @@
-﻿using ApiRepo.Handlers;
-using Model.DTO;
+﻿using Model.DTO;
 using Model.Resp.Api;
 using Repo;
 using System.Text.Json;
@@ -61,7 +60,11 @@ namespace ApiRepo
             if (resp.Success)
             {
                 if (jResp?["token"]?.GetValue<string>() is string token)
-                    return new ApiResp() { Success = true, Content = token };
+                {
+                    string? refreshToken = jResp?["refreshToken"]?.GetValue<string>();
+                    string content = JsonSerializer.Serialize(new { token, refreshToken });
+                    return new ApiResp() { Success = true, Content = content };
+                }
             }
             else
             {
@@ -80,22 +83,29 @@ namespace ApiRepo
         {
             UserDTO? user = await userRepo.GetAsync();
 
-            if (user is not null && user.Email is not null && user.Password is not null)
+            if (user is not null && user.RefreshToken is not null)
             {
-                string password = EncryptionHandler.Decrypt(user.Password);
+                string json = JsonSerializer.Serialize(new { refreshToken = user.RefreshToken });
 
-                var apiresp = await GetTokenAsync(user.Email, password);
+                var resp = await HttpClientFunctions.Request(RequestsTypes.Post, ApiKeys.ApiAddress + "/user/session/refresh", jsonContent: json);
 
-                if (apiresp.Success && apiresp.Content is not null)
+                if (resp.Success && resp.Content is not null)
                 {
-                    string newToken = apiresp.Content;
-                    user.Token = newToken;
+                    JsonNode? jResp = JsonNode.Parse(resp.Content);
+                    string? newToken = jResp?["token"]?.GetValue<string>();
+                    string? newRefreshToken = jResp?["refreshToken"]?.GetValue<string>();
 
-                    await userRepo.UpdateAsync(user);
+                    if (newToken is not null)
+                    {
+                        user.Token = newToken;
+                        user.RefreshToken = newRefreshToken;
+                        await userRepo.UpdateAsync(user);
 
-                    return (true, newToken);
+                        return (true, newToken);
+                    }
                 }
-                else throw new UnauthorizedAccessException("Falha ao tentar recuperar token do usuario");
+
+                throw new UnauthorizedAccessException("Falha ao tentar recuperar token do usuario");
             }
 
             return (false, null);

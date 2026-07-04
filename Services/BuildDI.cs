@@ -22,7 +22,7 @@ namespace Service
         {
             // core
             services.AddTransient<IBuildDbService, BuildDbService>();
-            services.AddTransient<IUserSessionService, UserSessionService>();
+            services.AddSingleton<IUserSessionService, UserSessionService>();
 
             // user
             services.AddTransient<IUserService, UserService>();

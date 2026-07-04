@@ -179,8 +179,6 @@ Introduce a stable `AccountId` (Guid) across client and server to enable determi
 - [x] 8. Final checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-
-
 ## Notes
 
 - Each task references specific requirements for traceability

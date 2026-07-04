@@ -1,9 +1,9 @@
 name: Deploy Android to Google Play (.NET 10)
 
 on:
-  push:
-    branches:
-      - '**'
+  # push:
+  #   branches:
+  #     - '**'
   pull_request:
     branches:
       - main
