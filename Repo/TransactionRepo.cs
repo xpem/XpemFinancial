@@ -49,6 +49,7 @@ namespace Repo
         {
             using var db = await DbCtx.CreateDbContextAsync();
             var query = db.Transaction
+                .Include(t => t.DestinationAccount)
                 .Where(t => t.Date.Month == monthYear.Month
                          && t.Date.Year == monthYear.Year
                          && t.Type != TransactionType.Adjustment
@@ -66,23 +67,56 @@ namespace Repo
         public async Task<decimal> GetPreviousBalanceAsync(DateTime monthYear, int? accountId = null)
         {
             using var db = await DbCtx.CreateDbContextAsync();
-            var query = db.Transaction
-                .Where(t => t.Date < new DateTime(monthYear.Year, monthYear.Month, 1) && !t.Inactive);
+            var firstDayOfMonth = new DateTime(monthYear.Year, monthYear.Month, 1);
 
             if (accountId.HasValue)
-                query = query.Where(t => t.AccountId == accountId.Value);
+            {
+                // Per-account: sum transactions where AccountId matches (origin)
+                var originSum = await db.Transaction
+                    .Where(t => t.Date < firstDayOfMonth && !t.Inactive && t.AccountId == accountId.Value)
+                    .SumAsync(t => t.Amount);
 
-            var previousTransactions = await query.ToListAsync();
-            return previousTransactions.Sum(t => t.Amount);
+                // Plus: sum -Amount of Transfer transactions where DestinationAccountId matches
+                // (Transfer Amount is negative, so -Amount = positive = money entering the destination)
+                var destinationSum = await db.Transaction
+                    .Where(t => t.Date < firstDayOfMonth && !t.Inactive
+                             && t.Type == TransactionType.Transfer
+                             && t.DestinationAccountId == accountId.Value)
+                    .SumAsync(t => -t.Amount);
+
+                return originSum + destinationSum;
+            }
+            else
+            {
+                // General balance (no account filter): transfers are included normally.
+                // The pair (negative on origin + positive on destination) nets to zero naturally.
+                var total = await db.Transaction
+                    .Where(t => t.Date < firstDayOfMonth && !t.Inactive)
+                    .SumAsync(t => t.Amount);
+
+                return total;
+            }
         }
 
         public async Task<decimal?> GetBalanceAsync(int accountId, DateTime dateLimit)
         {
             using var db = await DbCtx.CreateDbContextAsync();
-            var transactions = await db.Transaction
+
+            // Sum of all transactions where this account is the origin
+            var originSum = await db.Transaction
                 .Where(t => t.AccountId == accountId && t.Date < dateLimit && !t.Inactive)
-                .ToListAsync();
-            return transactions.Sum(t => t.Amount);
+                .SumAsync(t => t.Amount);
+
+            // Plus: sum -Amount of Transfer transactions where this account is the destination
+            // (Transfer Amount is negative, so -Amount = positive = money entering the destination)
+            var destinationSum = await db.Transaction
+                .Where(t => t.Type == TransactionType.Transfer
+                         && t.DestinationAccountId == accountId
+                         && t.Date < dateLimit
+                         && !t.Inactive)
+                .SumAsync(t => -t.Amount);
+
+            return originSum + destinationSum;
         }
 
         public async Task<TransactionDTO?> GetByExternalIdAsync(int externalId)
@@ -109,7 +143,10 @@ namespace Repo
         public async Task<TransactionDTO> GetByIdAsync(int transactionId)
         {
             using var db = await DbCtx.CreateDbContextAsync();
-            return await db.Transaction.Include(x => x.Category).FirstAsync(t => t.Id == transactionId);
+            return await db.Transaction
+                .Include(x => x.Category)
+                .Include(x => x.DestinationAccount)
+                .FirstAsync(t => t.Id == transactionId);
         }
 
         public async Task<IEnumerable<TransactionDTO>> GetByRecurringRuleIdAsync(Guid recurringRuleId)
@@ -123,9 +160,21 @@ namespace Repo
         public async Task<decimal> GetSumByAccountIdAsync(int accountId)
         {
             using var db = await DbCtx.CreateDbContextAsync();
-            return await db.Transaction
+
+            // Sum of all transactions where this account is the origin
+            var originSum = await db.Transaction
                 .Where(t => t.AccountId == accountId && !t.Inactive)
                 .SumAsync(t => t.Amount);
+
+            // Plus: sum -Amount of Transfer transactions where this account is the destination
+            // (Transfer Amount is negative, so -Amount = positive = money entering the destination)
+            var destinationSum = await db.Transaction
+                .Where(t => t.Type == TransactionType.Transfer
+                         && t.DestinationAccountId == accountId
+                         && !t.Inactive)
+                .SumAsync(t => -t.Amount);
+
+            return originSum + destinationSum;
         }
 
         public async Task AssignAccountToOrphansAsync(int accountId)

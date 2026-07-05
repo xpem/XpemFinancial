@@ -6,6 +6,7 @@
     xmlns:Icons="clr-namespace:XpemFinancial.Resources"
     xmlns:Utils="clr-namespace:XpemFinancial.Utils"
     xmlns:ViewModels="clr-namespace:XpemFinancial.VMs"
+    xmlns:dto="clr-namespace:Model.DTO;assembly=Model"
     x:DataType="ViewModels:MainVM"
     Shell.FlyoutBehavior="Flyout">
     <ContentPage.Resources>
@@ -13,6 +14,9 @@
             <Utils:AmountToColorConverter x:Key="AmountToColorConverter" />
             <Utils:IsRecurringConverter x:Key="IsRecurringConverter" />
             <Utils:IsFutureDateConverter x:Key="IsFutureDateConverter" />
+            <Utils:IsTransferConverter x:Key="IsTransferConverter" />
+            <Utils:IsNotNullConverter x:Key="IsNotNullConverter" />
+            <Utils:TransactionAmountColorConverter x:Key="TransactionAmountColorConverter" />
         </ResourceDictionary>
         <Style x:Key="btnDefault" TargetType="Button">
             <Setter Property="BorderColor" Value="#9da9b9" />
@@ -279,10 +283,11 @@
                         SelectedItem="{Binding SelectedTransaction}"
                         SelectionMode="Single">
                         <CollectionView.ItemTemplate>
-                            <DataTemplate>
+                            <DataTemplate x:DataType="dto:TransactionDTO">
                                 <Grid
                                     Padding="5,0,5,0"
                                     ColumnDefinitions="2*, 1.2*, 1*, Auto"
+                                    RowDefinitions="Auto, Auto"
                                     RowSpacing="0"
                                     VerticalOptions="Center">
                                     <Label
@@ -302,9 +307,34 @@
                                         Grid.Column="2"
                                         FontAttributes="Bold"
                                         HorizontalTextAlignment="End"
-                                        Text="{Binding Amount, StringFormat='{0:N2}'}"
-                                        TextColor="{Binding Amount, Converter={StaticResource AmountToColorConverter}}"
-                                        VerticalOptions="Center" />
+                                        Text="{Binding Amount, StringFormat='{0:N2}'}">
+                                        <Label.TextColor>
+                                            <MultiBinding Converter="{StaticResource TransactionAmountColorConverter}">
+                                                <Binding Path="Amount" />
+                                                <Binding Path="Type" />
+                                            </MultiBinding>
+                                        </Label.TextColor>
+                                        <Label.VerticalOptions>
+                                            <LayoutOptions Alignment="Center" />
+                                        </Label.VerticalOptions>
+                                    </Label>
+
+                                    <!--  Transfer indicator: shown when Type == Transfer  -->
+                                    <Image
+                                        Grid.Column="3"
+                                        Margin="4,0,0,0"
+                                        HeightRequest="12"
+                                        IsVisible="{Binding Type, Converter={StaticResource IsTransferConverter}}"
+                                        VerticalOptions="Center"
+                                        WidthRequest="12">
+                                        <Image.Source>
+                                            <FontImageSource
+                                                FontFamily="Icons"
+                                                Glyph="{x:Static Icons:IconFont.RightLeft}"
+                                                Size="12"
+                                                Color="#6cc8ef" />
+                                        </Image.Source>
+                                    </Image>
 
                                     <!--  Recurring indicator: shown when RecurringRuleId != null  -->
                                     <Image
@@ -322,6 +352,17 @@
                                                 Color="#6cc8ef" />
                                         </Image.Source>
                                     </Image>
+
+                                    <!--  Destination account name: shown for transfers with a destination account  -->
+                                    <Label
+                                        Grid.Row="1"
+                                        Grid.ColumnSpan="4"
+                                        FontSize="11"
+                                        IsVisible="{Binding DestinationAccount, Converter={StaticResource IsNotNullConverter}}"
+                                        LineBreakMode="TailTruncation"
+                                        Text="{Binding DestinationAccount.Name, StringFormat='→ {0}'}"
+                                        TextColor="#758292"
+                                        VerticalOptions="Start" />
                                 </Grid>
                             </DataTemplate>
                         </CollectionView.ItemTemplate>

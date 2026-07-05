@@ -33,6 +33,8 @@ namespace Model.Req
 
         public int AccountId { get; set; }
 
+        public int? DestinationAccountId { get; set; }
+
         /// <summary>
         /// Stable cross-device identifier assigned at creation time.
         /// Used by the server for upsert-based deduplication instead of heuristic matching.

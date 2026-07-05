@@ -6,7 +6,7 @@ namespace ApiRepo
 {
     public class HttpClientFunctions()
     {
-        private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(8);
+        private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(20);
 
         public static async Task<ApiResp> Request(RequestsTypes requestsType, string url, string? userToken = null, string? jsonContent = null)
         {

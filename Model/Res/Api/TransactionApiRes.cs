@@ -38,6 +38,8 @@ namespace Model.Resp.Api
 
         public int AccountId { get; set; }
 
+        public int? DestinationAccountId { get; set; }
+
         /// <summary>
         /// Stable identifier of the recurring rule that originated this occurrence.
         /// Populated by the server when the occurrence is a customized exception.

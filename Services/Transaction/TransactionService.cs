@@ -83,6 +83,23 @@ namespace Service.Transaction
 
         public async Task AddAsync(TransactionDTO transaction, bool isOnline)
         {
+            // Transfer-specific: force fields and validate
+            if (transaction.Type == TransactionType.Transfer)
+            {
+                transaction.Amount = -Math.Abs(transaction.Amount);
+                transaction.CategoryId = null;
+                transaction.Repetition = Repetition.None;
+
+                if (transaction.Amount == 0)
+                    throw new ArgumentException("Transfer amount must not be zero.");
+
+                if (!transaction.DestinationAccountId.HasValue)
+                    throw new ArgumentException("Transfer must have a DestinationAccountId.");
+
+                if (transaction.DestinationAccountId == transaction.AccountId)
+                    throw new ArgumentException("Origin and destination accounts must be different.");
+            }
+
             if (transaction.Repetition == Repetition.Monthly)
             {
                 if (transaction.TotalInstallments == null || transaction.TotalInstallments <= 0)
@@ -145,6 +162,10 @@ namespace Service.Transaction
                     await transactionRepo.SetSyncStatusAsync(transaction.Id, TransactionSyncStatus.Pending);
 
                 await RecalculateAccountBalanceAsync(transaction.AccountId);
+
+                // For transfers, also recalculate the destination account balance
+                if (transaction.Type == TransactionType.Transfer)
+                    await RecalculateAccountBalanceAsync(transaction.DestinationAccountId);
             }
         }
 
@@ -162,17 +183,65 @@ namespace Service.Transaction
 
         public async Task UpdateAsync(TransactionDTO transaction, bool isOnline)
         {
-            // Capture old AccountId before update to detect account changes
+            // Capture old state before update to detect changes
             var existing = await transactionRepo.GetByIdAsync(transaction.Id);
             int? oldAccountId = existing?.AccountId;
+            int? oldDestinationAccountId = existing?.DestinationAccountId;
+            var oldType = existing?.Type;
+
+            // ═══════════════════════════════════════════════════════════════════════
+            // TRANSFER LOGIC: Enforce invariants and handle type transitions
+            // ═══════════════════════════════════════════════════════════════════════
+
+            bool wasTransfer = oldType == TransactionType.Transfer;
+            bool isTransfer = transaction.Type == TransactionType.Transfer;
+
+            if (isTransfer)
+            {
+                // Enforce transfer field invariants
+                transaction.Amount = -Math.Abs(transaction.Amount);
+                transaction.CategoryId = null;
+                transaction.Repetition = Repetition.None;
+
+                // Validate DestinationAccountId
+                if (!transaction.DestinationAccountId.HasValue)
+                    throw new ArgumentException("Transfer must have a DestinationAccountId.");
+
+                if (transaction.DestinationAccountId == transaction.AccountId)
+                    throw new ArgumentException("Origin and destination accounts must be different.");
+            }
+            else if (wasTransfer && !isTransfer)
+            {
+                // Type changed FROM Transfer to another type: clear DestinationAccountId
+                transaction.DestinationAccountId = null;
+            }
 
             transaction.UpdatedAt = DateTime.Now;
             await transactionRepo.Update(transaction);
 
-            // Recalculate balance for affected account(s)
+            // Recalculate balance for affected origin account(s)
             await RecalculateAccountBalanceAsync(transaction.AccountId);
             if (oldAccountId.HasValue && oldAccountId != transaction.AccountId)
                 await RecalculateAccountBalanceAsync(oldAccountId);
+
+            // ═══════════════════════════════════════════════════════════════════════
+            // TRANSFER: Recalculate destination account balances
+            // ═══════════════════════════════════════════════════════════════════════
+
+            if (wasTransfer && !isTransfer)
+            {
+                // Type changed FROM Transfer: revert impact on old destination account
+                await RecalculateAccountBalanceAsync(oldDestinationAccountId);
+            }
+            else if (isTransfer)
+            {
+                // Recalculate old destination if it changed
+                if (oldDestinationAccountId.HasValue && oldDestinationAccountId != transaction.DestinationAccountId)
+                    await RecalculateAccountBalanceAsync(oldDestinationAccountId);
+
+                // Always recalculate current destination account
+                await RecalculateAccountBalanceAsync(transaction.DestinationAccountId);
+            }
 
             if (!isOnline)
             {
@@ -198,6 +267,22 @@ namespace Service.Transaction
                 return;
             }
 
+            // Resolve DestinationAccountExternalId para o PUT
+            int? destAccountExternalId = null;
+            if (transaction.DestinationAccountId.HasValue)
+            {
+                var destAccount = await accountRepo.GetByIdAsync(transaction.DestinationAccountId.Value);
+                destAccountExternalId = transaction.DestinationAccountExternalId ?? destAccount?.ExternalId;
+
+                if (destAccountExternalId is null)
+                {
+                    // Conta destino não sincronizada — adiar push para próximo ciclo
+                    System.Diagnostics.Debug.WriteLine($"[TransactionService] Deferring push of transaction {transaction.Id}: destination account has no ExternalId.");
+                    await transactionRepo.SetSyncStatusAsync(transaction.Id, TransactionSyncStatus.Pending);
+                    return;
+                }
+            }
+
             if (transaction.ExternalId.HasValue)
             {
                 await transactionRepo.SetSyncStatusAsync(transaction.Id, TransactionSyncStatus.Pushing);
@@ -217,6 +302,7 @@ namespace Service.Transaction
                     Type = transaction.Type,
                     Note = transaction.Note,
                     AccountId = accountExternalId.Value,
+                    DestinationAccountId = destAccountExternalId,
                     RecurringRuleId = transaction.RecurringRuleId,
                     IsCustomized = transaction.IsCustomized,
                     TransactionId = transaction.TransactionId == Guid.Empty ? null : transaction.TransactionId,
@@ -247,6 +333,14 @@ namespace Service.Transaction
 
             transaction.Inactive = true;
             await UpdateAsync(transaction, isOnline);
+
+            // For transfers, explicitly ensure the destination account balance is recalculated.
+            // After setting Inactive = true, GetSumByAccountIdAsync will exclude this transaction,
+            // effectively reverting the transfer's impact on the destination account.
+            if (transaction.Type == TransactionType.Transfer && transaction.DestinationAccountId.HasValue)
+            {
+                await RecalculateAccountBalanceAsync(transaction.DestinationAccountId);
+            }
         }
 
         public async Task DeleteFutureOccurrencesAsync(Guid recurringRuleId, DateTime fromDate)
@@ -299,6 +393,24 @@ namespace Service.Transaction
                 ?? txCategory?.ExternalId;
 
             // ═══════════════════════════════════════════════════════════════════════
+            // Resolve DestinationAccountExternalId (mesma lógica de AccountExternalId)
+            // ═══════════════════════════════════════════════════════════════════════
+            int? destinationAccountExternalId = null;
+            if (transaction.DestinationAccountId.HasValue)
+            {
+                var destAccount = await accountRepo.GetByIdAsync(transaction.DestinationAccountId.Value);
+                destinationAccountExternalId = transaction.DestinationAccountExternalId ?? destAccount?.ExternalId;
+
+                if (destinationAccountExternalId is null)
+                {
+                    // Conta destino não sincronizada — adiar push para próximo ciclo
+                    System.Diagnostics.Debug.WriteLine($"[TransactionService] Deferring push of transaction {transaction.Id}: destination account has no ExternalId.");
+                    await transactionRepo.SetSyncStatusAsync(transaction.Id, TransactionSyncStatus.Pending);
+                    return;
+                }
+            }
+
+            // ═══════════════════════════════════════════════════════════════════════
             // Marca como Pushing — pull deve ignorar este registro enquanto estiver neste estado
             // ═══════════════════════════════════════════════════════════════════════
             await transactionRepo.SetSyncStatusAsync(transaction.Id, TransactionSyncStatus.Pushing);
@@ -318,6 +430,7 @@ namespace Service.Transaction
                 Type = transaction.Type,
                 Note = transaction.Note,
                 AccountId = accountExternalId.Value,
+                DestinationAccountId = destinationAccountExternalId,
                 RecurringRuleId = transaction.RecurringRuleId,
                 IsCustomized = transaction.IsCustomized,
                 TransactionId = transaction.TransactionId == Guid.Empty ? null : transaction.TransactionId,
@@ -424,6 +537,18 @@ namespace Service.Transaction
                     accountCache[t.AccountId] = localAccountId;
                 }
 
+                // Resolve o DestinationAccountId local a partir do ExternalId da conta destino (com cache)
+                int? localDestinationAccountId = null;
+                if (t.DestinationAccountId.HasValue)
+                {
+                    if (!accountCache.TryGetValue(t.DestinationAccountId.Value, out int destLocalId))
+                    {
+                        destLocalId = await accountRepo.GetLocalIdByExternalIdAsync(t.DestinationAccountId.Value);
+                        accountCache[t.DestinationAccountId.Value] = destLocalId;
+                    }
+                    localDestinationAccountId = destLocalId > 0 ? destLocalId : null;
+                }
+
                 TransactionDTO dto = new()
                 {
                     ExternalId = t.Id,
@@ -439,6 +564,7 @@ namespace Service.Transaction
                     Type = (TransactionType)t.Type,
                     Note = t.Note,
                     AccountId = localAccountId,
+                    DestinationAccountId = localDestinationAccountId,
                     Inactive = t.Inactive,
                     CreatedAt = t.CreatedAt,
                     UpdatedAt = t.UpdatedAt,
