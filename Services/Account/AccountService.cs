@@ -236,9 +236,6 @@ namespace Service.Account
             };
 
             await accountRepo.Add(defaultAccount);
-
-            // Assign orphan transactions (AccountId == null) to the newly created default account
-            await transactionService.AssignAccountToOrphansAsync(defaultAccount.Id);
         }
 
         // ═══════════════════════════════════════════════════════════════════════
@@ -277,20 +274,20 @@ namespace Service.Account
             };
 
             AccountApiRes res;
-            if (accountDTO.AccountId != Guid.Empty)
+            if (accountDTO.ExternalId is not null)
             {
-                // AccountId-based upsert: always POST — server handles dedup
-                res = await accountApiRepo.PostAccountAsync(req);
+                // Already known by the server → PUT to update existing record
+                res = await accountApiRepo.PutAccountAsync(accountDTO.ExternalId.Value, req);
             }
-            else if (accountDTO.ExternalId is null)
+            else if (accountDTO.AccountId != Guid.Empty)
             {
-                // Legacy: no AccountId, no ExternalId → POST (new record)
+                // AccountId-based upsert: POST — server handles dedup by AccountId
                 res = await accountApiRepo.PostAccountAsync(req);
             }
             else
             {
-                // Legacy: has ExternalId → PUT (update existing)
-                res = await accountApiRepo.PutAccountAsync(accountDTO.ExternalId.Value, req);
+                // Legacy: no AccountId, no ExternalId → POST (new record)
+                res = await accountApiRepo.PostAccountAsync(req);
             }
 
             // Persist ExternalId from server response

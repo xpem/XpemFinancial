@@ -51,6 +51,14 @@ namespace Model.DTO
 
         public AccountDTO? Account { get; set; }
 
+        public int? DestinationAccountId { get; set; }
+
+        [NotMapped]
+        public int? DestinationAccountExternalId { get; set; }
+
+        [ForeignKey("DestinationAccountId")]
+        public AccountDTO? DestinationAccount { get; set; }
+
         public required int UserId { get; set; }
 
         public UserDTO User { get; set; }

@@ -89,7 +89,8 @@ namespace XpemFinancial.VMs
                 DaysInMonth = DateTime.DaysInMonth(date.Year, date.Month);
 
                 // ── transaction list ──────────────────────────────────────────
-                Transactions = new ObservableCollection<TransactionDTO>(allTransactions);
+                Transactions = new ObservableCollection<TransactionDTO>(
+                    allTransactions.Where(t => t.Type != TransactionType.Transfer));
 
                 // ── chart series ──────────────────────────────────────────────
                 decimal previousBalance = IncludePreviousBalance

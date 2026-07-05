@@ -196,7 +196,7 @@ namespace XpemFinancial.VMs
             {
                 if (transaction.Type == TransactionType.Income)
                     Income += transaction.Amount;
-                else
+                else if (transaction.Type != TransactionType.Transfer)
                     Expense += transaction.Amount;
 
                 Transactions.Add(transaction);

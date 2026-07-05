@@ -99,7 +99,12 @@
                             IsChecked="False"
                             Style="{StaticResource RadioButton}"
                             Value="{x:Static model:TransactionType.Income}" />
-                        <!--<RadioButton Style="{StaticResource RadioButton}" Content="Transferência" IsChecked="False" Margin="10,0" Value="#6cc8ef"/>-->
+                        <RadioButton
+                            Margin="10,0"
+                            Content="Transferência"
+                            IsChecked="False"
+                            Style="{StaticResource RadioButton}"
+                            Value="{x:Static model:TransactionType.Transfer}" />
                     </HorizontalStackLayout>
                 </Border>
                 <Grid ColumnDefinitions="auto, auto">
@@ -115,7 +120,10 @@
                                 MinimumDate="01/01/1990" />
                         </Border>
                     </VerticalStackLayout>
-                    <VerticalStackLayout Grid.Column="1" Margin="10,0,0,0">
+                    <VerticalStackLayout
+                        Grid.Column="1"
+                        Margin="10,0,0,0"
+                        IsVisible="{Binding IsTransfer, Converter={StaticResource InvertedBoolConverter}}">
                         <Label FontSize="14" Text="Categoria" />
                         <Border Padding="10" BackgroundColor="{StaticResource InputBackground}">
                             <Border.GestureRecognizers>
@@ -167,7 +175,23 @@
                         </Border>
                     </VerticalStackLayout>
                 </Grid>
-                <Border Margin="0,10,0,10" Padding="0,5,0,0">
+                <!--  Conta destino — visível apenas para transferências  -->
+                <VerticalStackLayout Padding="0,10,0,0" IsVisible="{Binding IsTransfer}">
+                    <Label Text="Conta destino" />
+                    <Border
+                        Padding="0"
+                        BackgroundColor="{StaticResource InputBackground}"
+                        StrokeShape="RoundRectangle 5">
+                        <Picker
+                            ItemDisplayBinding="{Binding Name}"
+                            ItemsSource="{Binding DestinationAccounts}"
+                            SelectedItem="{Binding SelectedDestinationAccount}" />
+                    </Border>
+                </VerticalStackLayout>
+                <Border
+                    Margin="0,10,0,10"
+                    Padding="0,5,0,0"
+                    IsVisible="{Binding IsTransfer, Converter={StaticResource InvertedBoolConverter}}">
                     <HorizontalStackLayout
                         x:Name="Repetition"
                         HorizontalOptions="Start"

@@ -40,10 +40,20 @@ namespace XpemFinancial.VMs
         [ObservableProperty] private Repetition selectedRepetition;
         [ObservableProperty] private TransactionType selectedTransactionType;
         [ObservableProperty] private bool isEditing = false;
-
-        // ── Account selection (Task 13) ──
+        [ObservableProperty] private string titleIcon;
+        [ObservableProperty] private string note;
         [ObservableProperty] private List<AccountDTO> activeAccounts = [];
         [ObservableProperty] private AccountDTO? selectedAccount;
+        [ObservableProperty] private List<AccountDTO> destinationAccounts = [];
+        [ObservableProperty] private AccountDTO? selectedDestinationAccount;
+        [ObservableProperty] private bool isTransfer;
+        [ObservableProperty] private bool suggestionsVisible = false;
+        [ObservableProperty] private string pageTitle;
+
+        /// <summary>
+        /// Stores the existing transaction's DestinationAccountId when editing a transfer, for pre-selection.
+        /// </summary>
+        private int? _editingDestinationAccountId;
 
         /// <summary>
         /// Stores the dashboard account ID passed via navigation parameter for pre-selection.
@@ -59,21 +69,9 @@ namespace XpemFinancial.VMs
 
         public ObservableCollection<TransactionDescriptionRes> DescriptionSuggestions { get; set; } = new();
 
-        [ObservableProperty] private bool suggestionsVisible = false;
-
         // Esta propriedade apenas facilita a exibição no botão/label da View
         // Ela será atualizada sempre que a SelectedCategory mudar
         public string CategoryDisplayName => selectedCategory?.Name ?? "Sem Categoria";
-
-        public string PageTitle => IsEditing ? "Editar transação" : "Adicionar transação";
-
-        public bool IsIncome => SelectedTransactionType == TransactionType.Income;
-
-        public string TitleIcon => SelectedTransactionType == TransactionType.Income
-            ? XpemFinancial.Resources.IconFont.ArrowTrendUp
-            : XpemFinancial.Resources.IconFont.ArrowTrendDown;
-
-        [ObservableProperty] private string note;
 
         /// <summary>
         /// Scope selected via the inline radio buttons when editing a recurring occurrence.
@@ -170,6 +168,15 @@ namespace XpemFinancial.VMs
             {
                 var match = accounts.FirstOrDefault(a => a.Id == _editingTransactionAccountId.Value);
                 SelectedAccount = match ?? accounts.First();
+
+                // Pre-select destination account for transfer editing (Req 3.4)
+                if (_editingDestinationAccountId.HasValue && IsTransfer)
+                {
+                    FilterDestinationAccounts();
+                    var destMatch = DestinationAccounts.FirstOrDefault(a => a.Id == _editingDestinationAccountId.Value);
+                    SelectedDestinationAccount = destMatch;
+                }
+
                 return;
             }
 
@@ -208,12 +215,84 @@ namespace XpemFinancial.VMs
             return parent != null ? $"{parent.Name} / {category.Name}" : category.Name;
         }
 
-        partial void OnSelectedTransactionTypeChanged(TransactionType value)
+        private void SetTransactionTypeAttributes(TransactionType value)
         {
             // Atualiza a cor com base no tipo de transação
-            TransactionTypeColor = value == TransactionType.Income ? "#198754" : "#ef4444";
-            OnPropertyChanged(nameof(IsIncome));
-            OnPropertyChanged(nameof(TitleIcon));
+            switch (value)
+            {
+                case TransactionType.Income:
+                    TransactionTypeColor = "#198754"; // Verde para entrada
+                    break;
+                case TransactionType.Expense:
+                    TransactionTypeColor = "#ef4444"; // Vermelho para saída
+                    break;
+                case TransactionType.Transfer:
+                    TransactionTypeColor = "#0d6efd"; // Azul para transferência
+                    break;
+                default:
+                    TransactionTypeColor = "#6c757d"; // Cinza padrão
+                    break;
+            }
+
+            switch (value)
+            {
+                case TransactionType.Income:
+                    TitleIcon = XpemFinancial.Resources.IconFont.ArrowTrendUp;
+                    break;
+                case TransactionType.Expense:
+                    TitleIcon = XpemFinancial.Resources.IconFont.ArrowTrendDown;
+                    break;
+                case TransactionType.Transfer:
+                    TitleIcon = XpemFinancial.Resources.IconFont.ArrowRightArrowLeft;
+                    break;
+                default:
+                    TitleIcon = XpemFinancial.Resources.IconFont.ArrowTrendDown;
+                    break;
+            }
+
+            // Toggle IsTransfer e re-filtrar contas destino (Req 2.1, 2.2, 2.3)
+            IsTransfer = value == TransactionType.Transfer;
+
+            if (IsTransfer)
+            {
+                // Ocultar categoria/parcelamento/recorrência
+                InstallmentPanelIsVisible = false;
+                SelectedRepetition = Repetition.None;
+                FilterDestinationAccounts();
+            }
+            else
+            {
+                // Restaurar visibilidade do parcelamento conforme repetição atual
+                if (SelectedRepetition == Repetition.Monthly)
+                    InstallmentPanelIsVisible = true;
+            }
+        }
+
+        partial void OnSelectedTransactionTypeChanged(TransactionType value)
+        {
+            SetTransactionTypeAttributes(value);
+        }
+
+        partial void OnSelectedAccountChanged(AccountDTO? value)
+        {
+            // Re-filtrar contas destino excluindo a nova conta origem (Req 2.1)
+            if (IsTransfer)
+                FilterDestinationAccounts();
+        }
+
+        /// <summary>
+        /// Filtra a lista de contas destino: todas as contas ativas excluindo a conta origem selecionada.
+        /// </summary>
+        private void FilterDestinationAccounts()
+        {
+            var originId = SelectedAccount?.Id;
+            DestinationAccounts = ActiveAccounts
+                .Where(a => a.Id != originId)
+                .ToList();
+
+            // Se a conta destino selecionada agora é a mesma da origem, limpar seleção
+            if (SelectedDestinationAccount != null && SelectedDestinationAccount.Id == originId)
+                SelectedDestinationAccount = null;
         }
 
         [RelayCommand]
@@ -282,10 +361,13 @@ namespace XpemFinancial.VMs
                         SelectedEditScope = EditScope.ThisOnly;
                         OnPropertyChanged(nameof(IsRecurring));
 
-                        TransactionTypeColor = transaction.Type == TransactionType.Income ? "#2bbf69" : "#f75c5c";
-
                         // Store account for pre-selection in InitializeAccountsAsync
                         _editingTransactionAccountId = transaction.AccountId;
+
+                        // Store destination account for transfer pre-selection (Req 3.4)
+                        _editingDestinationAccountId = transaction.DestinationAccountId;
+
+                        SetTransactionTypeAttributes(transaction.Type);
                     }
                     finally
                     {
@@ -295,10 +377,14 @@ namespace XpemFinancial.VMs
             }
             else
             {
-                TransactionTypeColor = "#f75c5c"; //Color.FromArgb("#2bbf69"); // Cor padrão para transações de entrada
-                TransactionDate = DateTime.Now;
                 SelectedTransactionType = TransactionType.Expense;
+                SetTransactionTypeAttributes(TransactionType.Expense);
+                TransactionDate = DateTime.Now;
             }
+
+            if (IsEditing)
+                PageTitle = "Editar transação";
+            else PageTitle = "Adicionar transação";
         }
 
         private async Task HandleDeleteRecurringAsync(TransactionDTO transaction, Page page)
@@ -435,6 +521,16 @@ namespace XpemFinancial.VMs
                 isValid = false;
                 _ = VMBase.ShowMessage("Aviso", "Selecione uma conta para a transação!");
             }
+            else if (IsTransfer && SelectedDestinationAccount is null)
+            {
+                isValid = false;
+                _ = VMBase.ShowMessage("Aviso", "Selecione a conta de destino");
+            }
+            else if (IsTransfer && SelectedDestinationAccount?.Id == SelectedAccount?.Id)
+            {
+                isValid = false;
+                _ = VMBase.ShowMessage("Aviso", "As contas devem ser diferentes");
+            }
 
             if (!isValid)
                 IsRequired = true;
@@ -508,10 +604,22 @@ namespace XpemFinancial.VMs
                 existingTransaction.Type = SelectedTransactionType;
                 existingTransaction.Note = Note?.Trim();
                 existingTransaction.CategoryId = SelectedCategory?.Id ?? existingTransaction.CategoryId;
-                existingTransaction.CategoryExternalId = SelectedCategory?.ExternalId;
+                existingTransaction.CategoryExternalId = SelectedCategory?.ExternalId ?? existingTransaction.CategoryExternalId;
                 existingTransaction.UpdatedAt = DateTime.Now;
                 existingTransaction.AccountId = SelectedAccount!.Id;
                 existingTransaction.AccountExternalId = SelectedAccount!.ExternalId;
+
+                // Transfer: propaga conta destino; não-transfer: limpa campos de destino
+                if (SelectedTransactionType == TransactionType.Transfer)
+                {
+                    existingTransaction.DestinationAccountId = SelectedDestinationAccount!.Id;
+                    existingTransaction.DestinationAccountExternalId = SelectedDestinationAccount!.ExternalId;
+                }
+                else
+                {
+                    existingTransaction.DestinationAccountId = null;
+                    existingTransaction.DestinationAccountExternalId = null;
+                }
 
                 await transactionService.UpdateAsync(existingTransaction, IsOn);
                 _ = VMBase.ShowMessage("Sucesso", "Transação atualizada com sucesso!");
@@ -566,6 +674,12 @@ namespace XpemFinancial.VMs
                 CreatedAt = DateTime.UtcNow,
                 AccountId = SelectedAccount!.Id
             };
+
+            if (SelectedTransactionType == TransactionType.Transfer)
+            {
+                transaction.DestinationAccountId = SelectedDestinationAccount?.Id;
+                transaction.DestinationAccountExternalId = SelectedDestinationAccount?.ExternalId;
+            }
 
             if (transaction.Repetition == Repetition.Monthly)
             {
