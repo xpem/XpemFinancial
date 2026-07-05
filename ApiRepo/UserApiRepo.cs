@@ -18,133 +18,146 @@ namespace ApiRepo
 
     public class UserApiRepo(IUserRepo userRepo) : IUserApiRepo
     {
+        private const string UserEndpoint = "/user";
+        private const string SessionEndpoint = "/user/session";
+        private const string RefreshSessionEndpoint = "/user/session/refresh";
+        private const string RefreshTokenProperty = "refreshToken";
+        private const string TokenProperty = "token";
+        private const string ErrorProperty = "error";
+        private const string ErrorsProperty = "errors";
+
         public async Task<ApiResp> SignUpAsync(string name, string email, string password)
         {
-            email = email.ToLower();
+            email = email.ToLowerInvariant();
             string json = JsonSerializer.Serialize(new { name, email, password });
 
-            return await HttpClientFunctions.Request(RequestsTypes.Post, ApiKeys.ApiAddress + "/user", jsonContent: json);
+            return await HttpClientFunctions.Request(RequestsTypes.Post, ApiKeys.ApiAddress + UserEndpoint, jsonContent: json);
         }
 
         public async Task<ApiResp> RecoverPasswordAsync(string email)
         {
-            try
-            {
-                string json = JsonSerializer.Serialize(new { email });
+            string json = JsonSerializer.Serialize(new { email });
 
-                return await HttpClientFunctions.Request(RequestsTypes.Post, ApiKeys.ApiAddress + "/user/recoverpassword", jsonContent: json);
-            }
-            catch (Exception) { throw; }
+            return await HttpClientFunctions.Request(RequestsTypes.Post, ApiKeys.ApiAddress + "/user/recoverpassword", jsonContent: json);
         }
 
         public async Task<ApiResp> GetTokenAsync(string email, string password)
         {
             string json = JsonSerializer.Serialize(new { email, password });
 
-            var resp = await HttpClientFunctions.Request(RequestsTypes.Post, ApiKeys.ApiAddress + "/user/session", jsonContent: json);
+            var resp = await HttpClientFunctions.Request(RequestsTypes.Post, ApiKeys.ApiAddress + SessionEndpoint, jsonContent: json);
 
             if (resp is null || resp.Content is null)
-                throw new ArgumentNullException(nameof(resp));
+                throw new InvalidOperationException("Resposta inválida ao obter token.");
 
-            JsonNode? jResp;
-
-            try
-            {
-                jResp = JsonNode.Parse(resp.Content);
-            }
-            catch (JsonException)
-            {
-                return new ApiResp() { Success = false, Content = resp.Content };
-            }
+            if (!TryParseJson(resp.Content, out JsonNode? jResp))
+                return new ApiResp { Success = false, Content = resp.Content };
 
             if (resp.Success)
             {
-                if (jResp?["token"]?.GetValue<string>() is string token)
+                string? token = GetStringValue(jResp, TokenProperty);
+
+                if (!string.IsNullOrWhiteSpace(token))
                 {
-                    string? refreshToken = jResp?["refreshToken"]?.GetValue<string>();
+                    string? refreshToken = GetStringValue(jResp, RefreshTokenProperty);
                     string content = JsonSerializer.Serialize(new { token, refreshToken });
-                    return new ApiResp() { Success = true, Content = content };
+
+                    return new ApiResp { Success = true, Content = content };
                 }
             }
             else
             {
-                if (jResp?["errors"]?.GetValue<string>() is string errors)
-                    return new ApiResp() { Success = false, Content = errors };
-                else if (jResp?["error"]?.GetValue<string>() is string error)
-                    return new ApiResp() { Success = false, Content = error };
+                string? error = GetStringValue(jResp, ErrorsProperty) ?? GetStringValue(jResp, ErrorProperty);
 
-                return new ApiResp() { Success = false, Content = resp.Content };
+                return new ApiResp
+                {
+                    Success = false,
+                    Content = error ?? resp.Content
+                };
             }
 
-            return new ApiResp() { Success = false, Content = resp.Content };
+            return new ApiResp { Success = false, Content = resp.Content };
         }
 
         public async Task<(bool success, string? newToken)> RefreshToken()
         {
             UserDTO? user = await userRepo.GetAsync();
 
-            if (user is not null && user.RefreshToken is not null)
-            {
-                string json = JsonSerializer.Serialize(new { refreshToken = user.RefreshToken });
+            if (string.IsNullOrWhiteSpace(user?.RefreshToken))
+                return (false, null);
 
-                var resp = await HttpClientFunctions.Request(RequestsTypes.Post, ApiKeys.ApiAddress + "/user/session/refresh", jsonContent: json);
+            string json = JsonSerializer.Serialize(new { refreshToken = user.RefreshToken });
 
-                if (resp.Success && resp.Content is not null)
-                {
-                    JsonNode? jResp = JsonNode.Parse(resp.Content);
-                    string? newToken = jResp?["token"]?.GetValue<string>();
-                    string? newRefreshToken = jResp?["refreshToken"]?.GetValue<string>();
+            var resp = await HttpClientFunctions.Request(RequestsTypes.Post, ApiKeys.ApiAddress + RefreshSessionEndpoint, jsonContent: json);
 
-                    if (newToken is not null)
-                    {
-                        user.Token = newToken;
-                        user.RefreshToken = newRefreshToken;
-                        await userRepo.UpdateAsync(user);
+            if (!resp.Success || string.IsNullOrWhiteSpace(resp.Content))
+                return (false, null);
 
-                        return (true, newToken);
-                    }
-                }
+            if (!TryParseJson(resp.Content, out JsonNode? jResp))
+                return (false, null);
 
-                throw new UnauthorizedAccessException("Falha ao tentar recuperar token do usuario");
-            }
+            string? newToken = GetStringValue(jResp, TokenProperty);
 
-            return (false, null);
+            if (string.IsNullOrWhiteSpace(newToken))
+                return (false, null);
+
+            string? newRefreshToken = GetStringValue(jResp, RefreshTokenProperty);
+
+            user.Token = newToken;
+            user.RefreshToken = newRefreshToken;
+            await userRepo.UpdateAsync(user);
+
+            return (true, newToken);
         }
 
         public async Task<ApiResp> AuthRequestAsync(RequestsTypes requestsType, string url, string? jsonContent = null)
         {
-            bool retry = true;
-            ApiResp? resp = null;
+            UserDTO? user = await userRepo.GetAsync();
+            string? userToken = user?.Token;
 
-            while (retry)
-            {
-                string? userToken;
+            if (string.IsNullOrWhiteSpace(userToken))
+                throw new UnauthorizedAccessException("Usuário não autenticado.");
 
-                if (resp is not null && resp.TryRefreshToken)
-                {
-                    retry = false;
+            ApiResp resp = await HttpClientFunctions.Request(requestsType, url, userToken, jsonContent);
 
-                    (bool refreshTokenSuccess, userToken) = await RefreshToken();
+            if (!resp.TryRefreshToken)
+                return resp;
 
-                    if (!refreshTokenSuccess || userToken is null)
-                        return resp;
-                }
-                else
-                {
-                    userToken = (await userRepo.GetAsync())?.Token;
+            (bool refreshTokenSuccess, string? newToken) = await RefreshToken();
 
-                    if (userToken is null) throw new ArgumentNullException(nameof(userToken));
-                }
+            if (!refreshTokenSuccess || string.IsNullOrWhiteSpace(newToken))
+                return resp;
 
-                resp = await HttpClientFunctions.Request(requestsType, url, userToken, jsonContent);
-
-                if (!resp.TryRefreshToken || !retry) return resp;
-            }
-
-            throw new Exception($"Erro ao tentar AuthRequest de tipo {requestsType} na url: {url}");
+            return await HttpClientFunctions.Request(requestsType, url, newToken, jsonContent);
         }
 
-        public async Task<ApiResp> GetAsync(string userToken) => await HttpClientFunctions.Request(RequestsTypes.Get, ApiKeys.ApiAddress + "/user", userToken: userToken);
+        public async Task<ApiResp> GetAsync(string userToken) =>
+            await HttpClientFunctions.Request(RequestsTypes.Get, ApiKeys.ApiAddress + UserEndpoint, userToken: userToken);
 
+        private static bool TryParseJson(string content, out JsonNode? node)
+        {
+            try
+            {
+                node = JsonNode.Parse(content);
+                return node is not null;
+            }
+            catch (JsonException)
+            {
+                node = null;
+                return false;
+            }
+        }
+
+        private static string? GetStringValue(JsonNode? node, string propertyName)
+        {
+            JsonNode? value = node?[propertyName];
+
+            return value switch
+            {
+                null => null,
+                JsonValue jsonValue when jsonValue.TryGetValue<string>(out string? text) => text,
+                _ => value.ToJsonString()
+            };
+        }
     }
 }
