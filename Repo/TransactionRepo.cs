@@ -19,6 +19,7 @@ namespace Repo
         Task<decimal> GetSumByAccountIdAsync(int accountId);
         Task AssignAccountToOrphansAsync(int accountId);
 
+        Task<IEnumerable<TransactionDTO>> GetByYear(int year, int? accountId = null);
         Task<List<TransactionDescriptionRes>> GetTransactionDescription(string description);
         Task<List<TransactionDTO>> GetPendingPushAsync(int userId);
         Task ResetStuckPushingAsync();
@@ -52,6 +53,23 @@ namespace Repo
                 .Include(t => t.DestinationAccount)
                 .Where(t => t.Date.Month == monthYear.Month
                          && t.Date.Year == monthYear.Year
+                         && t.Type != TransactionType.Adjustment
+                         && !t.Inactive);
+
+            if (accountId.HasValue)
+                query = query.Where(t => t.AccountId == accountId.Value);
+
+            return await query
+                .OrderByDescending(t => t.Date)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<TransactionDTO>> GetByYear(int year, int? accountId = null)
+        {
+            using var db = await DbCtx.CreateDbContextAsync();
+            var query = db.Transaction
+                .Include(t => t.DestinationAccount)
+                .Where(t => t.Date.Year == year
                          && t.Type != TransactionType.Adjustment
                          && !t.Inactive);
 

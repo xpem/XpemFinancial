@@ -28,6 +28,9 @@ namespace XpemFinancial.VMs
         [ObservableProperty] private bool includePreviousBalance;
         //[ObservableProperty] private decimal generalBalance;
 
+        [ObservableProperty] private bool isAnnualMode;
+        [ObservableProperty] private ObservableCollection<TransactionDTO> topExpenses = [];
+
         /// <summary>Cumulative income points, ordered by day.</summary>
         public List<ChartPoint> IncomePoints { get; private set; } = [];
 
@@ -36,6 +39,12 @@ namespace XpemFinancial.VMs
 
         /// <summary>Total days in the selected month — used by the drawable for the X axis.</summary>
         public int DaysInMonth { get; private set; } = 30;
+
+        /// <summary>Number of X-axis data points: 12 for annual mode, DaysInMonth for monthly.</summary>
+        public int XAxisPointCount { get; private set; } = 30;
+
+        /// <summary>Portuguese month abbreviations for annual mode X-axis; null for monthly mode.</summary>
+        public string[]? XAxisLabels { get; private set; }
 
         /// <summary>
         /// Maximum cumulative value across both series — used to scale the Y axis.
@@ -48,6 +57,7 @@ namespace XpemFinancial.VMs
 
         private DateTime _selectedDate;
         private int? _currentUserId;
+        private CancellationTokenSource? _loadCts;
 
         partial void OnIncludePreviousBalanceChanged(bool value)
         {
@@ -77,16 +87,41 @@ namespace XpemFinancial.VMs
             await LoadChartAsync(_selectedDate);
         }
 
+        [RelayCommand]
+        private async Task SetScope(bool annual)
+        {
+            IsAnnualMode = annual;
+            if (annual)
+            {
+                XAxisPointCount = 12;
+                XAxisLabels = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+                await LoadAnnualChartAsync(_selectedDate);
+            }
+            else
+            {
+                XAxisPointCount = DateTime.DaysInMonth(_selectedDate.Year, _selectedDate.Month);
+                XAxisLabels = null;
+                await LoadChartAsync(_selectedDate);
+            }
+        }
+
         private async Task LoadChartAsync(DateTime date)
         {
+            _loadCts?.Cancel();
+            _loadCts = new CancellationTokenSource();
+            var token = _loadCts.Token;
+
             MonthYearDisplay = date.ToString("MMMM/yyyy");
             IsBusy = true;
 
             try
             {
                 var allTransactions = (await transactionService.GetByMonthYear(date)).ToList();
+                if (token.IsCancellationRequested) return;
 
                 DaysInMonth = DateTime.DaysInMonth(date.Year, date.Month);
+                XAxisPointCount = DaysInMonth;
+                XAxisLabels = null;
 
                 // ── transaction list ──────────────────────────────────────────
                 Transactions = new ObservableCollection<TransactionDTO>(
@@ -96,6 +131,8 @@ namespace XpemFinancial.VMs
                 decimal previousBalance = IncludePreviousBalance
                     ? await transactionService.GetPreviousBalanceAsync(date)
                     : 0;
+
+                if (token.IsCancellationRequested) return;
 
                 var incomeByDay = allTransactions
                     .Where(t => t.Type == TransactionType.Income)
@@ -137,6 +174,8 @@ namespace XpemFinancial.VMs
                         expensePoints.Insert(0, new ChartPoint(1, previousBalance < 0 ? Math.Abs(previousBalance) : 0));
                 }
 
+                if (token.IsCancellationRequested) return;
+
                 IncomePoints = incomePoints;
                 ExpensePoints = expensePoints;
 
@@ -146,6 +185,8 @@ namespace XpemFinancial.VMs
                 MaxValue = allValues.Any() ? allValues.Max() : 1;
                 if (MaxValue <= 0) MaxValue = 1;
 
+                ComputeTop10(allTransactions);
+
                 DataChanged?.Invoke();
             }
             finally
@@ -154,22 +195,113 @@ namespace XpemFinancial.VMs
             }
         }
 
-        [RelayCommand]
-        private async Task LoadPreviousMonth()
+        private async Task LoadAnnualChartAsync(DateTime date)
         {
-            _selectedDate = _selectedDate.AddMonths(-1);
-            await LoadChartAsync(_selectedDate);
+            _loadCts?.Cancel();
+            _loadCts = new CancellationTokenSource();
+            var token = _loadCts.Token;
+
+            MonthYearDisplay = date.Year.ToString();
+            IsBusy = true;
+
+            try
+            {
+                var allTransactions = (await transactionService.GetByYear(date.Year)).ToList();
+                if (token.IsCancellationRequested) return;
+
+                // Cumulative monthly series — 12 points each
+                var incomeByMonth = allTransactions
+                    .Where(t => t.Type == TransactionType.Income)
+                    .GroupBy(t => t.Date.Month)
+                    .ToDictionary(g => g.Key, g => g.Sum(t => t.Amount));
+
+                var expenseByMonth = allTransactions
+                    .Where(t => t.Type == TransactionType.Expense)
+                    .GroupBy(t => t.Date.Month)
+                    .ToDictionary(g => g.Key, g => g.Sum(t => Math.Abs(t.Amount)));
+
+                var incomePoints = new List<ChartPoint>();
+                var expensePoints = new List<ChartPoint>();
+                decimal cumulativeIncome = 0;
+                decimal cumulativeExpense = 0;
+
+                for (int m = 1; m <= 12; m++)
+                {
+                    if (incomeByMonth.TryGetValue(m, out decimal monthIncome))
+                        cumulativeIncome += monthIncome;
+
+                    if (expenseByMonth.TryGetValue(m, out decimal monthExpense))
+                        cumulativeExpense += monthExpense;
+
+                    incomePoints.Add(new ChartPoint(m, cumulativeIncome));
+                    expensePoints.Add(new ChartPoint(m, cumulativeExpense));
+                }
+
+                if (token.IsCancellationRequested) return;
+
+                IncomePoints = incomePoints;
+                ExpensePoints = expensePoints;
+                XAxisPointCount = 12;
+                XAxisLabels = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+
+                var allValues = incomePoints.Select(p => p.Value)
+                    .Concat(expensePoints.Select(p => p.Value));
+
+                MaxValue = allValues.Any() ? Math.Max(allValues.Max(), 1) : 1;
+
+                ComputeTop10(allTransactions);
+                DataChanged?.Invoke();
+            }
+            finally
+            {
+                IsBusy = false;
+            }
+        }
+
+        private void ComputeTop10(IEnumerable<TransactionDTO> transactions)
+        {
+            var top = transactions
+                .Where(t => t.Type == TransactionType.Expense && !t.Inactive)
+                .OrderByDescending(t => Math.Abs(t.Amount))
+                .ThenByDescending(t => t.Date)
+                .Take(10)
+                .ToList();
+
+            TopExpenses = new ObservableCollection<TransactionDTO>(top);
         }
 
         [RelayCommand]
-        private async Task LoadNextMonth()
+        private async Task LoadPreviousPeriod()
         {
-            _selectedDate = _selectedDate.AddMonths(1);
+            if (IsAnnualMode)
+            {
+                _selectedDate = _selectedDate.AddYears(-1);
+                await LoadAnnualChartAsync(_selectedDate);
+            }
+            else
+            {
+                _selectedDate = _selectedDate.AddMonths(-1);
+                await LoadChartAsync(_selectedDate);
+            }
+        }
 
-            if (_selectedDate > DateTime.Today.AddMonths(6))
-                await recurringRuleService.RunSchedulerAsync(_selectedDate);
+        [RelayCommand]
+        private async Task LoadNextPeriod()
+        {
+            if (IsAnnualMode)
+            {
+                _selectedDate = _selectedDate.AddYears(1);
+                await LoadAnnualChartAsync(_selectedDate);
+            }
+            else
+            {
+                _selectedDate = _selectedDate.AddMonths(1);
 
-            await LoadChartAsync(_selectedDate);
+                if (_selectedDate > DateTime.Today.AddMonths(6))
+                    await recurringRuleService.RunSchedulerAsync(_selectedDate);
+
+                await LoadChartAsync(_selectedDate);
+            }
         }
 
         [RelayCommand]
