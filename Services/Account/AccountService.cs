@@ -306,19 +306,29 @@ namespace Service.Account
             DateTime cursor = await syncCursorRepo.GetAsync(SyncCursorKeys.Account);
             var serverAccounts = await accountApiRepo.GetAccountsAsync(cursor);
 
+            // Pre-load all local accounts to avoid missing matches due to detached contexts
+            var localAccounts = await accountRepo.GetAllAsync(uid);
+
             DateTime maxUpdatedAt = cursor;
 
             foreach (var res in serverAccounts)
             {
                 AccountDTO? local = null;
 
-                // 1. Try matching by AccountId first
+                // 1. Try matching by AccountId first (stable cross-device identifier)
                 if (res.AccountId is not null && res.AccountId.Value != Guid.Empty)
-                    local = await accountRepo.GetByAccountIdAsync(res.AccountId.Value);
+                    local = localAccounts.FirstOrDefault(a => a.AccountId == res.AccountId.Value);
 
-                // 2. Fall back to ExternalId lookup
+                // 2. Fall back to ExternalId lookup (server-side ID)
+                if (local is null && res.Id > 0)
+                    local = localAccounts.FirstOrDefault(a => a.ExternalId == res.Id);
+
+                // 3. Last resort: match by Name + Type for accounts that never completed sync
                 if (local is null)
-                    local = await accountRepo.GetByExternalIdAsync(res.Id);
+                    local = localAccounts.FirstOrDefault(a =>
+                        a.ExternalId == null &&
+                        a.Name == res.Name &&
+                        a.Type == res.Type);
 
                 if (local is null)
                 {
@@ -341,6 +351,7 @@ namespace Service.Account
                     };
 
                     await accountRepo.Add(newAccount);
+                    localAccounts.Add(newAccount);
                 }
                 else if (res.UpdatedAt > local.UpdatedAt)
                 {

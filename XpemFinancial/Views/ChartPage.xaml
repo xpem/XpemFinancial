@@ -45,32 +45,89 @@
     <ScrollView Margin="0">
         <VerticalStackLayout Padding="10" Spacing="10">
 
-            <!--  Month navigator  -->
-            <HorizontalStackLayout Margin="0,0,0,0">
-                <Button Command="{Binding LoadPreviousMonthCommand}" Style="{StaticResource NavButton}">
-                    <Button.ImageSource>
-                        <FontImageSource
-                            FontFamily="Icons"
-                            Glyph="{x:Static Icons:IconFont.CaretLeft}"
-                            Size="20" />
-                    </Button.ImageSource>
-                </Button>
-                <Border Margin="5,0" Stroke="#9da9b9">
-                    <Label
-                        Margin="10"
-                        HeightRequest="20"
-                        Text="{Binding MonthYearDisplay}"
-                        TextColor="#d6e0eb" />
-                </Border>
-                <Button Command="{Binding LoadNextMonthCommand}" Style="{StaticResource NavButton}">
-                    <Button.ImageSource>
-                        <FontImageSource
-                            FontFamily="Icons"
-                            Glyph="{x:Static Icons:IconFont.CaretRight}"
-                            Size="20" />
-                    </Button.ImageSource>
-                </Button>
-            </HorizontalStackLayout>
+            <Grid ColumnDefinitions="*,*">
+                <HorizontalStackLayout Margin="0,0,0,0">
+                    <Button Command="{Binding LoadPreviousPeriodCommand}" Style="{StaticResource NavButton}">
+                        <Button.ImageSource>
+                            <FontImageSource
+                                FontFamily="Icons"
+                                Glyph="{x:Static Icons:IconFont.CaretLeft}"
+                                Size="20" />
+                        </Button.ImageSource>
+                    </Button>
+                    <Border Margin="5,0" Stroke="#9da9b9">
+                        <Label
+                            Margin="10"
+                            HeightRequest="20"
+                            Text="{Binding MonthYearDisplay}"
+                            TextColor="#d6e0eb" />
+                    </Border>
+                    <Button Command="{Binding LoadNextPeriodCommand}" Style="{StaticResource NavButton}">
+                        <Button.ImageSource>
+                            <FontImageSource
+                                FontFamily="Icons"
+                                Glyph="{x:Static Icons:IconFont.CaretRight}"
+                                Size="20" />
+                        </Button.ImageSource>
+                    </Button>
+                </HorizontalStackLayout>
+                <HorizontalStackLayout
+                    Grid.Column="1"
+                    Margin="10,0,0,0"
+                    HorizontalOptions="Center"
+                    Spacing="0">
+                    <Button
+                        BorderColor="#9da9b9"
+                        BorderWidth="1"
+                        Command="{Binding SetScopeCommand}"
+                        CommandParameter="{x:Boolean False}"
+                        CornerRadius="0"
+                        FontSize="13"
+                        HeightRequest="30"
+                        Text="Mensal"
+                        TextColor="#d6e0eb">
+                        <Button.Triggers>
+                            <DataTrigger
+                                Binding="{Binding IsAnnualMode}"
+                                TargetType="Button"
+                                Value="False">
+                                <Setter Property="BackgroundColor" Value="#2b3548" />
+                            </DataTrigger>
+                            <DataTrigger
+                                Binding="{Binding IsAnnualMode}"
+                                TargetType="Button"
+                                Value="True">
+                                <Setter Property="BackgroundColor" Value="Transparent" />
+                            </DataTrigger>
+                        </Button.Triggers>
+                    </Button>
+                    <Button
+                        BorderColor="#9da9b9"
+                        BorderWidth="1"
+                        Command="{Binding SetScopeCommand}"
+                        CommandParameter="{x:Boolean True}"
+                        CornerRadius="0"
+                        FontSize="13"
+                        HeightRequest="30"
+                        Text="Anual"
+                        TextColor="#d6e0eb">
+                        <Button.Triggers>
+                            <DataTrigger
+                                Binding="{Binding IsAnnualMode}"
+                                TargetType="Button"
+                                Value="True">
+                                <Setter Property="BackgroundColor" Value="#2b3548" />
+                            </DataTrigger>
+                            <DataTrigger
+                                Binding="{Binding IsAnnualMode}"
+                                TargetType="Button"
+                                Value="False">
+                                <Setter Property="BackgroundColor" Value="Transparent" />
+                            </DataTrigger>
+                        </Button.Triggers>
+                    </Button>
+                </HorizontalStackLayout>
+            </Grid>
 
             <!--  Loading indicator  -->
             <ActivityIndicator
@@ -81,6 +138,14 @@
 
             <!--  Include previous balance  -->
             <HorizontalStackLayout Spacing="0" VerticalOptions="Center">
+                <HorizontalStackLayout.Triggers>
+                    <DataTrigger
+                        Binding="{Binding IsAnnualMode}"
+                        TargetType="HorizontalStackLayout"
+                        Value="True">
+                        <Setter Property="IsVisible" Value="False" />
+                    </DataTrigger>
+                </HorizontalStackLayout.Triggers>
                 <CheckBox IsChecked="{Binding IncludePreviousBalance}" Color="White" />
                 <Label
                     Text="Incluir saldo anterior"
@@ -156,7 +221,7 @@
                 </HorizontalStackLayout>
             </Border>-->
 
-            <!--  Transaction list  -->
+            <!--  Top 10 Maiores Despesas  -->
             <Border
                 Margin="0,5,0,0"
                 Padding="0"
@@ -170,14 +235,14 @@
                         BackgroundColor="#232c39"
                         FontAttributes="Bold"
                         FontSize="20"
-                        Text="Transações"
+                        Text="Top 10 Maiores Despesas"
                         TextColor="#d6e0eb" />
 
                     <!--  List  -->
                     <CollectionView
                         Grid.Row="1"
                         Margin="0,10,0,0"
-                        ItemsSource="{Binding Transactions}"
+                        ItemsSource="{Binding TopExpenses}"
                         SelectedItem="{Binding SelectedTransaction}"
                         SelectionMode="Single">
                         <CollectionView.ItemTemplate>
@@ -228,7 +293,7 @@
                             <Label
                                 Margin="20"
                                 HorizontalOptions="Center"
-                                Text="Nenhuma transação encontrada."
+                                Text="Nenhuma despesa encontrada para o período selecionado."
                                 TextColor="#758292" />
                         </CollectionView.EmptyView>
                     </CollectionView>

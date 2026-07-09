@@ -34,7 +34,8 @@ namespace XpemFinancial.Views
         {
             _drawable.IncomePoints = _vm.IncomePoints;
             _drawable.ExpensePoints = _vm.ExpensePoints;
-            _drawable.DaysInMonth = _vm.DaysInMonth;
+            _drawable.XAxisPointCount = _vm.XAxisPointCount;
+            _drawable.XAxisLabels = _vm.XAxisLabels;
             _drawable.MaxValue = _vm.MaxValue;
 
             // Invalidate must happen on the UI thread

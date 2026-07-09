@@ -14,14 +14,15 @@ namespace XpemFinancial.Utils
     ///  paddingBottom  (X axis labels)
     ///
     /// The caller is responsible for calling GraphicsView.Invalidate() whenever
-    /// IncomePoints / ExpensePoints / DaysInMonth / MaxValue change.
+    /// IncomePoints / ExpensePoints / XAxisPointCount / MaxValue change.
     /// </summary>
     public class LineChartDrawable : IDrawable
     {
         // ── data ──────────────────────────────────────────────────────────────
         public List<ChartPoint> IncomePoints { get; set; } = [];
         public List<ChartPoint> ExpensePoints { get; set; } = [];
-        public int DaysInMonth { get; set; } = 30;
+        public int XAxisPointCount { get; set; } = 30;
+        public string[]? XAxisLabels { get; set; }
         public decimal MaxValue { get; set; } = 1;
 
         // ── colours ───────────────────────────────────────────────────────────
@@ -76,15 +77,30 @@ namespace XpemFinancial.Utils
                     HorizontalAlignment.Right, VerticalAlignment.Center);
             }
 
-            // ── X axis labels (every ~5 days) ─────────────────────────────────
-            int xLabelStep = DaysInMonth <= 15 ? 2 : DaysInMonth <= 20 ? 4 : 5;
-            for (int d = 1; d <= DaysInMonth; d++)
+            // ── X axis labels ──────────────────────────────────────────────────
+            if (XAxisLabels is null)
             {
-                if (d == 1 || d % xLabelStep == 0 || d == DaysInMonth)
+                // Monthly mode: step-based numeric labels (existing logic)
+                int xLabelStep = XAxisPointCount <= 15 ? 2 : XAxisPointCount <= 20 ? 4 : 5;
+                for (int d = 1; d <= XAxisPointCount; d++)
                 {
-                    float x = DayToX(d, plotW);
-                    canvas.DrawString(d.ToString(), PadLeft + x - 10f, PadTop + plotH + 4f,
-                        20f, LabelFontSize + 2f,
+                    if (d == 1 || d % xLabelStep == 0 || d == XAxisPointCount)
+                    {
+                        float x = PointToX(d, plotW);
+                        canvas.DrawString(d.ToString(), PadLeft + x - 10f, PadTop + plotH + 4f,
+                            20f, LabelFontSize + 2f,
+                            HorizontalAlignment.Center, VerticalAlignment.Top);
+                    }
+                }
+            }
+            else
+            {
+                // Annual mode (or custom labels): render each label at its X position
+                for (int i = 0; i < XAxisLabels.Length; i++)
+                {
+                    float x = PointToX(i + 1, plotW);
+                    canvas.DrawString(XAxisLabels[i], PadLeft + x - 14f, PadTop + plotH + 4f,
+                        28f, LabelFontSize + 2f,
                         HorizontalAlignment.Center, VerticalAlignment.Top);
                 }
             }
@@ -117,7 +133,7 @@ namespace XpemFinancial.Utils
 
             foreach (var pt in points)
             {
-                float x = PadLeft + DayToX(pt.Day, plotW);
+                float x = PadLeft + PointToX(pt.Day, plotW);
                 float y = PadTop + ValueToY((double)pt.Value, plotH);
 
                 if (first) { path.MoveTo(x, y); first = false; }
@@ -130,15 +146,15 @@ namespace XpemFinancial.Utils
             canvas.FillColor = color;
             foreach (var pt in points)
             {
-                float x = PadLeft + DayToX(pt.Day, plotW);
+                float x = PadLeft + PointToX(pt.Day, plotW);
                 float y = PadTop + ValueToY((double)pt.Value, plotH);
                 canvas.FillCircle(x, y, 3f);
             }
         }
 
-        // Maps a day (1..DaysInMonth) → X offset inside the plot area
-        private float DayToX(int day, float plotW)
-            => (day - 1) / (float)(DaysInMonth - 1 == 0 ? 1 : DaysInMonth - 1) * plotW;
+        // Maps an index (1..XAxisPointCount) → X offset inside the plot area
+        private float PointToX(int index, float plotW)
+            => (index - 1) / (float)(XAxisPointCount - 1 == 0 ? 1 : XAxisPointCount - 1) * plotW;
 
         // Maps a value (0..MaxValue) → Y offset inside the plot area (Y increases downward)
         private float ValueToY(double value, float plotH)
