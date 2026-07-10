@@ -101,6 +101,7 @@ public partial class AccountEditVM(IAccountService accountService, IUserSessionS
                 _existingAccount.Name = trimmedName;
                 _existingAccount.Type = type;
                 _existingAccount.IncludeInGeneralBalance = IncludeInGeneralBalance;
+
                 await accountService.UpdateAsync(_existingAccount, IsOn);
 
                 // Ajustar saldo se o valor foi alterado
