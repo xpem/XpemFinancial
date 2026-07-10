@@ -363,6 +363,28 @@
                                         Text="{Binding DestinationAccount.Name, StringFormat='→ {0}'}"
                                         TextColor="#758292"
                                         VerticalOptions="Start" />
+
+                                    <!--  Source account name: shown when user has multiple accounts (non-transfer)  -->
+                                    <Label
+                                        Grid.Row="1"
+                                        Grid.ColumnSpan="4"
+                                        Margin="5,0,0,0"
+                                        FontAttributes="Italic"
+                                        FontSize="9"
+                                        IsVisible="{Binding Source={RelativeSource AncestorType={x:Type ViewModels:MainVM}}, Path=HasMultipleAccounts}"
+                                        LineBreakMode="TailTruncation"
+                                        Text="{Binding Account.Name}"
+                                        TextColor="#758292"
+                                        VerticalOptions="Start">
+                                        <Label.Triggers>
+                                            <DataTrigger
+                                                Binding="{Binding DestinationAccount, Converter={StaticResource IsNotNullConverter}}"
+                                                TargetType="Label"
+                                                Value="True">
+                                                <Setter Property="IsVisible" Value="False" />
+                                            </DataTrigger>
+                                        </Label.Triggers>
+                                    </Label>
                                 </Grid>
                             </DataTemplate>
                         </CollectionView.ItemTemplate>

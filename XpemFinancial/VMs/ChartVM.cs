@@ -31,6 +31,7 @@ namespace XpemFinancial.VMs
         [ObservableProperty] private bool isAnnualMode;
         [ObservableProperty] private bool isAnnualCumulative = true;
         [ObservableProperty] private ObservableCollection<TransactionDTO> topExpenses = [];
+        [ObservableProperty] private bool hasMultipleAccounts;
 
         /// <summary>Cumulative income points, ordered by day.</summary>
         public List<ChartPoint> IncomePoints { get; private set; } = [];
@@ -87,7 +88,9 @@ namespace XpemFinancial.VMs
             {
                 _currentUserId = user.Id;
                 IncludePreviousBalance = user.IncludePreviousBalance;
-                //GeneralBalance = await accountService.GetGeneralBalanceAsync(user.Id);
+
+                var activeAccounts = await accountService.GetActiveAsync(user.Id);
+                HasMultipleAccounts = activeAccounts.Count > 1;
             }
 
             _selectedDate = DateTime.Now;

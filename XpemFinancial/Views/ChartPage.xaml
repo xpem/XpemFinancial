@@ -299,6 +299,7 @@
                                 <Grid
                                     Padding="5,0,5,0"
                                     ColumnDefinitions="2*, 1.2*, 1*, Auto"
+                                    RowDefinitions="Auto, Auto"
                                     RowSpacing="0"
                                     VerticalOptions="Center">
                                     <Label
@@ -335,6 +336,19 @@
                                                 Color="#6cc8ef" />
                                         </Image.Source>
                                     </Image>
+
+                                    <!--  Source account name: shown when user has multiple accounts  -->
+                                    <Label
+                                        Grid.Row="1"
+                                        Grid.ColumnSpan="4"
+                                        Margin="5,0,0,0"
+                                        FontAttributes="Italic"
+                                        FontSize="9"
+                                        IsVisible="{Binding Source={RelativeSource AncestorType={x:Type vms:ChartVM}}, Path=HasMultipleAccounts}"
+                                        LineBreakMode="TailTruncation"
+                                        Text="{Binding Account.Name}"
+                                        TextColor="#758292"
+                                        VerticalOptions="Start" />
                                 </Grid>
                             </DataTemplate>
                         </CollectionView.ItemTemplate>

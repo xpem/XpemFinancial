@@ -34,6 +34,7 @@ namespace XpemFinancial.VMs
         // ── Account filter (Task 12) ──
         [ObservableProperty] private ObservableCollection<AccountFilterItem> accountFilterOptions = [];
         [ObservableProperty] private AccountFilterItem? selectedAccountFilter;
+        [ObservableProperty] private bool hasMultipleAccounts;
 
         /// <summary>
         /// Preserves the selected account filter across VM re-creations within the same app session.
@@ -139,6 +140,9 @@ namespace XpemFinancial.VMs
             }
 
             AccountFilterOptions = options;
+
+            // More than one real account (excluding the "Todas" entry) → show account names
+            HasMultipleAccounts = options.Count > 2;
 
             // Restore session selection or default to "Todas as Contas" (Req 6.5, 6.6, 6.7)
             if (_sessionSelectedAccountId.HasValue)
