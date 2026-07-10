@@ -29,7 +29,9 @@ namespace XpemFinancial.VMs
         //[ObservableProperty] private decimal generalBalance;
 
         [ObservableProperty] private bool isAnnualMode;
+        [ObservableProperty] private bool isAnnualCumulative = true;
         [ObservableProperty] private ObservableCollection<TransactionDTO> topExpenses = [];
+        [ObservableProperty] private bool hasMultipleAccounts;
 
         /// <summary>Cumulative income points, ordered by day.</summary>
         public List<ChartPoint> IncomePoints { get; private set; } = [];
@@ -59,6 +61,12 @@ namespace XpemFinancial.VMs
         private int? _currentUserId;
         private CancellationTokenSource? _loadCts;
 
+        partial void OnIsAnnualCumulativeChanged(bool value)
+        {
+            if (IsAnnualMode)
+                _ = LoadAnnualChartAsync(_selectedDate);
+        }
+
         partial void OnIncludePreviousBalanceChanged(bool value)
         {
             if (_currentUserId.HasValue)
@@ -80,7 +88,9 @@ namespace XpemFinancial.VMs
             {
                 _currentUserId = user.Id;
                 IncludePreviousBalance = user.IncludePreviousBalance;
-                //GeneralBalance = await accountService.GetGeneralBalanceAsync(user.Id);
+
+                var activeAccounts = await accountService.GetActiveAsync(user.Id);
+                HasMultipleAccounts = activeAccounts.Count > 1;
             }
 
             _selectedDate = DateTime.Now;
@@ -222,19 +232,34 @@ namespace XpemFinancial.VMs
 
                 var incomePoints = new List<ChartPoint>();
                 var expensePoints = new List<ChartPoint>();
-                decimal cumulativeIncome = 0;
-                decimal cumulativeExpense = 0;
 
-                for (int m = 1; m <= 12; m++)
+                if (IsAnnualCumulative)
                 {
-                    if (incomeByMonth.TryGetValue(m, out decimal monthIncome))
-                        cumulativeIncome += monthIncome;
+                    decimal cumulativeIncome = 0;
+                    decimal cumulativeExpense = 0;
 
-                    if (expenseByMonth.TryGetValue(m, out decimal monthExpense))
-                        cumulativeExpense += monthExpense;
+                    for (int m = 1; m <= 12; m++)
+                    {
+                        if (incomeByMonth.TryGetValue(m, out decimal monthIncome))
+                            cumulativeIncome += monthIncome;
 
-                    incomePoints.Add(new ChartPoint(m, cumulativeIncome));
-                    expensePoints.Add(new ChartPoint(m, cumulativeExpense));
+                        if (expenseByMonth.TryGetValue(m, out decimal monthExpense))
+                            cumulativeExpense += monthExpense;
+
+                        incomePoints.Add(new ChartPoint(m, cumulativeIncome));
+                        expensePoints.Add(new ChartPoint(m, cumulativeExpense));
+                    }
+                }
+                else
+                {
+                    for (int m = 1; m <= 12; m++)
+                    {
+                        incomeByMonth.TryGetValue(m, out decimal monthIncome);
+                        expenseByMonth.TryGetValue(m, out decimal monthExpense);
+
+                        incomePoints.Add(new ChartPoint(m, monthIncome));
+                        expensePoints.Add(new ChartPoint(m, monthExpense));
+                    }
                 }
 
                 if (token.IsCancellationRequested) return;
@@ -308,6 +333,12 @@ namespace XpemFinancial.VMs
         private void ToggleIncludePreviousBalance()
         {
             IncludePreviousBalance = !IncludePreviousBalance;
+        }
+
+        [RelayCommand]
+        private void ToggleAnnualCumulative()
+        {
+            IsAnnualCumulative = !IsAnnualCumulative;
         }
 
         [RelayCommand]

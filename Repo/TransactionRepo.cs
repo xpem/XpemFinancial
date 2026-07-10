@@ -50,6 +50,7 @@ namespace Repo
         {
             using var db = await DbCtx.CreateDbContextAsync();
             var query = db.Transaction
+                .Include(t => t.Account)
                 .Include(t => t.DestinationAccount)
                 .Where(t => t.Date.Month == monthYear.Month
                          && t.Date.Year == monthYear.Year
@@ -68,6 +69,7 @@ namespace Repo
         {
             using var db = await DbCtx.CreateDbContextAsync();
             var query = db.Transaction
+                .Include(t => t.Account)
                 .Include(t => t.DestinationAccount)
                 .Where(t => t.Date.Year == year
                          && t.Type != TransactionType.Adjustment

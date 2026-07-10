@@ -157,6 +157,27 @@
                 </Label>
             </HorizontalStackLayout>
 
+            <!--  Accumulated vs month-by-month (annual mode only)  -->
+            <HorizontalStackLayout Spacing="0" VerticalOptions="Center">
+                <HorizontalStackLayout.Triggers>
+                    <DataTrigger
+                        Binding="{Binding IsAnnualMode}"
+                        TargetType="HorizontalStackLayout"
+                        Value="False">
+                        <Setter Property="IsVisible" Value="False" />
+                    </DataTrigger>
+                </HorizontalStackLayout.Triggers>
+                <CheckBox IsChecked="{Binding IsAnnualCumulative}" Color="White" />
+                <Label
+                    Text="Valores acumulados"
+                    TextColor="#d6e0eb"
+                    VerticalOptions="Center">
+                    <Label.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding ToggleAnnualCumulativeCommand}" />
+                    </Label.GestureRecognizers>
+                </Label>
+            </HorizontalStackLayout>
+
             <Border>
                 <!--  Chart canvas  -->
                 <GraphicsView
@@ -175,9 +196,23 @@
                         Color="#2bbf69" />
                     <Label
                         FontSize="12"
-                        Text="Entradas acumuladas"
                         TextColor="#d6e0eb"
-                        VerticalOptions="Center" />
+                        VerticalOptions="Center">
+                        <Label.Triggers>
+                            <MultiTrigger TargetType="Label">
+                                <MultiTrigger.Conditions>
+                                    <BindingCondition Binding="{Binding IsAnnualMode}" Value="True" />
+                                    <BindingCondition Binding="{Binding IsAnnualCumulative}" Value="False" />
+                                </MultiTrigger.Conditions>
+                                <Setter Property="Text" Value="Entradas" />
+                            </MultiTrigger>
+                        </Label.Triggers>
+                        <Label.Style>
+                            <Style TargetType="Label">
+                                <Setter Property="Text" Value="Entradas acumuladas" />
+                            </Style>
+                        </Label.Style>
+                    </Label>
                 </HorizontalStackLayout>
                 <HorizontalStackLayout Spacing="6">
                     <BoxView
@@ -188,9 +223,23 @@
                         Color="#f75c5c" />
                     <Label
                         FontSize="12"
-                        Text="Saídas acumuladas"
                         TextColor="#d6e0eb"
-                        VerticalOptions="Center" />
+                        VerticalOptions="Center">
+                        <Label.Triggers>
+                            <MultiTrigger TargetType="Label">
+                                <MultiTrigger.Conditions>
+                                    <BindingCondition Binding="{Binding IsAnnualMode}" Value="True" />
+                                    <BindingCondition Binding="{Binding IsAnnualCumulative}" Value="False" />
+                                </MultiTrigger.Conditions>
+                                <Setter Property="Text" Value="Saídas" />
+                            </MultiTrigger>
+                        </Label.Triggers>
+                        <Label.Style>
+                            <Style TargetType="Label">
+                                <Setter Property="Text" Value="Saídas acumuladas" />
+                            </Style>
+                        </Label.Style>
+                    </Label>
                 </HorizontalStackLayout>
             </HorizontalStackLayout>
 
@@ -250,6 +299,7 @@
                                 <Grid
                                     Padding="5,0,5,0"
                                     ColumnDefinitions="2*, 1.2*, 1*, Auto"
+                                    RowDefinitions="Auto, Auto"
                                     RowSpacing="0"
                                     VerticalOptions="Center">
                                     <Label
@@ -286,6 +336,19 @@
                                                 Color="#6cc8ef" />
                                         </Image.Source>
                                     </Image>
+
+                                    <!--  Source account name: shown when user has multiple accounts  -->
+                                    <Label
+                                        Grid.Row="1"
+                                        Grid.ColumnSpan="4"
+                                        Margin="5,0,0,0"
+                                        FontAttributes="Italic"
+                                        FontSize="9"
+                                        IsVisible="{Binding Source={RelativeSource AncestorType={x:Type vms:ChartVM}}, Path=HasMultipleAccounts}"
+                                        LineBreakMode="TailTruncation"
+                                        Text="{Binding Account.Name}"
+                                        TextColor="#758292"
+                                        VerticalOptions="Start" />
                                 </Grid>
                             </DataTemplate>
                         </CollectionView.ItemTemplate>
