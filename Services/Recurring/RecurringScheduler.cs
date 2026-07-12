@@ -117,6 +117,8 @@ namespace Service.Recurring
         ///
         /// We still need <paramref name="ruleStart"/> to compute the correct phase of the
         /// recurrence (e.g. a monthly rule starting on the 15th always lands on the 15th).
+        /// The original day-of-month is preserved across steps so that a rule starting on the
+        /// 31st correctly lands on 30 or 28/29 when needed, but returns to 31 when possible.
         /// </summary>
         private static List<DateTime> ComputeExpectedDates(
             DateTime ruleStart,
@@ -125,6 +127,7 @@ namespace Service.Recurring
             Frequency frequency)
         {
             var dates = new List<DateTime>();
+            int originalDay = ruleStart.Day;
             DateTime current = ruleStart.Date;
             DateTime cutoffDate = cutoff.Date;
             DateTime windowStartDate = windowStart.Date;
@@ -135,17 +138,32 @@ namespace Service.Recurring
                 if (current >= windowStartDate)
                     dates.Add(current);
 
-                current = Step(current, frequency);
+                current = Step(current, originalDay, frequency);
             }
 
             return dates;
         }
 
-        private static DateTime Step(DateTime date, Frequency frequency) => frequency switch
+        /// <summary>
+        /// Advances the date by the given frequency while preserving the original day-of-month.
+        /// When the target month has fewer days than <paramref name="originalDay"/>, clamps to
+        /// the last day of that month (e.g. day 31 → 28 in February), but restores the
+        /// original day in subsequent months that support it.
+        /// </summary>
+        private static DateTime Step(DateTime date, int originalDay, Frequency frequency) => frequency switch
         {
-            Frequency.Monthly => date.AddMonths(1),
+            Frequency.Monthly => StepMonthly(date, originalDay),
             _ => throw new ArgumentOutOfRangeException(nameof(frequency), frequency, "Unknown frequency value.")
         };
+
+        private static DateTime StepMonthly(DateTime date, int originalDay)
+        {
+            int nextMonth = date.Month == 12 ? 1 : date.Month + 1;
+            int nextYear = date.Month == 12 ? date.Year + 1 : date.Year;
+            int daysInNextMonth = DateTime.DaysInMonth(nextYear, nextMonth);
+            int day = Math.Min(originalDay, daysInNextMonth);
+            return new DateTime(nextYear, nextMonth, day);
+        }
 
         private static TransactionDTO BuildOccurrence(RecurringRuleDTO rule, DateTime date) => new()
         {

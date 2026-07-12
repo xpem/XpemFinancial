@@ -148,7 +148,7 @@
                 <Components:RequiredEntry
                     x:Name="DescriptionEntry"
                     EntryValue="{Binding Description}"
-                    IsRequired="{Binding IsRequired}"
+                    IsRequired="False"
                     IsTextPredictionEnabled="True"
                     LabelText="Descrição"
                     SizeChanged="OnDescriptionEntrySizeChanged" />
