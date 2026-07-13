@@ -5,7 +5,6 @@ public partial class RequiredEntry : ContentView
     public RequiredEntry()
     {
         InitializeComponent();
-        RequiredText = "Campo obrigatório";
     }
 
     public static readonly BindableProperty LabelTextProperty = BindableProperty.Create(
@@ -39,8 +38,7 @@ public partial class RequiredEntry : ContentView
         returnType: typeof(bool),
         declaringType: typeof(RequiredEntry),
         defaultValue: false,
-        defaultBindingMode: BindingMode.TwoWay,
-        propertyChanged: OnIsRequiredChanged);
+        defaultBindingMode: BindingMode.OneWay);
 
     public bool IsRequired
     {
@@ -48,18 +46,12 @@ public partial class RequiredEntry : ContentView
         set => SetValue(IsRequiredProperty, value);
     }
 
-    private static void OnIsRequiredChanged(BindableObject bindable, object oldValue, object newValue)
-    {
-        var control = (RequiredEntry)bindable;
-        control.RequiredStrokeThickness = (bool)newValue ? 1 : 0;
-    }
-
     public static readonly BindableProperty RequiredTextProperty = BindableProperty.Create(
         propertyName: nameof(RequiredText),
         returnType: typeof(string),
         declaringType: typeof(RequiredEntry),
-        defaultValue: null,
-        defaultBindingMode: BindingMode.TwoWay);
+        defaultValue: "Campo obrigatório",
+        defaultBindingMode: BindingMode.OneWay);
 
     public string RequiredText
     {
@@ -67,12 +59,25 @@ public partial class RequiredEntry : ContentView
         set => SetValue(RequiredTextProperty, value);
     }
 
+    public static readonly BindableProperty IsPasswordProperty = BindableProperty.Create(
+        propertyName: nameof(IsPassword),
+        returnType: typeof(bool),
+        declaringType: typeof(RequiredEntry),
+        defaultValue: false,
+        defaultBindingMode: BindingMode.OneWay);
+
+    public bool IsPassword
+    {
+        get => (bool)GetValue(IsPasswordProperty);
+        set => SetValue(IsPasswordProperty, value);
+    }
+
     public static readonly BindableProperty IsTextPredictionEnabledProperty = BindableProperty.Create(
         propertyName: nameof(IsTextPredictionEnabled),
         returnType: typeof(bool),
         declaringType: typeof(RequiredEntry),
         defaultValue: true,
-        defaultBindingMode: BindingMode.TwoWay);
+        defaultBindingMode: BindingMode.OneWay);
 
     public bool IsTextPredictionEnabled
     {
@@ -80,23 +85,16 @@ public partial class RequiredEntry : ContentView
         set => SetValue(IsTextPredictionEnabledProperty, value);
     }
 
-    //valor será 1 caso IsRequired seja true, caso contrário, será 0
-    public static readonly BindableProperty RequiredStrokeThicknessProperty = BindableProperty.Create(
-        propertyName: nameof(RequiredStrokeThickness),
+    public static readonly BindableProperty MaxLengthProperty = BindableProperty.Create(
+        propertyName: nameof(MaxLength),
         returnType: typeof(int),
         declaringType: typeof(RequiredEntry),
-        defaultValue: 0,
+        defaultValue: int.MaxValue,
         defaultBindingMode: BindingMode.OneWay);
 
-    public int RequiredStrokeThickness
+    public int MaxLength
     {
-        get => (int)GetValue(RequiredStrokeThicknessProperty);
-        set => SetValue(RequiredStrokeThicknessProperty, value);
+        get => (int)GetValue(MaxLengthProperty);
+        set => SetValue(MaxLengthProperty, value);
     }
-
-    public bool IsPassword { get => (bool)GetValue(IsPasswordProperty); set { SetValue(IsPasswordProperty, value); } }
-
-    public static readonly BindableProperty IsPasswordProperty = BindableProperty.Create(propertyName: nameof(IsPassword),
-        returnType: typeof(bool), declaringType: typeof(RequiredEntry), defaultValue: false, defaultBindingMode: BindingMode.OneWay);
-
 }
