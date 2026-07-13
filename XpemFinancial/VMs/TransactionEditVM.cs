@@ -501,7 +501,12 @@ namespace XpemFinancial.VMs
         {
             bool isValid = true;
 
-            if (string.IsNullOrWhiteSpace(Description) && string.IsNullOrWhiteSpace(SelectedCategory?.Name))
+            if (!IsTransfer && SelectedCategory is null)
+            {
+                isValid = false;
+                _ = VMBase.ShowMessage("Aviso", "Selecione uma categoria para a transação!");
+            }
+            else if (string.IsNullOrWhiteSpace(Description) && string.IsNullOrWhiteSpace(SelectedCategory?.Name))
             {
                 isValid = false;
                 _ = VMBase.ShowMessage("Aviso", "Defina uma descrição ou selecione uma categoria!");

@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace Model.Req
 {
     public class RecurringRuleReq
@@ -6,6 +8,7 @@ namespace Model.Req
 
         public Guid RecurringRuleId { get; set; }
 
+        [StringLength(100)]
         public string? Description { get; set; }
 
         public decimal Amount { get; set; }

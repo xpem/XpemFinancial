@@ -11,11 +11,20 @@
             HorizontalOptions="Fill"
             Stroke="{StaticResource DeleteAction}"
             StrokeShape="RoundRectangle 5"
-            StrokeThickness="{Binding Source={x:Reference this}, Path=RequiredStrokeThickness}"
+            StrokeThickness="0"
             VerticalOptions="Fill">
+            <Border.Triggers>
+                <DataTrigger
+                    Binding="{Binding Source={x:Reference this}, Path=IsRequired}"
+                    TargetType="Border"
+                    Value="True">
+                    <Setter Property="StrokeThickness" Value="1" />
+                </DataTrigger>
+            </Border.Triggers>
             <Entry
                 IsPassword="{Binding Source={x:Reference this}, Path=IsPassword}"
                 IsTextPredictionEnabled="{Binding Source={x:Reference this}, Path=IsTextPredictionEnabled}"
+                MaxLength="{Binding Source={x:Reference this}, Path=MaxLength}"
                 Text="{Binding Source={x:Reference this}, Path=EntryValue}" />
         </Border>
         <Label

@@ -50,6 +50,32 @@ public partial class CurrencyEntry : ContentView
             control.EntryCurrency.Text = novoTexto;
     }
 
+    public static readonly BindableProperty IsRequiredProperty = BindableProperty.Create(
+    propertyName: nameof(IsRequired),
+    returnType: typeof(bool),
+    declaringType: typeof(RequiredEntry),
+    defaultValue: false,
+    defaultBindingMode: BindingMode.OneWay);
+
+    public bool IsRequired
+    {
+        get => (bool)GetValue(IsRequiredProperty);
+        set => SetValue(IsRequiredProperty, value);
+    }
+
+    public static readonly BindableProperty RequiredTextProperty = BindableProperty.Create(
+        propertyName: nameof(RequiredText),
+        returnType: typeof(string),
+        declaringType: typeof(RequiredEntry),
+        defaultValue: "Campo obrigatório",
+        defaultBindingMode: BindingMode.OneWay);
+
+    public string RequiredText
+    {
+        get => (string)GetValue(RequiredTextProperty);
+        set => SetValue(RequiredTextProperty, value);
+    }
+
     [GeneratedRegex("\\D")]
     private static partial Regex OnlyDigits();
 

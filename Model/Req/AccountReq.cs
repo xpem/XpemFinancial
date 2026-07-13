@@ -1,4 +1,5 @@
 using Model.DTO;
+using System.ComponentModel.DataAnnotations;
 
 namespace Model.Req
 {
@@ -8,6 +9,8 @@ namespace Model.Req
 
         public DateTime UpdatedAt { get; set; }
 
+        [Required]
+        [StringLength(100, MinimumLength = 1)]
         public required string Name { get; set; }
 
         public AccountType Type { get; set; }
