@@ -7,10 +7,31 @@
     x:Name="this"
     x:DataType="local:CurrencyEntry">
     <VerticalStackLayout>
-        <Entry
-            x:Name="EntryCurrency"
+        <Border
+            BackgroundColor="Transparent"
             HorizontalOptions="Fill"
-            Keyboard="Numeric"
-            TextChanged="EntryCurrency_TextChanged" />
+            Stroke="{StaticResource DeleteAction}"
+            StrokeShape="RoundRectangle 5"
+            StrokeThickness="0"
+            VerticalOptions="Fill">
+            <Border.Triggers>
+                <DataTrigger
+                    Binding="{Binding Source={x:Reference this}, Path=IsRequired}"
+                    TargetType="Border"
+                    Value="True">
+                    <Setter Property="StrokeThickness" Value="1" />
+                </DataTrigger>
+            </Border.Triggers>
+            <Entry
+                x:Name="EntryCurrency"
+                HorizontalOptions="Fill"
+                Keyboard="Numeric"
+                TextChanged="EntryCurrency_TextChanged" />
+        </Border>
+        <Label
+            Padding="0,0,0,0"
+            IsVisible="{Binding Source={x:Reference this}, Path=IsRequired}"
+            Text="{Binding Source={x:Reference this}, Path=RequiredText}"
+            TextColor="{StaticResource DeleteAction}" />
     </VerticalStackLayout>
 </ContentView>

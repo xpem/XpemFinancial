@@ -151,6 +151,7 @@
                     IsRequired="False"
                     IsTextPredictionEnabled="True"
                     LabelText="Descrição"
+                    MaxLength="100"
                     SizeChanged="OnDescriptionEntrySizeChanged" />
 
                 <Grid
@@ -270,8 +271,20 @@
                 </Border>
 
                 <Label Padding="0,10,0,0" Text="Notas" />
-                <Editor HeightRequest="100" Text="{Binding Note}" />
+                <Border
+                    BackgroundColor="Transparent"
+                    HorizontalOptions="Fill"
+                    Stroke="{StaticResource DeleteAction}"
+                    StrokeShape="RoundRectangle 5"
+                    StrokeThickness="0"
+                    VerticalOptions="Fill">
+                    <Editor
+                        HeightRequest="100"
+                        MaxLength="500"
+                        Text="{Binding Note}" />
+                </Border>
             </VerticalStackLayout>
+
         </ScrollView>
 
         <!--  Dismiss layer: sits above the ScrollView (z=2). Tapping anywhere outside the suggestion list dismisses it.  -->

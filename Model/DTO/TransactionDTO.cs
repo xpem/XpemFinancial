@@ -16,7 +16,7 @@ namespace Model.DTO
         /// </summary>
         public Guid TransactionId { get; set; }
 
-        [StringLength(250)]
+        [StringLength(100)]
         public required string Description { get; set; }
 
         public DateTime Date { get; set; }
@@ -42,6 +42,7 @@ namespace Model.DTO
 
         public TransactionType Type { get; set; }
 
+        [StringLength(500)]
         public string? Note { get; set; }
 
         public int? AccountId { get; set; }

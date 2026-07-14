@@ -46,6 +46,7 @@
                 <Label Text="Nome" />
                 <Border BackgroundColor="{StaticResource InputBackground}">
                     <Entry
+                        MaxLength="50"
                         Placeholder="Nome da categoria"
                         ReturnType="Done"
                         Text="{Binding Name}" />

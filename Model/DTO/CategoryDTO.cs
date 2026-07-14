@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Model.DTO
 {
@@ -14,6 +15,7 @@ namespace Model.DTO
 
         public int? ExternalId { get; set; }
 
+        [StringLength(50)]
         public string Name { get; set; }
 
         public int? ParentExternalId { get; set; }
