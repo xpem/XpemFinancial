@@ -9,8 +9,10 @@ namespace Service.Category
     public interface ICategoryService
     {
         Task<List<CategoryDTO>> GetAllAsync();
+        Task<List<CategoryDTO>> GetAllGroupedAsync();
         Task UpsertAsync(CategoryDTO category);
         Task AddLocalAsync(CategoryDTO category);
+        Task UpdateLocalAsync(CategoryDTO category);
         Task<DateTime> GetLastUpdatedAtAsync();
         Task PullAsync(int uid, DateTime lastUpdatedAt);
         Task PushAsync();
@@ -103,12 +105,72 @@ namespace Service.Category
                 .ToList();
         }
 
+        public async Task<List<CategoryDTO>> GetAllGroupedAsync()
+        {
+            var all = await categoryRepo.GetAllAsync();
+            return GroupCategories(all);
+        }
+
+        /// <summary>
+        /// Pure sorting/grouping logic extracted for testability.
+        /// Main categories alphabetically (active first, then inactive), each followed
+        /// by its subcategories (active alphabetically, then inactive alphabetically),
+        /// orphan subcategories at the end.
+        /// </summary>
+        public static List<CategoryDTO> GroupCategories(IEnumerable<CategoryDTO> all)
+        {
+            var allList = all.ToList();
+            var mainCategories = allList.Where(c => c.IsMainCategory).ToList();
+            var subCategories = allList.Where(c => !c.IsMainCategory).ToList();
+
+            var mainExternalIds = new HashSet<int?>(mainCategories
+                .Where(c => c.ExternalId != null)
+                .Select(c => c.ExternalId));
+
+            var sortedMains = mainCategories
+                .OrderBy(c => c.Inactive ? 1 : 0)
+                .ThenBy(c => c.Name, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            var result = new List<CategoryDTO>();
+
+            foreach (var main in sortedMains)
+            {
+                result.Add(main);
+
+                var children = subCategories
+                    .Where(s => s.ParentExternalId != null && s.ParentExternalId == main.ExternalId)
+                    .OrderBy(s => s.Inactive ? 1 : 0)
+                    .ThenBy(s => s.Name, StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+                result.AddRange(children);
+            }
+
+            // Orphan subcategories: no matching main category exists for their ParentExternalId
+            var orphans = subCategories
+                .Where(s => s.ParentExternalId == null || !mainExternalIds.Contains(s.ParentExternalId))
+                .OrderBy(s => s.Inactive ? 1 : 0)
+                .ThenBy(s => s.Name, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            result.AddRange(orphans);
+
+            return result;
+        }
+
         public async Task AddLocalAsync(CategoryDTO category)
         {
             if (category.CategoryId == Guid.Empty)
                 category.CategoryId = Guid.NewGuid();
 
             await categoryRepo.AddAsync(category);
+        }
+
+        public async Task UpdateLocalAsync(CategoryDTO category)
+        {
+            category.UpdatedAt = DateTime.UtcNow;
+            await categoryRepo.UpdateAsync(category);
         }
 
         public async Task PushAsync()

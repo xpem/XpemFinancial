@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="XpemFinancial.Views.CategoryManagementPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:Icons="clr-namespace:XpemFinancial.Resources"
+    xmlns:Utils="clr-namespace:XpemFinancial.Utils"
+    xmlns:vms="clr-namespace:XpemFinancial.VMs"
+    x:DataType="vms:CategoryManagementVM"
+    BackgroundColor="{StaticResource BodyBackground}">
+
+    <ContentPage.Resources>
+        <Utils:BoldConverter x:Key="BoldConverter" />
+        <Utils:InvertedBoolConverter x:Key="InvertedBoolConverter" />
+        <Utils:IndentConverter x:Key="IndentConverter" />
+    </ContentPage.Resources>
+
+    <Shell.TitleView>
+        <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
+            <Label
+                FontFamily="Icons"
+                FontSize="17"
+                Text="{x:Static Icons:IconFont.Tag}"
+                TextColor="{StaticResource White}"
+                VerticalOptions="Center" />
+            <Label
+                FontSize="17"
+                Text="Categorias"
+                TextColor="{StaticResource White}"
+                VerticalOptions="Center" />
+        </HorizontalStackLayout>
+    </Shell.TitleView>
+
+    <Grid RowDefinitions="*">
+        <!--  Empty State  -->
+        <VerticalStackLayout
+            HorizontalOptions="Center"
+            IsVisible="{Binding HasNoCategories}"
+            Spacing="8"
+            VerticalOptions="Center">
+            <Label
+                FontFamily="Icons"
+                FontSize="40"
+                HorizontalOptions="Center"
+                Text="{x:Static Icons:IconFont.Tag}"
+                TextColor="{StaticResource FontDark}" />
+            <Label
+                FontSize="16"
+                HorizontalOptions="Center"
+                Text="Nenhuma categoria encontrada"
+                TextColor="{StaticResource FontDark}" />
+        </VerticalStackLayout>
+
+        <!--  Category List  -->
+        <CollectionView
+            IsVisible="{Binding HasNoCategories, Converter={StaticResource InvertedBoolConverter}}"
+            ItemsSource="{Binding Categories}">
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="vms:CategoryDisplayItem">
+                    <Border
+                        Margin="16,4"
+                        Padding="12"
+                        BackgroundColor="{StaticResource InputBackground}"
+                        StrokeShape="RoundRectangle 8">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer
+                                Command="{Binding Source={RelativeSource AncestorType={x:Type vms:CategoryManagementVM}}, Path=EditCategoryCommand}"
+                                CommandParameter="{Binding Category}" />
+                        </Border.GestureRecognizers>
+                        <Border.Triggers>
+                            <DataTrigger
+                                Binding="{Binding IsInactive}"
+                                TargetType="Border"
+                                Value="True">
+                                <Setter Property="Opacity" Value="0.6" />
+                            </DataTrigger>
+                        </Border.Triggers>
+                        <Grid
+                            Margin="{Binding IsMainCategory, Converter={StaticResource IndentConverter}}"
+                            ColumnDefinitions="*,Auto">
+                            <Label
+                                Grid.Column="0"
+                                FontAttributes="{Binding IsMainCategory, Converter={StaticResource BoldConverter}}"
+                                FontSize="15"
+                                Text="{Binding Category.Name}"
+                                TextColor="{StaticResource FontLight}"
+                                VerticalOptions="Center" />
+                            <Label
+                                Grid.Column="1"
+                                BackgroundColor="{StaticResource PageBackground}"
+                                FontSize="11"
+                                IsVisible="{Binding IsSystemDefault}"
+                                Padding="6,2"
+                                Text="Sistema"
+                                TextColor="{StaticResource FontDark}"
+                                VerticalOptions="Center" />
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </Grid>
+</ContentPage>
