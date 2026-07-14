@@ -18,9 +18,23 @@
                 VerticalOptions="Center" />
             <Label
                 FontSize="17"
-                Text="Nova Categoria"
                 TextColor="{StaticResource White}"
-                VerticalOptions="Center" />
+                VerticalOptions="Center">
+                <Label.Triggers>
+                    <DataTrigger
+                        Binding="{Binding IsEditMode}"
+                        TargetType="Label"
+                        Value="True">
+                        <Setter Property="Text" Value="Editar Categoria" />
+                    </DataTrigger>
+                    <DataTrigger
+                        Binding="{Binding IsEditMode}"
+                        TargetType="Label"
+                        Value="False">
+                        <Setter Property="Text" Value="Nova Categoria" />
+                    </DataTrigger>
+                </Label.Triggers>
+            </Label>
         </HorizontalStackLayout>
     </Shell.TitleView>
 
@@ -43,7 +57,18 @@
             <VerticalStackLayout Spacing="8">
                 <Label Text="Tipo" />
                 <Border Padding="0,5,0,0" BackgroundColor="{StaticResource InputBackground}">
-                    <HorizontalStackLayout RadioButtonGroup.GroupName="CategoryType" RadioButtonGroup.SelectedValue="{Binding IsMainCategory}">
+                    <HorizontalStackLayout
+                        IsEnabled="{Binding CanChangeType}"
+                        RadioButtonGroup.GroupName="CategoryType"
+                        RadioButtonGroup.SelectedValue="{Binding IsMainCategory}">
+                        <HorizontalStackLayout.Triggers>
+                            <DataTrigger
+                                Binding="{Binding CanChangeType}"
+                                TargetType="HorizontalStackLayout"
+                                Value="False">
+                                <Setter Property="Opacity" Value="0.5" />
+                            </DataTrigger>
+                        </HorizontalStackLayout.Triggers>
                         <RadioButton
                             Margin="10,0"
                             Content="Principal"

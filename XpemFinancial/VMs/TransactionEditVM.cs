@@ -74,6 +74,19 @@ namespace XpemFinancial.VMs
         public string CategoryDisplayName => selectedCategory?.Name ?? "Sem Categoria";
 
         /// <summary>
+        /// When editing a transaction that references an inactive category, this holds
+        /// the original category name for display purposes (Req 6.3). The picker will NOT
+        /// pre-select it (Req 6.4) — user must choose a new active category before saving.
+        /// </summary>
+        [ObservableProperty] private string? inactiveCategoryDisplayName;
+
+        /// <summary>
+        /// True when the transaction being edited references an inactive category.
+        /// Used by the view to show the inactive category label as read-only.
+        /// </summary>
+        public bool HasInactiveCategoryReference => InactiveCategoryDisplayName != null;
+
+        /// <summary>
         /// Scope selected via the inline radio buttons when editing a recurring occurrence.
         /// Defaults to ThisOnly — the safest option.
         /// </summary>
@@ -90,6 +103,11 @@ namespace XpemFinancial.VMs
         private bool _isLoading;
 
         #endregion
+
+        partial void OnInactiveCategoryDisplayNameChanged(string? value)
+        {
+            OnPropertyChanged(nameof(HasInactiveCategoryReference));
+        }
 
         partial void OnDescriptionChanged(string value)
         {
@@ -128,6 +146,7 @@ namespace XpemFinancial.VMs
                 {
                     SelectedCategory = category;
                     SelectedCategoryName = await ResolveCategoryDisplayNameAsync(category);
+                    InactiveCategoryDisplayName = null;
                 }
             }
 
@@ -318,6 +337,9 @@ namespace XpemFinancial.VMs
             {
                 SelectedCategory = selected;
 
+                // Clear inactive category reference since user picked a new active category (Req 6.4)
+                InactiveCategoryDisplayName = null;
+
                 SelectedCategoryName = query.TryGetValue("SelectedCategoryDisplayName", out var displayName) && displayName is string name
                     ? name
                     : selected.Name;
@@ -353,9 +375,31 @@ namespace XpemFinancial.VMs
                         Note = transaction.Note ?? string.Empty;
                         NumberOfInstallments = transaction.TotalInstallments ?? 0;
                         InitialInstallments = transaction.Installment ?? 0;
-                        SelectedCategory = transaction.Category ?? new CategoryDTO { Id = 1, Name = "Sem Categoria" };
-                        SelectedCategoryName = SelectedCategory.Name;
-                        _ = ResolveCategoryDisplayNameAsync(SelectedCategory).ContinueWith(t => SelectedCategoryName = t.Result, TaskScheduler.FromCurrentSynchronizationContext());
+
+                        // Req 6.3/6.4: If the transaction's category is inactive, do NOT pre-select it.
+                        // Show its name as read-only display, require user to pick a new active category.
+                        var transactionCategory = transaction.Category;
+                        if (transactionCategory != null && transactionCategory.Inactive)
+                        {
+                            // Store inactive category name for read-only display (Req 6.3)
+                            SelectedCategoryName = transactionCategory.Name;
+                            InactiveCategoryDisplayName = transactionCategory.Name;
+                            _ = ResolveCategoryDisplayNameAsync(transactionCategory).ContinueWith(t =>
+                            {
+                                // Guard: if user already picked a new category, don't overwrite (Req 6.4)
+                                if (SelectedCategory != null) return;
+                                InactiveCategoryDisplayName = t.Result;
+                                SelectedCategoryName = t.Result;
+                            }, TaskScheduler.FromCurrentSynchronizationContext());
+                            // SelectedCategory remains null — picker won't pre-select (Req 6.4)
+                            SelectedCategory = null;
+                        }
+                        else
+                        {
+                            SelectedCategory = transactionCategory ?? new CategoryDTO { Id = 1, Name = "Sem Categoria" };
+                            SelectedCategoryName = SelectedCategory.Name;
+                            _ = ResolveCategoryDisplayNameAsync(SelectedCategory).ContinueWith(t => SelectedCategoryName = t.Result, TaskScheduler.FromCurrentSynchronizationContext());
+                        }
 
                         IsRecurring = transaction.RecurringRuleId.HasValue;
                         SelectedEditScope = EditScope.ThisOnly;
@@ -504,7 +548,11 @@ namespace XpemFinancial.VMs
             if (!IsTransfer && SelectedCategory is null)
             {
                 isValid = false;
-                _ = VMBase.ShowMessage("Aviso", "Selecione uma categoria para a transação!");
+                // Provide a more informative message when the category was cleared due to being inactive (Req 6.4)
+                var message = HasInactiveCategoryReference
+                    ? "A categoria anterior foi inativada. Selecione uma nova categoria para a transação!"
+                    : "Selecione uma categoria para a transação!";
+                _ = VMBase.ShowMessage("Aviso", message);
             }
             else if (string.IsNullOrWhiteSpace(Description) && string.IsNullOrWhiteSpace(SelectedCategory?.Name))
             {

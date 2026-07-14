@@ -107,7 +107,10 @@ public partial class CategoryPickerVM(ICategoryService categoryService, IUserSes
     {
         if (_cachedCategories.Count == 0 || _needsRefresh)
         {
-            _cachedCategories = await categoryService.GetAllAsync();
+            var allCategories = await categoryService.GetAllAsync();
+            // Filter out inactive categories — each category is evaluated by its own Inactive flag only,
+            // so active subcategories of inactive parents remain visible.
+            _cachedCategories = allCategories.Where(c => !c.Inactive).ToList();
             // Pre-compute normalised names once per navigation instance.
             _cachedNormalizedNames = _cachedCategories.Select(x => RemoveDiacritics(x.Name)).ToList();
             _needsRefresh = false;
