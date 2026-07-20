@@ -10,6 +10,7 @@ namespace Service.Category
     {
         Task<List<CategoryDTO>> GetAllAsync();
         Task<List<CategoryDTO>> GetAllGroupedAsync();
+        Task<bool> ExistsByNameAsync(string name, Guid? excludeCategoryId = null);
         Task UpsertAsync(CategoryDTO category);
         Task AddLocalAsync(CategoryDTO category);
         Task UpdateLocalAsync(CategoryDTO category);
@@ -120,6 +121,9 @@ namespace Service.Category
                 .ThenBy(c => c.Name)
                 .ToList();
         }
+
+        public async Task<bool> ExistsByNameAsync(string name, Guid? excludeCategoryId = null)
+            => await categoryRepo.ExistsByNameAsync(name, excludeCategoryId);
 
         public async Task<List<CategoryDTO>> GetAllGroupedAsync()
         {

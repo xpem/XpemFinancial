@@ -1,0 +1,13 @@
+{
+  "name": "Validate StaticResource References",
+  "version": "1.0.0",
+  "description": "When a XAML file is saved, checks if all {StaticResource} references are defined in Colors.xaml or Styles.xaml. Reports missing resources that would crash on Android.",
+  "when": {
+    "type": "fileEdited",
+    "patterns": ["**/*.xaml"]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "The user just saved a XAML file. Scan its content for all `{StaticResource ...}` references (extract the key names). Then check if each key is defined in either `XpemFinancial/Resources/Styles/Colors.xaml` or `XpemFinancial/Resources/Styles/Styles.xaml` (look for `x:Key=\"...\"` attributes). Also consider built-in MAUI keys like White, Black, etc. Report any StaticResource keys that are NOT defined in these dictionaries. If all resources are found, say nothing. If any are missing, list them clearly as errors that will crash on Android."
+  }
+}

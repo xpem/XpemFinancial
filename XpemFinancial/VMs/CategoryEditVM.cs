@@ -89,6 +89,17 @@ public partial class CategoryEditVM(
             return;
         }
 
+        // Validação de nome duplicado entre categorias e subcategorias ativas
+        var trimmedName = Name.Trim();
+        var excludeId = _editingCategory?.CategoryId;
+        bool duplicateExists = await categoryService.ExistsByNameAsync(trimmedName, excludeId);
+
+        if (duplicateExists)
+        {
+            await VMBase.ShowMessage("Aviso", "Já existe uma categoria ou subcategoria com este nome.");
+            return;
+        }
+
         IsBusy = true;
         try
         {

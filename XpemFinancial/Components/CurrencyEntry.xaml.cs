@@ -102,11 +102,19 @@ public partial class CurrencyEntry : ContentView
         });
     }
 
+    // Máximo de 9 dígitos (7 inteiros + 2 decimais = até 9.999.999,99)
+    private const int MaxDigits = 9;
+
     private void EntryCurrency_TextChanged(object sender, TextChangedEventArgs e)
     {
         if (_isUpdating || EntryCurrency == null) return;
 
         string digits = OnlyDigits().Replace(e.NewTextValue ?? "", "");
+
+        // Limita a quantidade de dígitos para não exceder o valor máximo
+        if (digits.Length > MaxDigits)
+            digits = digits[..MaxDigits];
+
         decimal value = string.IsNullOrEmpty(digits) ? 0m : Convert.ToDecimal(digits);
         string formatted = value <= 0 ? "0,00" : (value / 100m).ToString("N2", _culture);
 
