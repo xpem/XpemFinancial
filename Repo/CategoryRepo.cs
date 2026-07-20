@@ -12,6 +12,7 @@ namespace Repo
         Task<List<CategoryDTO>> GetAllAsync();
         Task<CategoryDTO?> GetByIdAsync(int id);
         Task<CategoryDTO?> GetByCategoryIdAsync(Guid categoryId);
+        Task<bool> ExistsByNameAsync(string name, Guid? excludeCategoryId = null);
         Task UpdateAsync(Model.DTO.CategoryDTO category);
         Task<Model.DTO.CategoryDTO?> GetByExternalIdAsync(int externalId);
         Task<DateTime> GetMaxUpdatedAtAsync();
@@ -38,6 +39,15 @@ namespace Repo
 
             using var db = await DbCtx.CreateDbContextAsync();
             return await db.Category.FirstOrDefaultAsync(c => c.CategoryId == categoryId);
+        }
+
+        public async Task<bool> ExistsByNameAsync(string name, Guid? excludeCategoryId = null)
+        {
+            using var db = await DbCtx.CreateDbContextAsync();
+            return await db.Category.AnyAsync(c =>
+                !c.Inactive &&
+                c.Name.ToLower() == name.ToLower() &&
+                (excludeCategoryId == null || c.CategoryId != excludeCategoryId));
         }
 
         public async Task AddAsync(Model.DTO.CategoryDTO category)

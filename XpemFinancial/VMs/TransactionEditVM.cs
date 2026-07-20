@@ -421,8 +421,15 @@ namespace XpemFinancial.VMs
             }
             else
             {
-                SelectedTransactionType = TransactionType.Expense;
-                SetTransactionTypeAttributes(TransactionType.Expense);
+                var type = TransactionType.Expense;
+                if (query.TryGetValue("TransactionType", out var typeObj)
+                    && Enum.TryParse<TransactionType>(typeObj?.ToString(), out var parsed))
+                {
+                    type = parsed;
+                }
+
+                SelectedTransactionType = type;
+                SetTransactionTypeAttributes(type);
                 TransactionDate = DateTime.Now;
             }
 

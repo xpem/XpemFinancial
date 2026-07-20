@@ -70,13 +70,13 @@
                             Size="20" />
                     </Button.ImageSource>
                 </Button>
-                <Border Margin="5,0,5,0" Stroke="#9da9b9">
-                    <Label
-                        Margin="10,10,10,10"
-                        HeightRequest="20"
-                        Text="{Binding MonthYearDisplay}"
-                        TextColor="#d6e0eb" />
-                </Border>
+                <Picker
+                    Margin="5,0,5,0"
+                    ItemsSource="{Binding MonthOptions}"
+                    SelectedItem="{Binding SelectedMonthOption}"
+                    TextColor="#d6e0eb"
+                    TitleColor="#9da9b9"
+                    HorizontalOptions="Center" />
                 <Button
                     x:Name="NextMonthButton"
                     Margin="0,0,10,0"
@@ -90,18 +90,54 @@
                     </Button.ImageSource>
                 </Button>
                 <Button
-                    x:Name="CreateTransaction"
-                    Command="{Binding GoToTransactionEditCommand}"
-                    ContentLayout="Left, 10"
+                    x:Name="CreateExpense"
+                    Command="{Binding GoToNewTransactionCommand}"
+                    CommandParameter="{x:Static dto:TransactionType.Expense}"
+                    ContentLayout="Left, 6"
                     HeightRequest="20"
                     IsEnabled="{Binding IsNotNullAccount}"
-                    Style="{StaticResource SuccessButton}">
+                    Style="{StaticResource SuccessButton}"
+                    BackgroundColor="{StaticResource Expense}">
                     <Button.ImageSource>
                         <FontImageSource
                             FontFamily="Icons"
-                            Glyph="{x:Static Icons:IconFont.Plus}"
-                            Size="15"
-                            Color="#121b27" />
+                            Glyph="{x:Static Icons:IconFont.ArrowTrendDown}"
+                            Size="13"
+                            Color="White" />
+                    </Button.ImageSource>
+                </Button>
+                <Button
+                    x:Name="CreateIncome"
+                    Command="{Binding GoToNewTransactionCommand}"
+                    CommandParameter="{x:Static dto:TransactionType.Income}"
+                    ContentLayout="Left, 6"
+                    HeightRequest="20"
+                    IsEnabled="{Binding IsNotNullAccount}"
+                    Style="{StaticResource SuccessButton}"
+                    BackgroundColor="{StaticResource Income}">
+                    <Button.ImageSource>
+                        <FontImageSource
+                            FontFamily="Icons"
+                            Glyph="{x:Static Icons:IconFont.ArrowTrendUp}"
+                            Size="13"
+                            Color="White" />
+                    </Button.ImageSource>
+                </Button>
+                <Button
+                    x:Name="CreateTransfer"
+                    Command="{Binding GoToNewTransactionCommand}"
+                    CommandParameter="{x:Static dto:TransactionType.Transfer}"
+                    ContentLayout="Left, 6"
+                    HeightRequest="20"
+                    IsEnabled="{Binding IsNotNullAccount}"
+                    Style="{StaticResource SuccessButton}"
+                    BackgroundColor="{StaticResource Transfer}">
+                    <Button.ImageSource>
+                        <FontImageSource
+                            FontFamily="Icons"
+                            Glyph="{x:Static Icons:IconFont.RightLeft}"
+                            Size="13"
+                            Color="White" />
                     </Button.ImageSource>
                 </Button>
             </FlexLayout>

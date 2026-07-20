@@ -52,5 +52,6 @@
     <Color x:Key="HeaderBackground">#232c39</Color>
     <Color x:Key="BodyBackground">#191d24</Color>
     <Color x:Key="FontLight">#d6e0eb</Color>
+    <Color x:Key="FontDark">#6b7a8d</Color>
 
 </ResourceDictionary>
