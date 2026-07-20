@@ -42,7 +42,7 @@ namespace XpemFinancial.VMs
         /// </summary>
         private static int? _sessionSelectedAccountId;
 
-        private DateTime SelectedDate { get; set; }
+        private DateTime SelectedDate { get; set; } = DateTime.Today;
         private int? _currentUserId;
         private bool _isInitializing;
 
@@ -211,22 +211,36 @@ namespace XpemFinancial.VMs
                 : Income + Expense;
         }
 
-        [RelayCommand]
+        private bool CanLoadPreviousMonth()
+            => SelectedDate > DateTime.Today.AddMonths(-6);
+
+        [RelayCommand(CanExecute = nameof(CanLoadPreviousMonth))]
         private async Task LoadPreviousMonth()
         {
             SelectedDate = SelectedDate.AddMonths(-1);
+            NotifyNavigationCanExecuteChanged();
             await LoadTransactionsForMonthAsync(SelectedDate);
         }
 
-        [RelayCommand]
+        private bool CanLoadNextMonth()
+            => SelectedDate < DateTime.Today.AddMonths(6);
+
+        [RelayCommand(CanExecute = nameof(CanLoadNextMonth))]
         private async Task LoadNextMonth()
         {
             SelectedDate = SelectedDate.AddMonths(1);
+            NotifyNavigationCanExecuteChanged();
 
             if (SelectedDate > DateTime.Today.AddMonths(6))
                 await recurringRuleService.RunSchedulerAsync(SelectedDate);
 
             await LoadTransactionsForMonthAsync(SelectedDate);
+        }
+
+        private void NotifyNavigationCanExecuteChanged()
+        {
+            LoadPreviousMonthCommand.NotifyCanExecuteChanged();
+            LoadNextMonthCommand.NotifyCanExecuteChanged();
         }
 
         [RelayCommand]
