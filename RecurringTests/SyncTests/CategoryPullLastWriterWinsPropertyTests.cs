@@ -93,7 +93,7 @@ public class CategoryPullLastWriterWinsPropertyTests
         var categoryApiRepo = Substitute.For<ICategoryApiRepo>();
         var syncCursorRepo = Substitute.For<ISyncCursorRepo>();
 
-        categoryApiRepo.GetByLastUpdateAsync(Arg.Any<DateTime>(), page: 1)
+        categoryApiRepo.GetByLastUpdateAsync(Arg.Any<DateTime>(), Arg.Any<int>())
             .Returns(new ApiResp
             {
                 Success = true,
@@ -182,7 +182,7 @@ public class CategoryPullLastWriterWinsPropertyTests
         var categoryApiRepo = Substitute.For<ICategoryApiRepo>();
         var syncCursorRepo = Substitute.For<ISyncCursorRepo>();
 
-        categoryApiRepo.GetByLastUpdateAsync(Arg.Any<DateTime>(), page: 1)
+        categoryApiRepo.GetByLastUpdateAsync(Arg.Any<DateTime>(), Arg.Any<int>())
             .Returns(new ApiResp
             {
                 Success = true,
@@ -267,7 +267,7 @@ public class CategoryPullLastWriterWinsPropertyTests
         var categoryApiRepo = Substitute.For<ICategoryApiRepo>();
         var syncCursorRepo = Substitute.For<ISyncCursorRepo>();
 
-        categoryApiRepo.GetByLastUpdateAsync(Arg.Any<DateTime>(), page: 1)
+        categoryApiRepo.GetByLastUpdateAsync(Arg.Any<DateTime>(), Arg.Any<int>())
             .Returns(new ApiResp
             {
                 Success = true,

@@ -514,82 +514,94 @@ namespace Service.Transaction
 
         public async Task PullAsync(int uid, DateTime lastUpdatedAt)
         {
-
-            List<TransactionApiRes>? apiTransactions = await transactionApiRepo.GetByUpdatedAtAsync(lastUpdatedAt);
-
-            if (apiTransactions is null || apiTransactions.Count == 0) return;
+            const int pageSize = 100;
+            int page = 1;
+            DateTime maxServerTs = DateTime.MinValue;
 
             Dictionary<int, int> accountCache = [];
             Dictionary<int, int?> categoryCache = [];
 
-            foreach (var t in apiTransactions)
+            while (true)
             {
-                // Resolve o CategoryId local a partir do ExternalId da categoria (com cache)
-                int? localCategoryId = null;
-                if (t.CategoryId.HasValue)
+                List<TransactionApiRes>? apiTransactions = await transactionApiRepo.GetByUpdatedAtAsync(lastUpdatedAt, page);
+
+                if (apiTransactions is null || apiTransactions.Count == 0) break;
+
+                foreach (var t in apiTransactions)
                 {
-                    if (!categoryCache.TryGetValue(t.CategoryId.Value, out localCategoryId))
+                    // Resolve o CategoryId local a partir do ExternalId da categoria (com cache)
+                    int? localCategoryId = null;
+                    if (t.CategoryId.HasValue)
                     {
-                        var localCategory = await categoryRepo.GetByExternalIdAsync(t.CategoryId.Value);
-                        localCategoryId = localCategory?.Id;
-                        categoryCache[t.CategoryId.Value] = localCategoryId;
+                        if (!categoryCache.TryGetValue(t.CategoryId.Value, out localCategoryId))
+                        {
+                            var localCategory = await categoryRepo.GetByExternalIdAsync(t.CategoryId.Value);
+                            localCategoryId = localCategory?.Id;
+                            categoryCache[t.CategoryId.Value] = localCategoryId;
+                        }
                     }
-                }
 
-                // Resolve o AccountId local a partir do ExternalId da conta (com cache)
-                if (!accountCache.TryGetValue(t.AccountId, out int localAccountId))
-                {
-                    localAccountId = await accountRepo.GetLocalIdByExternalIdAsync(t.AccountId);
-                    accountCache[t.AccountId] = localAccountId;
-                }
-
-                // Resolve o DestinationAccountId local a partir do ExternalId da conta destino (com cache)
-                int? localDestinationAccountId = null;
-                if (t.DestinationAccountId.HasValue)
-                {
-                    if (!accountCache.TryGetValue(t.DestinationAccountId.Value, out int destLocalId))
+                    // Resolve o AccountId local a partir do ExternalId da conta (com cache)
+                    if (!accountCache.TryGetValue(t.AccountId, out int localAccountId))
                     {
-                        destLocalId = await accountRepo.GetLocalIdByExternalIdAsync(t.DestinationAccountId.Value);
-                        accountCache[t.DestinationAccountId.Value] = destLocalId;
+                        localAccountId = await accountRepo.GetLocalIdByExternalIdAsync(t.AccountId);
+                        accountCache[t.AccountId] = localAccountId;
                     }
-                    localDestinationAccountId = destLocalId > 0 ? destLocalId : null;
+
+                    // Resolve o DestinationAccountId local a partir do ExternalId da conta destino (com cache)
+                    int? localDestinationAccountId = null;
+                    if (t.DestinationAccountId.HasValue)
+                    {
+                        if (!accountCache.TryGetValue(t.DestinationAccountId.Value, out int destLocalId))
+                        {
+                            destLocalId = await accountRepo.GetLocalIdByExternalIdAsync(t.DestinationAccountId.Value);
+                            accountCache[t.DestinationAccountId.Value] = destLocalId;
+                        }
+                        localDestinationAccountId = destLocalId > 0 ? destLocalId : null;
+                    }
+
+                    TransactionDTO dto = new()
+                    {
+                        ExternalId = t.Id,
+                        TransactionId = t.TransactionId ?? Guid.Empty,
+                        Description = t.Description,
+                        Date = t.Date,
+                        Amount = t.Amount,
+                        Repetition = (Repetition)t.Repetition,
+                        TotalInstallments = t.TotalInstallments,
+                        InstallmentId = t.InstallmentId,
+                        Installment = t.Installment,
+                        CategoryId = localCategoryId ?? null,
+                        Type = (TransactionType)t.Type,
+                        Note = t.Note,
+                        AccountId = localAccountId,
+                        DestinationAccountId = localDestinationAccountId,
+                        Inactive = t.Inactive,
+                        CreatedAt = t.CreatedAt,
+                        UpdatedAt = t.UpdatedAt,
+                        UserId = uid,
+                        RecurringRuleId = t.RecurringRuleId,
+                        IsCustomized = t.IsCustomized,
+                    };
+
+                    await ApplyFromApiAsync(dto);
                 }
 
-                TransactionDTO dto = new()
-                {
-                    ExternalId = t.Id,
-                    TransactionId = t.TransactionId ?? Guid.Empty,
-                    Description = t.Description,
-                    Date = t.Date,
-                    Amount = t.Amount,
-                    Repetition = (Repetition)t.Repetition,
-                    TotalInstallments = t.TotalInstallments,
-                    InstallmentId = t.InstallmentId,
-                    Installment = t.Installment,
-                    CategoryId = localCategoryId ?? null,
-                    Type = (TransactionType)t.Type,
-                    Note = t.Note,
-                    AccountId = localAccountId,
-                    DestinationAccountId = localDestinationAccountId,
-                    Inactive = t.Inactive,
-                    CreatedAt = t.CreatedAt,
-                    UpdatedAt = t.UpdatedAt,
-                    UserId = uid,
-                    RecurringRuleId = t.RecurringRuleId,
-                    IsCustomized = t.IsCustomized,
-                };
+                DateTime batchMax = apiTransactions.Max(t => t.UpdatedAt);
+                if (batchMax > maxServerTs)
+                    maxServerTs = batchMax;
 
-                await ApplyFromApiAsync(dto);
+                if (apiTransactions.Count < pageSize) break;
+                page++;
             }
 
-            // Advance the cursor to the highest server-side UpdatedAt in this batch.
-            // Using values from the server response (not DateTime.UtcNow) keeps the anchor
-            // on the server's clock regardless of any device clock skew.
-            DateTime maxServerTs = apiTransactions.Max(t => t.UpdatedAt);
-            DateTime current = await syncCursorRepo.GetAsync(SyncCursorKeys.Transaction);
-            if (maxServerTs > current)
-                await syncCursorRepo.SaveAsync(SyncCursorKeys.Transaction, maxServerTs);
-
+            // Advance the cursor to the highest server-side UpdatedAt seen across all pages.
+            if (maxServerTs > DateTime.MinValue)
+            {
+                DateTime current = await syncCursorRepo.GetAsync(SyncCursorKeys.Transaction);
+                if (maxServerTs > current)
+                    await syncCursorRepo.SaveAsync(SyncCursorKeys.Transaction, maxServerTs);
+            }
         }
 
         public async Task<List<TransactionDescriptionRes>> GetDescriptionSuggestionsAsync(string description)

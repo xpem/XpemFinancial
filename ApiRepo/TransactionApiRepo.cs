@@ -8,7 +8,7 @@ namespace ApiRepo
 {
     public interface ITransactionApiRepo
     {
-        Task<List<TransactionApiRes>?> GetByUpdatedAtAsync(DateTime updatedAt);
+        Task<List<TransactionApiRes>?> GetByUpdatedAtAsync(DateTime updatedAt, int page);
         Task<int> PostAsync(TransactionReq req);
         Task PutAsync(int externalId, TransactionReq req);
     }
@@ -21,11 +21,11 @@ namespace ApiRepo
             Converters = { new JsonStringEnumConverter() }
         };
 
-        public async Task<List<TransactionApiRes>?> GetByUpdatedAtAsync(DateTime updatedAt)
+        public async Task<List<TransactionApiRes>?> GetByUpdatedAtAsync(DateTime updatedAt, int page)
         {
             ApiResp resp = await userApiRepo.AuthRequestAsync(
                 RequestsTypes.Get,
-                ApiKeys.ApiAddress + $"/financial/transaction?updatedAt={updatedAt:yyyy-MM-ddTHH:mm:ss.fff}");
+                ApiKeys.ApiAddress + $"/financial/transaction?updatedAt={updatedAt:yyyy-MM-ddTHH:mm:ss.fff}&page={page}");
 
             if (resp.Success && !string.IsNullOrEmpty(resp.Content))
                 return JsonSerializer.Deserialize<List<TransactionApiRes>>(resp.Content, _jsonOptions);

@@ -94,7 +94,7 @@ public class AccountPullLastWriterWinsPropertyTests
         var syncCursorRepo = Substitute.For<ISyncCursorRepo>();
         var transactionService = Substitute.For<ITransactionService>();
 
-        accountApiRepo.GetAccountsAsync(Arg.Any<DateTime>())
+        accountApiRepo.GetAccountsAsync(Arg.Any<DateTime>(), Arg.Any<int>())
             .Returns(pulledAccounts);
 
         syncCursorRepo.GetAsync(SyncCursorKeys.Account).Returns(DateTime.MinValue);
@@ -182,7 +182,7 @@ public class AccountPullLastWriterWinsPropertyTests
         var syncCursorRepo = Substitute.For<ISyncCursorRepo>();
         var transactionService = Substitute.For<ITransactionService>();
 
-        accountApiRepo.GetAccountsAsync(Arg.Any<DateTime>())
+        accountApiRepo.GetAccountsAsync(Arg.Any<DateTime>(), Arg.Any<int>())
             .Returns(pulledAccounts);
 
         syncCursorRepo.GetAsync(SyncCursorKeys.Account).Returns(DateTime.MinValue);
@@ -267,7 +267,7 @@ public class AccountPullLastWriterWinsPropertyTests
         var syncCursorRepo = Substitute.For<ISyncCursorRepo>();
         var transactionService = Substitute.For<ITransactionService>();
 
-        accountApiRepo.GetAccountsAsync(Arg.Any<DateTime>())
+        accountApiRepo.GetAccountsAsync(Arg.Any<DateTime>(), Arg.Any<int>())
             .Returns(pulledAccounts);
 
         syncCursorRepo.GetAsync(SyncCursorKeys.Account).Returns(DateTime.MinValue);
@@ -347,7 +347,7 @@ public class AccountPullLastWriterWinsPropertyTests
         var syncCursorRepo = Substitute.For<ISyncCursorRepo>();
         var transactionService = Substitute.For<ITransactionService>();
 
-        accountApiRepo.GetAccountsAsync(Arg.Any<DateTime>())
+        accountApiRepo.GetAccountsAsync(Arg.Any<DateTime>(), Arg.Any<int>())
             .Returns(pulledAccounts);
 
         syncCursorRepo.GetAsync(SyncCursorKeys.Account).Returns(DateTime.MinValue);

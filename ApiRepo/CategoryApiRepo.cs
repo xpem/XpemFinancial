@@ -19,7 +19,7 @@ namespace ApiRepo
 
         public async Task<ApiResp> GetByLastUpdateAsync(DateTime lastUpdate, int page)
         {
-            return await userApiRepo.AuthRequestAsync(RequestsTypes.Get, ApiKeys.ApiAddress + $"/financial/categories?updatedAt={lastUpdate:yyyy-MM-ddThh:mm:ss.fff}");
+            return await userApiRepo.AuthRequestAsync(RequestsTypes.Get, ApiKeys.ApiAddress + $"/financial/categories?updatedAt={lastUpdate:yyyy-MM-ddThh:mm:ss.fff}&page={page}");
         }
 
         public async Task<CategoryPushRes> PostCategoryAsync(CategoryReq req)
