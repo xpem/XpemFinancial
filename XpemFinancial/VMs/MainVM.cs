@@ -298,6 +298,17 @@ namespace XpemFinancial.VMs
         [RelayCommand]
         private async Task GoToTransactionEdit(int? transactionId = null)
         {
+            await NavigateToTransactionEdit(transactionId, transactionType: null);
+        }
+
+        [RelayCommand]
+        private async Task GoToNewTransaction(TransactionType transactionType)
+        {
+            await NavigateToTransactionEdit(transactionId: null, transactionType);
+        }
+
+        private async Task NavigateToTransactionEdit(int? transactionId, TransactionType? transactionType)
+        {
             var accountParam = SelectedAccountFilter?.AccountId;
 
             string route;
@@ -309,8 +320,14 @@ namespace XpemFinancial.VMs
             }
             else
             {
-                route = accountParam.HasValue
-                    ? $"{nameof(Views.TransactionEditPage)}?DashboardAccountId={accountParam}"
+                var typeParam = transactionType.HasValue ? $"TransactionType={transactionType.Value}" : null;
+                var dashParam = accountParam.HasValue ? $"DashboardAccountId={accountParam}" : null;
+
+                var queryParams = new[] { typeParam, dashParam }
+                    .Where(p => p is not null);
+
+                route = queryParams.Any()
+                    ? $"{nameof(Views.TransactionEditPage)}?{string.Join("&", queryParams)}"
                     : nameof(Views.TransactionEditPage);
             }
 

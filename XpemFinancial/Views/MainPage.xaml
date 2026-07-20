@@ -90,18 +90,54 @@
                     </Button.ImageSource>
                 </Button>
                 <Button
-                    x:Name="CreateTransaction"
-                    Command="{Binding GoToTransactionEditCommand}"
-                    ContentLayout="Left, 10"
+                    x:Name="CreateExpense"
+                    Command="{Binding GoToNewTransactionCommand}"
+                    CommandParameter="{x:Static dto:TransactionType.Expense}"
+                    ContentLayout="Left, 6"
                     HeightRequest="20"
                     IsEnabled="{Binding IsNotNullAccount}"
-                    Style="{StaticResource SuccessButton}">
+                    Style="{StaticResource SuccessButton}"
+                    BackgroundColor="{StaticResource Expense}">
                     <Button.ImageSource>
                         <FontImageSource
                             FontFamily="Icons"
-                            Glyph="{x:Static Icons:IconFont.Plus}"
-                            Size="15"
-                            Color="#121b27" />
+                            Glyph="{x:Static Icons:IconFont.ArrowTrendDown}"
+                            Size="13"
+                            Color="White" />
+                    </Button.ImageSource>
+                </Button>
+                <Button
+                    x:Name="CreateIncome"
+                    Command="{Binding GoToNewTransactionCommand}"
+                    CommandParameter="{x:Static dto:TransactionType.Income}"
+                    ContentLayout="Left, 6"
+                    HeightRequest="20"
+                    IsEnabled="{Binding IsNotNullAccount}"
+                    Style="{StaticResource SuccessButton}"
+                    BackgroundColor="{StaticResource Income}">
+                    <Button.ImageSource>
+                        <FontImageSource
+                            FontFamily="Icons"
+                            Glyph="{x:Static Icons:IconFont.ArrowTrendUp}"
+                            Size="13"
+                            Color="White" />
+                    </Button.ImageSource>
+                </Button>
+                <Button
+                    x:Name="CreateTransfer"
+                    Command="{Binding GoToNewTransactionCommand}"
+                    CommandParameter="{x:Static dto:TransactionType.Transfer}"
+                    ContentLayout="Left, 6"
+                    HeightRequest="20"
+                    IsEnabled="{Binding IsNotNullAccount}"
+                    Style="{StaticResource SuccessButton}"
+                    BackgroundColor="{StaticResource Transfer}">
+                    <Button.ImageSource>
+                        <FontImageSource
+                            FontFamily="Icons"
+                            Glyph="{x:Static Icons:IconFont.RightLeft}"
+                            Size="13"
+                            Color="White" />
                     </Button.ImageSource>
                 </Button>
             </FlexLayout>
