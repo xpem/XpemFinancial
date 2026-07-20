@@ -29,6 +29,8 @@ namespace XpemFinancial.VMs
         [ObservableProperty] private bool isNullAccount = false;
         [ObservableProperty] private bool isNotNullAccount = false;
         [ObservableProperty] private string monthYearDisplay;
+        [ObservableProperty] private ObservableCollection<MonthOption> monthOptions = [];
+        [ObservableProperty] private MonthOption? selectedMonthOption;
         [ObservableProperty] private bool isRequired;
 
         // ── Account filter (Task 12) ──
@@ -79,6 +81,42 @@ namespace XpemFinancial.VMs
             _ = LoadTransactionsForMonthAsync(SelectedDate);
         }
 
+        partial void OnSelectedMonthOptionChanged(MonthOption? value)
+        {
+            if (value == null || _isInitializing) return;
+
+            // Avoid re-triggering if already on that month
+            if (SelectedDate.Year == value.Date.Year && SelectedDate.Month == value.Date.Month)
+                return;
+
+            SelectedDate = value.Date;
+            NotifyNavigationCanExecuteChanged();
+            _ = LoadTransactionsForMonthAsync(SelectedDate);
+        }
+
+        private void BuildMonthOptions()
+        {
+            var today = DateTime.Today;
+            var options = new ObservableCollection<MonthOption>();
+
+            for (int i = -6; i <= 6; i++)
+            {
+                var date = new DateTime(today.Year, today.Month, 1).AddMonths(i);
+                options.Add(new MonthOption(date));
+            }
+
+            MonthOptions = options;
+        }
+
+        private void SyncSelectedMonthOption()
+        {
+            var match = MonthOptions.FirstOrDefault(m =>
+                m.Date.Year == SelectedDate.Year && m.Date.Month == SelectedDate.Month);
+
+            if (match != null && match != SelectedMonthOption)
+                SelectedMonthOption = match;
+        }
+
         public async Task InitializeAsync()
         {
             _isInitializing = true;
@@ -94,6 +132,9 @@ namespace XpemFinancial.VMs
             SelectedDate = DateTime.Now;
             _currentUserId = user.Id;
             IncludePreviousBalance = user.IncludePreviousBalance;
+
+            BuildMonthOptions();
+            SyncSelectedMonthOption();
 
             // Load active accounts for filter
             await LoadAccountFilterOptionsAsync();
@@ -219,6 +260,7 @@ namespace XpemFinancial.VMs
         {
             SelectedDate = SelectedDate.AddMonths(-1);
             NotifyNavigationCanExecuteChanged();
+            SyncSelectedMonthOption();
             await LoadTransactionsForMonthAsync(SelectedDate);
         }
 
@@ -230,6 +272,7 @@ namespace XpemFinancial.VMs
         {
             SelectedDate = SelectedDate.AddMonths(1);
             NotifyNavigationCanExecuteChanged();
+            SyncSelectedMonthOption();
 
             if (SelectedDate > DateTime.Today.AddMonths(6))
                 await recurringRuleService.RunSchedulerAsync(SelectedDate);
