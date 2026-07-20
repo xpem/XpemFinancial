@@ -10,7 +10,7 @@ namespace ApiRepo
         Task<AccountApiRes?> GetAccountAsync(DateTime updatedAt);
 
         // New multi-account methods
-        Task<List<AccountApiRes>> GetAccountsAsync(DateTime updatedAt);
+        Task<List<AccountApiRes>> GetAccountsAsync(DateTime updatedAt, int page);
         Task<AccountApiRes> PostAccountAsync(AccountReq req);
         Task<AccountApiRes> PutAccountAsync(int externalId, AccountReq req);
     }
@@ -53,11 +53,11 @@ namespace ApiRepo
             return null;
         }
 
-        public async Task<List<AccountApiRes>> GetAccountsAsync(DateTime updatedAt)
+        public async Task<List<AccountApiRes>> GetAccountsAsync(DateTime updatedAt, int page)
         {
             ApiResp resp = await userApiRepo.AuthRequestAsync(
                 RequestsTypes.Get,
-                ApiKeys.ApiAddress + $"/financial/accounts?updatedAt={updatedAt:yyyy-MM-ddTHH:mm:ss.fff}");
+                ApiKeys.ApiAddress + $"/financial/accounts?updatedAt={updatedAt:yyyy-MM-ddTHH:mm:ss.fff}&page={page}");
 
             if (resp.Error == ErrorTypes.ServerUnavaliable)
                 return [];

@@ -59,7 +59,9 @@ namespace XpemFinancial.VMs
                 Progress = 1;
 
                 WeakReferenceMessenger.Default.Send(new UserLoggedInMessage());
-                syncService.StartThread();
+
+                _ = Task.Run(() => { Task.Delay(5000); syncService.StartThread(); });
+                               
                 await Shell.Current.GoToAsync($"//{nameof(MainPage)}");
             }
             catch (UnauthorizedAccessException)

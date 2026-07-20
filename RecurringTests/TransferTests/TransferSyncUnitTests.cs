@@ -126,7 +126,7 @@ public class TransferSyncUnitTests
             UpdatedAt = DateTime.UtcNow,
             Repetition = (int)Repetition.None,
         };
-        transactionApiRepo.GetByUpdatedAtAsync(Arg.Any<DateTime>())
+        transactionApiRepo.GetByUpdatedAtAsync(Arg.Any<DateTime>(), Arg.Any<int>())
             .Returns(Task.FromResult<List<TransactionApiRes>?>(new List<TransactionApiRes> { apiTransaction }));
 
         var transactionRepo = new TransactionRepo(factory);
@@ -189,7 +189,7 @@ public class TransferSyncUnitTests
             UpdatedAt = DateTime.UtcNow,
             Repetition = (int)Repetition.None,
         };
-        transactionApiRepo.GetByUpdatedAtAsync(Arg.Any<DateTime>())
+        transactionApiRepo.GetByUpdatedAtAsync(Arg.Any<DateTime>(), Arg.Any<int>())
             .Returns(Task.FromResult<List<TransactionApiRes>?>(new List<TransactionApiRes> { apiTransaction }));
 
         var transactionRepo = new TransactionRepo(factory);

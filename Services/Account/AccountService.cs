@@ -303,86 +303,97 @@ namespace Service.Account
 
         public async Task PullAsync(int uid)
         {
+            const int pageSize = 100;
             DateTime cursor = await syncCursorRepo.GetAsync(SyncCursorKeys.Account);
-            var serverAccounts = await accountApiRepo.GetAccountsAsync(cursor);
 
             // Pre-load all local accounts to avoid missing matches due to detached contexts
             var localAccounts = await accountRepo.GetAllAsync(uid);
 
             DateTime maxUpdatedAt = cursor;
+            int page = 1;
 
-            foreach (var res in serverAccounts)
+            while (true)
             {
-                AccountDTO? local = null;
+                var serverAccounts = await accountApiRepo.GetAccountsAsync(cursor, page);
 
-                // 1. Try matching by AccountId first (stable cross-device identifier)
-                if (res.AccountId is not null && res.AccountId.Value != Guid.Empty)
-                    local = localAccounts.FirstOrDefault(a => a.AccountId == res.AccountId.Value);
+                if (serverAccounts.Count == 0) break;
 
-                // 2. Fall back to ExternalId lookup (server-side ID)
-                if (local is null && res.Id > 0)
-                    local = localAccounts.FirstOrDefault(a => a.ExternalId == res.Id);
-
-                // 3. Last resort: match by Name + Type for accounts that never completed sync
-                if (local is null)
-                    local = localAccounts.FirstOrDefault(a =>
-                        a.ExternalId == null &&
-                        a.Name == res.Name &&
-                        a.Type == res.Type);
-
-                if (local is null)
+                foreach (var res in serverAccounts)
                 {
-                    // No match — insert new record with both AccountId and ExternalId
-                    var newAccount = new AccountDTO
-                    {
-                        Name = res.Name,
-                        Type = res.Type,
-                        CurrentBalance = res.CurrentBalance,
-                        IncludeInGeneralBalance = res.IncludeInGeneralBalance,
-                        IsActive = !res.Inactive,
-                        Inactive = res.Inactive,
-                        ExternalId = res.Id,
-                        UserId = uid,
-                        CreatedAt = DateTime.UtcNow,
-                        UpdatedAt = res.UpdatedAt,
-                        AccountId = res.AccountId is not null && res.AccountId.Value != Guid.Empty
-                            ? res.AccountId.Value
-                            : Guid.NewGuid(),
-                    };
+                    AccountDTO? local = null;
 
-                    await accountRepo.Add(newAccount);
-                    localAccounts.Add(newAccount);
-                }
-                else if (res.UpdatedAt > local.UpdatedAt)
-                {
-                    // Last-writer-wins: update local record
-                    local.Name = res.Name;
-                    local.Type = res.Type;
-                    local.CurrentBalance = res.CurrentBalance;
-                    local.IncludeInGeneralBalance = res.IncludeInGeneralBalance;
-                    local.IsActive = !res.Inactive;
-                    local.Inactive = res.Inactive;
-                    local.UpdatedAt = res.UpdatedAt;
-                    local.ExternalId = res.Id;
-
-                    // Persist AccountId from response if non-empty
+                    // 1. Try matching by AccountId first (stable cross-device identifier)
                     if (res.AccountId is not null && res.AccountId.Value != Guid.Empty)
-                        local.AccountId = res.AccountId.Value;
+                        local = localAccounts.FirstOrDefault(a => a.AccountId == res.AccountId.Value);
 
-                    await accountRepo.Update(local);
-                }
-                else
-                {
-                    // UpdatedAt <= local — skip update but still persist AccountId if missing
-                    if (res.AccountId is not null && res.AccountId.Value != Guid.Empty && local.AccountId == Guid.Empty)
+                    // 2. Fall back to ExternalId lookup (server-side ID)
+                    if (local is null && res.Id > 0)
+                        local = localAccounts.FirstOrDefault(a => a.ExternalId == res.Id);
+
+                    // 3. Last resort: match by Name + Type for accounts that never completed sync
+                    if (local is null)
+                        local = localAccounts.FirstOrDefault(a =>
+                            a.ExternalId == null &&
+                            a.Name == res.Name &&
+                            a.Type == res.Type);
+
+                    if (local is null)
                     {
-                        local.AccountId = res.AccountId.Value;
+                        // No match — insert new record with both AccountId and ExternalId
+                        var newAccount = new AccountDTO
+                        {
+                            Name = res.Name,
+                            Type = res.Type,
+                            CurrentBalance = res.CurrentBalance,
+                            IncludeInGeneralBalance = res.IncludeInGeneralBalance,
+                            IsActive = !res.Inactive,
+                            Inactive = res.Inactive,
+                            ExternalId = res.Id,
+                            UserId = uid,
+                            CreatedAt = DateTime.UtcNow,
+                            UpdatedAt = res.UpdatedAt,
+                            AccountId = res.AccountId is not null && res.AccountId.Value != Guid.Empty
+                                ? res.AccountId.Value
+                                : Guid.NewGuid(),
+                        };
+
+                        await accountRepo.Add(newAccount);
+                        localAccounts.Add(newAccount);
+                    }
+                    else if (res.UpdatedAt > local.UpdatedAt)
+                    {
+                        // Last-writer-wins: update local record
+                        local.Name = res.Name;
+                        local.Type = res.Type;
+                        local.CurrentBalance = res.CurrentBalance;
+                        local.IncludeInGeneralBalance = res.IncludeInGeneralBalance;
+                        local.IsActive = !res.Inactive;
+                        local.Inactive = res.Inactive;
+                        local.UpdatedAt = res.UpdatedAt;
+                        local.ExternalId = res.Id;
+
+                        // Persist AccountId from response if non-empty
+                        if (res.AccountId is not null && res.AccountId.Value != Guid.Empty)
+                            local.AccountId = res.AccountId.Value;
+
                         await accountRepo.Update(local);
                     }
+                    else
+                    {
+                        // UpdatedAt <= local — skip update but still persist AccountId if missing
+                        if (res.AccountId is not null && res.AccountId.Value != Guid.Empty && local.AccountId == Guid.Empty)
+                        {
+                            local.AccountId = res.AccountId.Value;
+                            await accountRepo.Update(local);
+                        }
+                    }
+
+                    if (res.UpdatedAt > maxUpdatedAt)
+                        maxUpdatedAt = res.UpdatedAt;
                 }
 
-                if (res.UpdatedAt > maxUpdatedAt)
-                    maxUpdatedAt = res.UpdatedAt;
+                if (serverAccounts.Count < pageSize) break;
+                page++;
             }
 
             if (maxUpdatedAt > cursor)

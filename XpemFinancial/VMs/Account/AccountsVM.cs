@@ -35,11 +35,12 @@ public partial class AccountsVM(
 
             var all = await accountService.GetAllAsync(user.Id);
 
-            // Calcular saldo real de cada conta via transações
-            foreach (var account in all)
+            // Calcular saldo real de cada conta via transações (em paralelo)
+            var balanceTasks = all.Select(async account =>
             {
                 account.CurrentBalance = await transactionService.GetBalanceAsync(account.Id) ?? 0;
-            }
+            });
+            await Task.WhenAll(balanceTasks);
 
             ActiveAccounts = all.Where(a => a.IsActive).OrderBy(a => a.Name).ToList();
             InactiveAccounts = all.Where(a => !a.IsActive).OrderBy(a => a.Name).ToList();

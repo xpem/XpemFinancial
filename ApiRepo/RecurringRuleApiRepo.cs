@@ -8,7 +8,7 @@ namespace ApiRepo
     public interface IRecurringRuleApiRepo
     {
         Task<int> PostAsync(RecurringRuleReq req);
-        Task<List<RecurringRuleApiRes>?> GetByUpdatedAtAsync(DateTime updatedAt);
+        Task<List<RecurringRuleApiRes>?> GetByUpdatedAtAsync(DateTime updatedAt, int page);
     }
 
     public class RecurringRuleApiRepo(IUserApiRepo userApiRepo) : IRecurringRuleApiRepo
@@ -19,11 +19,11 @@ namespace ApiRepo
             Converters = { new JsonStringEnumConverter() }
         };
 
-        public async Task<List<RecurringRuleApiRes>?> GetByUpdatedAtAsync(DateTime updatedAt)
+        public async Task<List<RecurringRuleApiRes>?> GetByUpdatedAtAsync(DateTime updatedAt, int page)
         {
             ApiResp resp = await userApiRepo.AuthRequestAsync(
                 RequestsTypes.Get,
-                ApiKeys.ApiAddress + $"/financial/recurringrule?updatedAt={updatedAt:yyyy-MM-ddTHH:mm:ss.fff}");
+                ApiKeys.ApiAddress + $"/financial/recurringrule?updatedAt={updatedAt:yyyy-MM-ddTHH:mm:ss.fff}&page={page}");
 
             if (resp.Success && !string.IsNullOrEmpty(resp.Content))
                 return JsonSerializer.Deserialize<List<RecurringRuleApiRes>>(resp.Content, _jsonOptions);

@@ -14,7 +14,7 @@ namespace XpemFinancial
         public static string CrashLogPath { get; } =
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "crash.log");
 
-        public IUserSessionService UserSessionService { get; set; }
+        public readonly IUserSessionService _userSessionService;
 
         private readonly IUserService _userService;
         private readonly ICategoryService _categoryService;
@@ -34,7 +34,7 @@ namespace XpemFinancial
 
             InitializeComponent();
 
-            UserSessionService = userSessionService;
+            _userSessionService = userSessionService;
             _userService = userService;
             _categoryService = categoryService;
             _buildDbService = buildDbService;
@@ -94,11 +94,11 @@ namespace XpemFinancial
             //await _accountService.MockAccount(1);
             //await _categoryService.MockCategories(1);
 
-            var appShellVM = new AppShellVM(UserSessionService, _buildDbService, _syncService);
+            var appShellVM = new AppShellVM(_userSessionService, _buildDbService, _syncService);
             await appShellVM.UserFlyoutAsync();
 
             // Se o usuário já está logado, inicia o sync em background
-            var user = await UserSessionService.GetCurrentUserAsync();
+            var user = await _userSessionService.GetCurrentUserAsync();
             if (user != null)
                 _syncService.StartThread();
 

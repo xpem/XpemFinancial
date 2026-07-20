@@ -3,15 +3,12 @@
     x:Class="XpemFinancial.Views.Account.AccountsPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:Components="clr-namespace:XpemFinancial.Components"
     xmlns:Icons="clr-namespace:XpemFinancial.Resources"
     xmlns:Models="clr-namespace:Model.DTO;assembly=Model"
-    xmlns:Utils="clr-namespace:XpemFinancial.Utils"
     xmlns:vms="clr-namespace:XpemFinancial.VMs"
     x:DataType="vms:AccountsVM"
     BackgroundColor="{StaticResource BodyBackground}">
-    <ContentPage.Resources>
-        <Utils:AccountTypeConverter x:Key="AccountTypeConverter" />
-    </ContentPage.Resources>
     <Shell.TitleView>
         <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
             <Label
@@ -29,7 +26,19 @@
     </Shell.TitleView>
 
     <Grid RowDefinitions="*,Auto">
-        <ScrollView Grid.Row="0" Margin="16">
+        <!--  Loading Indicator  -->
+        <ActivityIndicator
+            Grid.Row="0"
+            HorizontalOptions="Center"
+            IsRunning="{Binding IsBusy}"
+            IsVisible="{Binding IsBusy}"
+            VerticalOptions="Center"
+            Color="{StaticResource Income}" />
+
+        <ScrollView
+            Grid.Row="0"
+            Margin="16"
+            IsVisible="{Binding IsNotBusy}">
             <VerticalStackLayout Spacing="16">
                 <!--  Saldo Geral  -->
                 <Border
@@ -62,39 +71,16 @@
                     <CollectionView ItemsSource="{Binding ActiveAccounts}">
                         <CollectionView.ItemTemplate>
                             <DataTemplate x:DataType="Models:AccountDTO">
-                                <StackLayout>
-                                    <Border
-                                        Margin="5"
-                                        Padding="12"
-                                        BackgroundColor="{StaticResource InputBackground}"
-                                        StrokeShape="RoundRectangle 8">
-                                        <Border.GestureRecognizers>
-                                            <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type vms:AccountsVM}}, Path=EditAccountCommand}" CommandParameter="{Binding .}" />
-                                        </Border.GestureRecognizers>
-                                        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
-                                            <Label
-                                                Grid.Row="0"
-                                                Grid.Column="0"
-                                                FontAttributes="Bold"
-                                                FontSize="15"
-                                                Text="{Binding Name}"
-                                                TextColor="{StaticResource FontLight}" />
-                                            <Label
-                                                Grid.Row="0"
-                                                Grid.Column="1"
-                                                FontAttributes="Bold"
-                                                FontSize="15"
-                                                Text="{Binding CurrentBalance, StringFormat='{0:C}'}"
-                                                TextColor="{StaticResource FontLight}" />
-                                            <Label
-                                                Grid.Row="1"
-                                                Grid.Column="0"
-                                                FontSize="13"
-                                                Text="{Binding Type, Converter={StaticResource AccountTypeConverter}}"
-                                                TextColor="{StaticResource FontDark}" />
-                                        </Grid>
-                                    </Border>
-                                </StackLayout>
+                                <Components:AccountItemView
+                                    Margin="0,4"
+                                    AccountBalance="{Binding CurrentBalance}"
+                                    AccountName="{Binding Name}"
+                                    AccountType="{Binding Type}"
+                                    IsInactive="False">
+                                    <Components:AccountItemView.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type vms:AccountsVM}}, Path=EditAccountCommand}" CommandParameter="{Binding .}" />
+                                    </Components:AccountItemView.GestureRecognizers>
+                                </Components:AccountItemView>
                             </DataTemplate>
                         </CollectionView.ItemTemplate>
                     </CollectionView>
@@ -110,40 +96,16 @@
                     <CollectionView ItemsSource="{Binding InactiveAccounts}">
                         <CollectionView.ItemTemplate>
                             <DataTemplate x:DataType="Models:AccountDTO">
-                                <Border
+                                <Components:AccountItemView
                                     Margin="0,4"
-                                    Padding="12"
-                                    BackgroundColor="{StaticResource InputBackground}"
-                                    Opacity="0.6"
-                                    StrokeShape="RoundRectangle 8">
-                                    <Border.GestureRecognizers>
+                                    AccountBalance="{Binding CurrentBalance}"
+                                    AccountName="{Binding Name}"
+                                    AccountType="{Binding Type}"
+                                    IsInactive="True">
+                                    <Components:AccountItemView.GestureRecognizers>
                                         <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type vms:AccountsVM}}, Path=EditAccountCommand}" CommandParameter="{Binding .}" />
-                                    </Border.GestureRecognizers>
-                                    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
-                                        <Label
-                                            Grid.Row="0"
-                                            Grid.Column="0"
-                                            FontAttributes="Bold"
-                                            FontSize="15"
-                                            Text="{Binding Name}" />
-                                        <Label
-                                            Grid.Row="0"
-                                            Grid.Column="1"
-                                            FontAttributes="Bold"
-                                            FontSize="15"
-                                            Text="{Binding CurrentBalance, StringFormat='{0:C}'}" />
-                                        <HorizontalStackLayout
-                                            Grid.Row="1"
-                                            Grid.Column="0"
-                                            Spacing="6">
-                                            <Label FontSize="13" Text="{Binding Type, Converter={StaticResource AccountTypeConverter}}" />
-                                            <Label
-                                                FontSize="12"
-                                                Text="(Inativa)"
-                                                TextColor="{StaticResource Expense}" />
-                                        </HorizontalStackLayout>
-                                    </Grid>
-                                </Border>
+                                    </Components:AccountItemView.GestureRecognizers>
+                                </Components:AccountItemView>
                             </DataTemplate>
                         </CollectionView.ItemTemplate>
                     </CollectionView>

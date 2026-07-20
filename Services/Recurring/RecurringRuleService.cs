@@ -233,54 +233,67 @@ namespace Service.Recurring
 
         public async Task PullAsync(int uid, DateTime lastUpdatedAt)
         {
-            List<Model.Resp.Api.RecurringRuleApiRes>? results = await recurringRuleApiRepo.GetByUpdatedAtAsync(lastUpdatedAt);
-
-            if (results is null || results.Count == 0) return;
-
+            const int pageSize = 100;
+            int page = 1;
+            DateTime maxServerTs = DateTime.MinValue;
             List<RecurringRuleDTO> upsertedRules = [];
 
-            foreach (var res in results)
+            while (true)
             {
-                // Resolve local CategoryId from the API's CategoryId (which is the ExternalId)
-                int localCategoryId = 0;
-                if (res.CategoryId.HasValue)
+                List<Model.Resp.Api.RecurringRuleApiRes>? results = await recurringRuleApiRepo.GetByUpdatedAtAsync(lastUpdatedAt, page);
+
+                if (results is null || results.Count == 0) break;
+
+                foreach (var res in results)
                 {
-                    var localCategory = await categoryRepo.GetByExternalIdAsync(res.CategoryId.Value);
-                    localCategoryId = localCategory?.Id ?? 0;
+                    // Resolve local CategoryId from the API's CategoryId (which is the ExternalId)
+                    int localCategoryId = 0;
+                    if (res.CategoryId.HasValue)
+                    {
+                        var localCategory = await categoryRepo.GetByExternalIdAsync(res.CategoryId.Value);
+                        localCategoryId = localCategory?.Id ?? 0;
+                    }
+
+                    // Resolve local AccountId from the API's AccountId (which is the ExternalId).
+                    // Without this, the scheduler would write the server's external ID as a FK into
+                    // the local Transaction table, causing a FK constraint exception.
+                    int? localAccountId = null;
+                    if (res.AccountId.HasValue)
+                    {
+                        var localAccount = await accountRepo.GetByExternalIdAsync(res.AccountId.Value);
+                        if (localAccount is not null)
+                            localAccountId = localAccount.Id;
+                    }
+
+                    RecurringRuleDTO dto = new()
+                    {
+                        ExternalId = res.Id,
+                        RecurringRuleId = res.RecurringRuleId,
+                        Description = res.Description,
+                        Amount = res.Amount,
+                        Type = (TransactionType)res.Type,
+                        CategoryId = localCategoryId,
+                        CategoryExternalId = res.CategoryId,
+                        AccountId = localAccountId,
+                        Frequency = (Frequency)res.Frequency,
+                        StartDate = res.StartDate,
+                        EndDate = res.EndDate,
+                        Inactive = res.Inactive,
+                        CreatedAt = res.CreatedAt,
+                        UpdatedAt = res.UpdatedAt,
+                        UserId = uid,
+                    };
+
+                    await recurringRuleRepo.UpsertAsync(dto);
+                    upsertedRules.Add(dto);
                 }
 
-                // Resolve local AccountId from the API's AccountId (which is the ExternalId).
-                // Without this, the scheduler would write the server's external ID as a FK into
-                // the local Transaction table, causing a FK constraint exception.
-                int? localAccountId = null;
-                if (res.AccountId.HasValue)
-                {
-                    var localAccount = await accountRepo.GetByExternalIdAsync(res.AccountId.Value);
-                    if (localAccount is not null)
-                        localAccountId = localAccount.Id;
-                }
+                DateTime batchMax = results.Max(r => r.UpdatedAt);
+                if (batchMax > maxServerTs)
+                    maxServerTs = batchMax;
 
-                RecurringRuleDTO dto = new()
-                {
-                    ExternalId = res.Id,
-                    RecurringRuleId = res.RecurringRuleId,
-                    Description = res.Description,
-                    Amount = res.Amount,
-                    Type = (TransactionType)res.Type,
-                    CategoryId = localCategoryId,
-                    CategoryExternalId = res.CategoryId,
-                    AccountId = localAccountId,
-                    Frequency = (Frequency)res.Frequency,
-                    StartDate = res.StartDate,
-                    EndDate = res.EndDate,
-                    Inactive = res.Inactive,
-                    CreatedAt = res.CreatedAt,
-                    UpdatedAt = res.UpdatedAt,
-                    UserId = uid,
-                };
-
-                await recurringRuleRepo.UpsertAsync(dto);
-                upsertedRules.Add(dto);
+                if (results.Count < pageSize) break;
+                page++;
             }
 
             // Fix #2: only run the scheduler for rules that are active — inactive rules have
@@ -290,11 +303,13 @@ namespace Service.Recurring
             if (activeUpserted.Count > 0)
                 await recurringScheduler.GeneratePendingAsync(activeUpserted);
 
-            // Advance the cursor using the highest server-side UpdatedAt in this batch.
-            DateTime maxServerTs = results.Max(r => r.UpdatedAt);
-            DateTime current = await syncCursorRepo.GetAsync(SyncCursorKeys.RecurringRule);
-            if (maxServerTs > current)
-                await syncCursorRepo.SaveAsync(SyncCursorKeys.RecurringRule, maxServerTs);
+            // Advance the cursor using the highest server-side UpdatedAt seen across all pages.
+            if (maxServerTs > DateTime.MinValue)
+            {
+                DateTime current = await syncCursorRepo.GetAsync(SyncCursorKeys.RecurringRule);
+                if (maxServerTs > current)
+                    await syncCursorRepo.SaveAsync(SyncCursorKeys.RecurringRule, maxServerTs);
+            }
         }
 
         // ── helpers ──────────────────────────────────────────────────────────

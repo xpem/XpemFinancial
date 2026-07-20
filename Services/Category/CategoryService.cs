@@ -27,69 +27,85 @@ namespace Service.Category
 
         public async Task PullAsync(int uid, DateTime lastUpdatedAt)
         {
-            ApiResp apiResp = await categoryApiRepo.GetByLastUpdateAsync(lastUpdatedAt, page: 1);
+            const int pageSize = 100;
+            int page = 1;
+            DateTime maxServerTs = DateTime.MinValue;
 
-            if (!apiResp.Success || apiResp.Content is null)
-                throw new Exception($"Erro ao buscar categorias da API: {apiResp.Content ?? "sem resposta"}");
-
-            List<TransactionCategoryApiRes>? apiRes = JsonSerializer.Deserialize<List<TransactionCategoryApiRes>>(apiResp.Content, _jsonOptions);
-
-            if (apiRes is null || apiRes.Count == 0) return;
-
-            foreach (var category in apiRes)
+            while (true)
             {
-                if (category == null) continue;
+                ApiResp apiResp = await categoryApiRepo.GetByLastUpdateAsync(lastUpdatedAt, page);
 
-                CategoryDTO? local = null;
+                if (!apiResp.Success || apiResp.Content is null)
+                    throw new Exception($"Erro ao buscar categorias da API: {apiResp.Content ?? "sem resposta"}");
 
-                // 1. Match by CategoryId if present
-                if (category.CategoryId is not null && category.CategoryId != Guid.Empty)
-                    local = await categoryRepo.GetByCategoryIdAsync(category.CategoryId.Value);
+                List<TransactionCategoryApiRes>? apiRes = JsonSerializer.Deserialize<List<TransactionCategoryApiRes>>(apiResp.Content, _jsonOptions);
 
-                // 2. Fallback to ExternalId
-                if (local is null && category.Id > 0)
-                    local = await categoryRepo.GetByExternalIdAsync(category.Id);
+                if (apiRes is null || apiRes.Count == 0) break;
 
-                if (local is not null)
+                foreach (var category in apiRes)
                 {
-                    // Last-writer-wins: update only if pulled UpdatedAt > local UpdatedAt
-                    if (category.UpdatedAt > local.UpdatedAt)
+                    if (category == null) continue;
+
+                    CategoryDTO? local = null;
+
+                    // 1. Match by CategoryId if present
+                    if (category.CategoryId is not null && category.CategoryId != Guid.Empty)
+                        local = await categoryRepo.GetByCategoryIdAsync(category.CategoryId.Value);
+
+                    // 2. Fallback to ExternalId
+                    if (local is null && category.Id > 0)
+                        local = await categoryRepo.GetByExternalIdAsync(category.Id);
+
+                    if (local is not null)
                     {
-                        local.Name = category.Name;
-                        local.Inactive = category.Inactive;
-                        local.SystemDefault = category.SystemDefault;
-                        local.IsMainCategory = category.IsMainTransactionCategory;
-                        local.ParentExternalId = category.ParentTransactionCategoryId;
-                        local.ExternalId = category.Id;
-                        local.UpdatedAt = category.UpdatedAt;
-                        if (category.CategoryId is not null && category.CategoryId != Guid.Empty)
-                            local.CategoryId = category.CategoryId.Value;
-                        await categoryRepo.UpdateAsync(local);
+                        // Last-writer-wins: update only if pulled UpdatedAt > local UpdatedAt
+                        if (category.UpdatedAt > local.UpdatedAt)
+                        {
+                            local.Name = category.Name;
+                            local.Inactive = category.Inactive;
+                            local.SystemDefault = category.SystemDefault;
+                            local.IsMainCategory = category.IsMainTransactionCategory;
+                            local.ParentExternalId = category.ParentTransactionCategoryId;
+                            local.ExternalId = category.Id;
+                            local.UpdatedAt = category.UpdatedAt;
+                            if (category.CategoryId is not null && category.CategoryId != Guid.Empty)
+                                local.CategoryId = category.CategoryId.Value;
+                            await categoryRepo.UpdateAsync(local);
+                        }
+                    }
+                    else
+                    {
+                        // Insert new record
+                        await categoryRepo.AddAsync(new CategoryDTO
+                        {
+                            CategoryId = category.CategoryId ?? Guid.Empty,
+                            ExternalId = category.Id,
+                            Name = category.Name,
+                            Inactive = category.Inactive,
+                            SystemDefault = category.SystemDefault,
+                            IsMainCategory = category.IsMainTransactionCategory,
+                            ParentExternalId = category.ParentTransactionCategoryId,
+                            UserId = uid,
+                            UpdatedAt = category.UpdatedAt
+                        });
                     }
                 }
-                else
-                {
-                    // Insert new record
-                    await categoryRepo.AddAsync(new CategoryDTO
-                    {
-                        CategoryId = category.CategoryId ?? Guid.Empty,
-                        ExternalId = category.Id,
-                        Name = category.Name,
-                        Inactive = category.Inactive,
-                        SystemDefault = category.SystemDefault,
-                        IsMainCategory = category.IsMainTransactionCategory,
-                        ParentExternalId = category.ParentTransactionCategoryId,
-                        UserId = uid,
-                        UpdatedAt = category.UpdatedAt
-                    });
-                }
+
+                DateTime batchMax = apiRes.Max(c => c.UpdatedAt);
+                if (batchMax > maxServerTs)
+                    maxServerTs = batchMax;
+
+                if (apiRes.Count < pageSize) break;
+                page++;
             }
 
-            // Advance the cursor to the highest server-side UpdatedAt in this batch.
-            DateTime maxServerTs = apiRes.Max(c => c.UpdatedAt);
-            DateTime current = await syncCursorRepo.GetAsync(SyncCursorKeys.Category);
-            if (maxServerTs > current)
-                await syncCursorRepo.SaveAsync(SyncCursorKeys.Category, maxServerTs);
+            // Advance the cursor to the highest server-side UpdatedAt seen across all pages.
+            if (maxServerTs > DateTime.MinValue)
+            {
+                DateTime current = await syncCursorRepo.GetAsync(SyncCursorKeys.Category);
+                if (maxServerTs > current)
+                    await syncCursorRepo.SaveAsync(SyncCursorKeys.Category, maxServerTs);
+            }
         }
 
         public async Task<List<CategoryDTO>> GetAllAsync()
