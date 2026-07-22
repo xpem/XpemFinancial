@@ -76,6 +76,16 @@
             RemainingItemsThresholdReachedCommand="{Binding LoadMoreCommand}"
             SelectedItem="{Binding SelectedItem, Mode=TwoWay}"
             SelectionMode="Single">
+            <CollectionView.EmptyView>
+                <Label
+                    Margin="20"
+                    FontSize="15"
+                    HorizontalOptions="Center"
+                    HorizontalTextAlignment="Center"
+                    Text="{Binding EmptyStateMessage}"
+                    TextColor="{StaticResource White}"
+                    VerticalOptions="Center" />
+            </CollectionView.EmptyView>
             <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="Models:CategoryDTO">
                     <Grid Padding="15">

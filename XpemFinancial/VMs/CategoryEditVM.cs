@@ -12,6 +12,7 @@ public partial class CategoryEditVM(
 {
     private List<CategoryDTO> _mainCategories = [];
     private CategoryDTO? _editingCategory;
+    private CategoryType? _originalCategoryType;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsSubcategory))]
@@ -23,6 +24,20 @@ public partial class CategoryEditVM(
     [ObservableProperty] private bool isEditMode;
     [ObservableProperty] private bool canChangeType = true;
     [ObservableProperty] private bool isInactive;
+    [ObservableProperty] private string inheritedTypeDisplayText = string.Empty;
+    [ObservableProperty] private int selectedCategoryTypeIndex = -1;
+
+    /// <summary>
+    /// Options for the CategoryType picker: Receita (Income), Despesa (Expense), Ambos (Both).
+    /// Index maps to CategoryType enum values: 0=Income, 1=Expense, null=Both.
+    /// </summary>
+    public List<string> CategoryTypeOptions { get; } = ["Receita", "Despesa", "Ambos"];
+
+    /// <summary>
+    /// Returns the currently selected CategoryType, or null if nothing is selected.
+    /// </summary>
+    public CategoryType? SelectedCategoryType =>
+        SelectedCategoryTypeIndex >= 0 ? (CategoryType)SelectedCategoryTypeIndex : null;
 
     /// <summary>
     /// True when the category is user-created (not system) and in edit mode.
@@ -49,6 +64,21 @@ public partial class CategoryEditVM(
             ParentCategoryName = null;
         }
     }
+
+    partial void OnParentCategoryChanged(CategoryDTO? value)
+    {
+        InheritedTypeDisplayText = value is not null
+            ? GetCategoryTypeDisplayText(value.Type)
+            : string.Empty;
+    }
+
+    private static string GetCategoryTypeDisplayText(CategoryType? type) => type switch
+    {
+        CategoryType.Income => "Receita",
+        CategoryType.Expense => "Despesa",
+        null => "Ambos",
+        _ => string.Empty
+    };
 
     public async Task InitializeAsync()
     {
@@ -83,6 +113,12 @@ public partial class CategoryEditVM(
             return;
         }
 
+        if (IsMainCategory && SelectedCategoryType is null)
+        {
+            await VMBase.ShowMessage("Aviso", "Selecione um tipo para a categoria");
+            return;
+        }
+
         if (!IsMainCategory && ParentCategory is null)
         {
             await VMBase.ShowMessage("Aviso", "Selecione a categoria pai.");
@@ -110,6 +146,17 @@ public partial class CategoryEditVM(
                 _editingCategory.ParentExternalId = IsMainCategory ? null : ParentCategory!.ExternalId;
                 _editingCategory.UpdatedAt = DateTime.UtcNow;
 
+                // If MainCategory type changed, cascade to subcategories
+                if (IsMainCategory && SelectedCategoryType is not null
+                    && _originalCategoryType != SelectedCategoryType.Value)
+                {
+                    await categoryService.UpdateMainCategoryTypeAsync(_editingCategory, SelectedCategoryType.Value);
+                }
+                else if (IsMainCategory && SelectedCategoryType is not null)
+                {
+                    _editingCategory.Type = SelectedCategoryType.Value;
+                }
+
                 await categoryService.UpdateLocalAsync(_editingCategory);
                 await categoryService.PushAsync();
 
@@ -127,6 +174,7 @@ public partial class CategoryEditVM(
                     UserId = user.Id,
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow,
+                    Type = IsMainCategory ? SelectedCategoryType!.Value : ParentCategory!.Type,
                 };
 
                 await categoryService.AddLocalAsync(category);
@@ -254,6 +302,13 @@ public partial class CategoryEditVM(
             Name = _editingCategory.Name;
             IsInactive = _editingCategory.Inactive;
             OnPropertyChanged(nameof(CanToggleActive));
+
+            // Pre-fill the CategoryType selector for MainCategory edit
+            if (_editingCategory.IsMainCategory)
+            {
+                SelectedCategoryTypeIndex = (int)_editingCategory.Type;
+                _originalCategoryType = _editingCategory.Type;
+            }
 
             // Block type change if main category has active subcategories (Requirement 5.6)
             if (_editingCategory.IsMainCategory)

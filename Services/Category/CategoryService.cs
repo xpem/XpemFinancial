@@ -14,6 +14,7 @@ namespace Service.Category
         Task UpsertAsync(CategoryDTO category);
         Task AddLocalAsync(CategoryDTO category);
         Task UpdateLocalAsync(CategoryDTO category);
+        Task UpdateMainCategoryTypeAsync(CategoryDTO mainCategory, CategoryType newType);
         Task<DateTime> GetLastUpdatedAtAsync();
         Task PullAsync(int uid, DateTime lastUpdatedAt);
         Task PushAsync();
@@ -22,6 +23,20 @@ namespace Service.Category
     public class CategoryService(ICategoryRepo categoryRepo, ICategoryApiRepo categoryApiRepo, ISyncCursorRepo syncCursorRepo) : ICategoryService
     {
         private static readonly JsonSerializerOptions _jsonOptions = new() { PropertyNameCaseInsensitive = true };
+
+        /// <summary>
+        /// Defensively maps an integer from the API response to a <see cref="CategoryType"/>.
+        /// Returns <see cref="CategoryType.Both"/> for null or out-of-range values.
+        /// </summary>
+        public static CategoryType? SafeParseCategoryType(int? value)
+        {
+            return value switch
+            {
+                0 => CategoryType.Income,
+                1 => CategoryType.Expense,
+                _ => null
+            };
+        }
 
         public async Task<DateTime> GetLastUpdatedAtAsync()
             => await syncCursorRepo.GetAsync(SyncCursorKeys.Category);
@@ -68,6 +83,7 @@ namespace Service.Category
                             local.IsMainCategory = category.IsMainTransactionCategory;
                             local.ParentExternalId = category.ParentTransactionCategoryId;
                             local.ExternalId = category.Id;
+                            local.Type = SafeParseCategoryType(category.Type);
                             local.UpdatedAt = category.UpdatedAt;
                             if (category.CategoryId is not null && category.CategoryId != Guid.Empty)
                                 local.CategoryId = category.CategoryId.Value;
@@ -87,6 +103,7 @@ namespace Service.Category
                             IsMainCategory = category.IsMainTransactionCategory,
                             ParentExternalId = category.ParentTransactionCategoryId,
                             UserId = uid,
+                            Type = SafeParseCategoryType(category.Type),
                             UpdatedAt = category.UpdatedAt
                         });
                     }
@@ -184,13 +201,61 @@ namespace Service.Category
             if (category.CategoryId == Guid.Empty)
                 category.CategoryId = Guid.NewGuid();
 
+            // Subcategory type inheritance: assign Type from parent MainCategory
+            if (!category.IsMainCategory)
+            {
+                if (category.ParentExternalId is null)
+                    throw new InvalidOperationException("Selecione uma categoria pai válida");
+
+                var parent = await categoryRepo.GetByExternalIdAsync(category.ParentExternalId.Value);
+                if (parent is null)
+                    throw new InvalidOperationException("Selecione uma categoria pai válida");
+
+                category.Type = parent.Type;
+            }
+
             await categoryRepo.AddAsync(category);
         }
 
         public async Task UpdateLocalAsync(CategoryDTO category)
         {
             category.UpdatedAt = DateTime.UtcNow;
+
+            // Subcategory type inheritance: update Type when parent changes
+            if (!category.IsMainCategory)
+            {
+                if (category.ParentExternalId is null)
+                    throw new InvalidOperationException("Selecione uma categoria pai válida");
+
+                var parent = await categoryRepo.GetByExternalIdAsync(category.ParentExternalId.Value);
+                if (parent is null)
+                    throw new InvalidOperationException("Selecione uma categoria pai válida");
+
+                category.Type = parent.Type;
+            }
+
             await categoryRepo.UpdateAsync(category);
+        }
+
+        public async Task UpdateMainCategoryTypeAsync(CategoryDTO mainCategory, CategoryType newType)
+        {
+            mainCategory.Type = newType;
+            mainCategory.UpdatedAt = DateTime.UtcNow;
+            await categoryRepo.UpdateAsync(mainCategory);
+
+            // Cascade to active subcategories
+            var all = await categoryRepo.GetAllAsync();
+            var subcategories = all.Where(c =>
+                !c.IsMainCategory
+                && !c.Inactive
+                && c.ParentExternalId == mainCategory.ExternalId);
+
+            foreach (var sub in subcategories)
+            {
+                sub.Type = newType;
+                sub.UpdatedAt = DateTime.UtcNow;
+                await categoryRepo.UpdateAsync(sub);
+            }
         }
 
         public async Task PushAsync()
@@ -207,7 +272,8 @@ namespace Service.Category
                         IsMainTransactionCategory = category.IsMainCategory,
                         ParentTransactionCategoryId = category.ParentExternalId,
                         Inactive = category.Inactive,
-                        Color = null
+                        Color = null,
+                        Type = (int)category.Type
                     });
 
                     if (response.Id > 0)

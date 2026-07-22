@@ -27,5 +27,7 @@ namespace Model.DTO
         public UserDTO User { get; set; }
 
         public bool SystemDefault { get; set; }
+
+        public CategoryType? Type { get; set; } = null;
     }
 }

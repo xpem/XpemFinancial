@@ -39,6 +39,9 @@ namespace Repo
             {
                 entity.Property(c => c.CategoryId)
                     .HasDefaultValue(Guid.Empty);
+
+                entity.Property(c => c.Type)
+                    .HasDefaultValue(null);
             });
 
             modelBuilder.Entity<AccountDTO>(entity =>
