@@ -17,10 +17,7 @@ namespace XpemFinancial
             //icons: https://fontawesome.com/icons/right-to-bracket?s=solid
             var builder = MauiApp.CreateBuilder();
 
-            builder.UseMauiApp<App>().UseMauiCommunityToolkit(options =>
-            {
-                options.SetShouldEnableSnackbarOnWindows(true);
-            });
+            builder.UseMauiApp<App>().UseMauiCommunityToolkit();
 
             builder
                 .UseMauiApp<App>()
@@ -38,6 +35,7 @@ namespace XpemFinancial
                 });
 
             builder.Logging.AddProvider(new CrashFileLoggerProvider());
+            builder.Logging.AddFilter("Microsoft.WindowsAppRuntime", LogLevel.None);
 
 #if DEBUG
             builder.Logging.AddDebug();
