@@ -17,7 +17,9 @@ namespace Service.Category
         Task UpdateMainCategoryTypeAsync(CategoryDTO mainCategory, CategoryType newType);
         Task<DateTime> GetLastUpdatedAtAsync();
         Task PullAsync(int uid, DateTime lastUpdatedAt);
-        Task PushAsync();
+        Task PushAsync(CategoryDTO category);
+
+        Task PushPendingAsync(int userId);
     }
 
     public class CategoryService(ICategoryRepo categoryRepo, ICategoryApiRepo categoryApiRepo, ISyncCursorRepo syncCursorRepo) : ICategoryService
@@ -258,34 +260,39 @@ namespace Service.Category
             }
         }
 
-        public async Task PushAsync()
+        public async Task PushPendingAsync(int userId)
         {
             var pending = await categoryRepo.GetPendingPushAsync();
             foreach (var category in pending)
             {
-                try
-                {
-                    var response = await categoryApiRepo.PostCategoryAsync(new Model.Req.CategoryReq
-                    {
-                        CategoryId = category.CategoryId,
-                        Name = category.Name,
-                        IsMainTransactionCategory = category.IsMainCategory,
-                        ParentTransactionCategoryId = category.ParentExternalId,
-                        Inactive = category.Inactive,
-                        Color = null,
-                        Type = (int)category.Type
-                    });
+                await PushAsync(category);
+            }
+        }
 
-                    if (response.Id > 0)
-                    {
-                        category.ExternalId = response.Id;
-                        await categoryRepo.UpdateAsync(category);
-                    }
-                }
-                catch
+        public async Task PushAsync(CategoryDTO category)
+        {
+            try
+            {
+                var response = await categoryApiRepo.PostCategoryAsync(new Model.Req.CategoryReq
                 {
-                    // Continue with remaining records — failed one retries next cycle
+                    CategoryId = category.CategoryId,
+                    Name = category.Name,
+                    IsMainTransactionCategory = category.IsMainCategory,
+                    ParentTransactionCategoryId = category.ParentExternalId,
+                    Inactive = category.Inactive,
+                    Color = null,
+                    Type = (int)category.Type
+                });
+
+                if (response.Id > 0)
+                {
+                    category.ExternalId = response.Id;
+                    await categoryRepo.UpdateAsync(category);
                 }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
             }
         }
 

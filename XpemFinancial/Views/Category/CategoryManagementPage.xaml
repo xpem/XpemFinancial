@@ -12,6 +12,9 @@
     <ContentPage.Resources>
         <Utils:BoldConverter x:Key="BoldConverter" />
         <Utils:IndentConverter x:Key="IndentConverter" />
+        <Utils:CategoryTypeIconConverter x:Key="CategoryTypeIconConverter" />
+        <Utils:CategoryTypeColorConverter x:Key="CategoryTypeColorConverter" />
+        <Utils:IsNotNullConverter x:Key="IsNotNullConverter" />
     </ContentPage.Resources>
 
     <Shell.TitleView>
@@ -59,9 +62,7 @@
         </VerticalStackLayout>
 
         <!--  Category List  -->
-        <CollectionView
-            IsVisible="{Binding IsNotBusy}"
-            ItemsSource="{Binding Categories}">
+        <CollectionView IsVisible="{Binding IsNotBusy}" ItemsSource="{Binding Categories}">
             <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="vms:CategoryDisplayItem">
                     <Border
@@ -70,9 +71,7 @@
                         BackgroundColor="{StaticResource InputBackground}"
                         StrokeShape="RoundRectangle 8">
                         <Border.GestureRecognizers>
-                            <TapGestureRecognizer
-                                Command="{Binding Source={RelativeSource AncestorType={x:Type vms:CategoryManagementVM}}, Path=EditCategoryCommand}"
-                                CommandParameter="{Binding Category}" />
+                            <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type vms:CategoryManagementVM}}, Path=EditCategoryCommand}" CommandParameter="{Binding Category}" />
                         </Border.GestureRecognizers>
                         <Border.Triggers>
                             <DataTrigger
@@ -82,9 +81,7 @@
                                 <Setter Property="Opacity" Value="0.6" />
                             </DataTrigger>
                         </Border.Triggers>
-                        <Grid
-                            Margin="{Binding IsMainCategory, Converter={StaticResource IndentConverter}}"
-                            ColumnDefinitions="*,Auto">
+                        <Grid Margin="{Binding IsMainCategory, Converter={StaticResource IndentConverter}}" ColumnDefinitions="*,Auto,Auto">
                             <Label
                                 Grid.Column="0"
                                 FontAttributes="{Binding IsMainCategory, Converter={StaticResource BoldConverter}}"
@@ -94,10 +91,19 @@
                                 VerticalOptions="Center" />
                             <Label
                                 Grid.Column="1"
+                                Margin="0,0,6,0"
+                                FontFamily="Icons"
+                                FontSize="13"
+                                IsVisible="{Binding Category.Type, Converter={StaticResource IsNotNullConverter}}"
+                                Text="{Binding Category.Type, Converter={StaticResource CategoryTypeIconConverter}}"
+                                TextColor="{Binding Category.Type, Converter={StaticResource CategoryTypeColorConverter}}"
+                                VerticalOptions="Center" />
+                            <Label
+                                Grid.Column="2"
+                                Padding="6,2"
                                 BackgroundColor="{StaticResource PageBackground}"
                                 FontSize="11"
                                 IsVisible="{Binding IsSystemDefault}"
-                                Padding="6,2"
                                 Text="Sistema"
                                 TextColor="{StaticResource FontDark}"
                                 VerticalOptions="Center" />

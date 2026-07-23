@@ -158,7 +158,7 @@ public partial class CategoryEditVM(
                 }
 
                 await categoryService.UpdateLocalAsync(_editingCategory);
-                await categoryService.PushAsync();
+                await categoryService.PushAsync(_editingCategory);
 
                 await VMBase.ShowMessage("Sucesso", "Categoria atualizada com sucesso.");
             }
@@ -253,7 +253,7 @@ public partial class CategoryEditVM(
                 }
             }
 
-            await categoryService.PushAsync();
+            await categoryService.PushAsync(_editingCategory);
 
             IsInactive = _editingCategory.Inactive;
 
@@ -306,7 +306,16 @@ public partial class CategoryEditVM(
             // Pre-fill the CategoryType selector for MainCategory edit
             if (_editingCategory.IsMainCategory)
             {
-                SelectedCategoryTypeIndex = (int)_editingCategory.Type;
+                if (_editingCategory.Type is null)
+                {
+                    // If the type is null, default to "Both" (index 2)
+                    SelectedCategoryTypeIndex = 2;
+                }
+                else
+                {
+                    SelectedCategoryTypeIndex = (int)_editingCategory.Type;
+                }
+
                 _originalCategoryType = _editingCategory.Type;
             }
 

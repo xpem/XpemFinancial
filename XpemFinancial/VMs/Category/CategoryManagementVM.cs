@@ -4,6 +4,7 @@ using Model.DTO;
 using Service;
 using Service.Category;
 using XpemFinancial.Views;
+using XpemFinancial.VMs.Category;
 
 namespace XpemFinancial.VMs;
 
@@ -88,7 +89,7 @@ public partial class CategoryManagementVM(
                 }
             }
 
-            await categoryService.PushAsync();
+            await categoryService.PushAsync(category);
             await InitializeAsync();
         }
         catch
@@ -126,7 +127,7 @@ public partial class CategoryManagementVM(
                 }
             }
 
-            await categoryService.PushAsync();
+            await categoryService.PushAsync(category);
             await InitializeAsync();
         }
         catch

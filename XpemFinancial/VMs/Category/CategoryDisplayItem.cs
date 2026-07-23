@@ -1,6 +1,6 @@
 using Model.DTO;
 
-namespace XpemFinancial.VMs
+namespace XpemFinancial.VMs.Category
 {
     public class CategoryDisplayItem
     {

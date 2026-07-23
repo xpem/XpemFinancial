@@ -5,6 +5,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:Icons="clr-namespace:XpemFinancial.Resources"
     xmlns:Models="clr-namespace:Model.DTO;assembly=Model"
+    xmlns:mct="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
     xmlns:utils="clr-namespace:XpemFinancial.Utils"
     xmlns:vms="clr-namespace:XpemFinancial.VMs"
     x:DataType="vms:CategoryPickerVM"
@@ -38,7 +39,95 @@
     </Shell.TitleView>
     <ContentPage.Resources>
         <utils:BoldConverter x:Key="BoldConverter" />
-        <utils:IndentConverter x:Key="IndentConverter" />
+        <utils:InvertedBoolConverter x:Key="InvertedBoolConverter" />
+        <!--<utils:CategoryTypeIconConverter x:Key="CategoryTypeIconConverter" />
+        <utils:CategoryTypeColorConverter x:Key="CategoryTypeColorConverter" />
+        <utils:IsNotNullConverter x:Key="IsNotNullConverter" />-->
+
+        <!--  Template for parent categories that have children (expandable)  -->
+        <DataTemplate x:Key="ExpandableTemplate" x:DataType="utils:CategoryGroup">
+            <mct:Expander>
+                <mct:Expander.Header>
+                    <Grid Padding="15,12" ColumnDefinitions="*,Auto">
+                        <!--<Label
+                            Grid.Column="0"
+                            Margin="0,0,8,0"
+                            FontFamily="Icons"
+                            FontSize="13"
+                            IsVisible="{Binding Parent.Type, Converter={StaticResource IsNotNullConverter}}"
+                            Text="{Binding Parent.Type, Converter={StaticResource CategoryTypeIconConverter}}"
+                            TextColor="{Binding Parent.Type, Converter={StaticResource CategoryTypeColorConverter}}"
+                            VerticalOptions="Center" />-->
+                        <Label
+                            Grid.Column="0"
+                            FontAttributes="Bold"
+                            FontSize="16"
+                            Text="{Binding Parent.Name}"
+                            VerticalOptions="Center" />
+                        <Label
+                            Grid.Column="1"
+                            FontFamily="Icons"
+                            FontSize="12"
+                            Opacity="0.6"
+                            Text="{x:Static Icons:IconFont.ChevronDown}"
+                            TextColor="{StaticResource White}"
+                            VerticalOptions="Center" />
+                    </Grid>
+                </mct:Expander.Header>
+                <VerticalStackLayout BindableLayout.ItemsSource="{Binding Children}">
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate x:DataType="Models:CategoryDTO">
+                            <Grid Padding="30,10,15,10">
+                                <Grid.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type vms:CategoryPickerVM}}, Path=SelectItemCommand}" CommandParameter="{Binding .}" />
+                                </Grid.GestureRecognizers>
+                                <!--<Label
+                                    Grid.Column="0"
+                                    Margin="0,0,8,0"
+                                    FontFamily="Icons"
+                                    FontSize="13"
+                                    IsVisible="{Binding Type, Converter={StaticResource IsNotNullConverter}}"
+                                    Text="{Binding Type, Converter={StaticResource CategoryTypeIconConverter}}"
+                                    TextColor="{Binding Type, Converter={StaticResource CategoryTypeColorConverter}}"
+                                    VerticalOptions="Center" />-->
+                                <Label
+                                    FontSize="15"
+                                    Text="{Binding Name}"
+                                    VerticalOptions="Center" />
+                            </Grid>
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </VerticalStackLayout>
+            </mct:Expander>
+        </DataTemplate>
+
+        <!--  Template for standalone categories without children (tappable)  -->
+        <DataTemplate x:Key="SimpleTemplate" x:DataType="utils:CategoryGroup">
+            <Grid Padding="15,12">
+                <Grid.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type vms:CategoryPickerVM}}, Path=SelectItemCommand}" CommandParameter="{Binding Parent}" />
+                </Grid.GestureRecognizers>
+                <!--<Label
+                    Grid.Column="0"
+                    Margin="0,0,8,0"
+                    FontFamily="Icons"
+                    FontSize="13"
+                    IsVisible="{Binding Parent.Type, Converter={StaticResource IsNotNullConverter}}"
+                    Text="{Binding Parent.Type, Converter={StaticResource CategoryTypeIconConverter}}"
+                    TextColor="{Binding Parent.Type, Converter={StaticResource CategoryTypeColorConverter}}"
+                    VerticalOptions="Center" />-->
+                <Label
+                    FontAttributes="Bold"
+                    FontSize="16"
+                    Text="{Binding Parent.Name}"
+                    VerticalOptions="Center" />
+            </Grid>
+        </DataTemplate>
+
+        <utils:CategoryGroupTemplateSelector
+            x:Key="GroupTemplateSelector"
+            ExpandableTemplate="{StaticResource ExpandableTemplate}"
+            SimpleTemplate="{StaticResource SimpleTemplate}" />
     </ContentPage.Resources>
     <Grid RowDefinitions="Auto, *">
         <Grid Grid.Row="0">
@@ -56,6 +145,7 @@
                 WidthRequest="20"
                 Color="{StaticResource White}" />
         </Grid>
+
         <!--  Loading  -->
         <ActivityIndicator
             Grid.Row="1"
@@ -65,24 +155,35 @@
             VerticalOptions="Center"
             Color="{StaticResource White}" />
 
-        <!--  Lista  -->
+        <!--  Accordion view (grouped with Expanders)  -->
+        <ScrollView Grid.Row="1" IsVisible="{Binding IsSearchActive, Converter={StaticResource InvertedBoolConverter}}">
+            <VerticalStackLayout BindableLayout.ItemTemplateSelector="{StaticResource GroupTemplateSelector}" BindableLayout.ItemsSource="{Binding CategoryGroups}">
+                <BindableLayout.EmptyView>
+                    <Label
+                        Margin="20"
+                        FontSize="15"
+                        HorizontalOptions="Center"
+                        HorizontalTextAlignment="Center"
+                        Text="{Binding EmptyStateMessage}"
+                        TextColor="{StaticResource White}"
+                        VerticalOptions="Center" />
+                </BindableLayout.EmptyView>
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <!--  Flat search results  -->
         <CollectionView
-            x:Name="categoriesView"
             Grid.Row="1"
-            IsVisible="{Binding IsNotBusy}"
-            ItemSizingStrategy="MeasureFirstItem"
-            ItemsSource="{Binding Categories}"
-            RemainingItemsThreshold="{Binding RemainingItemsThreshold}"
-            RemainingItemsThresholdReachedCommand="{Binding LoadMoreCommand}"
-            SelectedItem="{Binding SelectedItem, Mode=TwoWay}"
-            SelectionMode="Single">
+            IsVisible="{Binding IsSearchActive}"
+            ItemsSource="{Binding FilteredCategories}"
+            SelectionMode="None">
             <CollectionView.EmptyView>
                 <Label
                     Margin="20"
                     FontSize="15"
                     HorizontalOptions="Center"
                     HorizontalTextAlignment="Center"
-                    Text="{Binding EmptyStateMessage}"
+                    Text="Nenhum resultado encontrado"
                     TextColor="{StaticResource White}"
                     VerticalOptions="Center" />
             </CollectionView.EmptyView>
@@ -92,21 +193,19 @@
                         <Grid.GestureRecognizers>
                             <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type vms:CategoryPickerVM}}, Path=SelectItemCommand}" CommandParameter="{Binding .}" />
                         </Grid.GestureRecognizers>
+                        <!--<Label
+                            Grid.Column="0"
+                            Margin="0,0,8,0"
+                            FontFamily="Icons"
+                            FontSize="13"
+                            IsVisible="{Binding Type, Converter={StaticResource IsNotNullConverter}}"
+                            Text="{Binding Type, Converter={StaticResource CategoryTypeIconConverter}}"
+                            TextColor="{Binding Type, Converter={StaticResource CategoryTypeColorConverter}}"
+                            VerticalOptions="Center" />-->
                         <Label
-                            Margin="{Binding IsMainCategory, Converter={StaticResource IndentConverter}}"
                             FontAttributes="{Binding IsMainCategory, Converter={StaticResource BoldConverter}}"
                             FontSize="16"
                             Text="{Binding Name}" />
-                        <VisualStateManager.VisualStateGroups>
-                            <VisualStateGroup Name="CommonStates">
-                                <VisualState Name="Normal" />
-                                <VisualState Name="PointerOver">
-                                    <VisualState.Setters>
-                                        <Setter Property="BackgroundColor" Value="#10000000" />
-                                    </VisualState.Setters>
-                                </VisualState>
-                            </VisualStateGroup>
-                        </VisualStateManager.VisualStateGroups>
                     </Grid>
                 </DataTemplate>
             </CollectionView.ItemTemplate>
