@@ -104,7 +104,6 @@
                 <Label Text="Tipo da categoria" />
                 <Border BackgroundColor="{StaticResource InputBackground}" StrokeShape="RoundRectangle 5">
                     <Picker
-                        Title="Selecionar tipo..."
                         ItemsSource="{Binding CategoryTypeOptions}"
                         SelectedIndex="{Binding SelectedCategoryTypeIndex}"
                         TextColor="{StaticResource FontLight}" />

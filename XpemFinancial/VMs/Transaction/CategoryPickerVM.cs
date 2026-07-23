@@ -11,22 +11,27 @@ namespace XpemFinancial.VMs;
 public partial class CategoryPickerVM(ICategoryService categoryService, IUserSessionService userSessionService) : VMBase, IQueryAttributable
 {
     // Instance-level cache: scoped to this navigation instance.
-    // Declared static previously, which caused stale data after logout/login with a different account.
     private List<CategoryDTO> _cachedCategories = [];
     // Pre-computed normalised names to avoid running RemoveDiacritics on every keystroke.
     private List<string> _cachedNormalizedNames = [];
-    private const int BatchSize = 20;
-    private List<CategoryDTO> _currentSource = [];
-    private int _loadedCount = 0;
-    private bool _isLoadingMore = false;
     private CancellationTokenSource _searchCts = new();
 
-    public event Action<CategoryDTO>? ScrollToItemRequested;
+    /// <summary>
+    /// Grouped categories for the accordion (Expander) view.
+    /// </summary>
+    [ObservableProperty] private List<CategoryGroup> categoryGroups = [];
 
-    [ObservableProperty] private RangeObservableCollection<CategoryDTO> categories = new();
-    [ObservableProperty] private CategoryDTO selectedItem;
+    /// <summary>
+    /// Flat filtered list shown during search.
+    /// </summary>
+    [ObservableProperty] private List<CategoryDTO> filteredCategories = [];
+
+    /// <summary>
+    /// Whether the search bar has text (controls which view is visible).
+    /// </summary>
+    [ObservableProperty] private bool isSearchActive;
+
     [ObservableProperty] private string searchText;
-    [ObservableProperty] private int remainingItemsThreshold = 5;
 
     // Separado do IsBusy para não esconder a lista nem desabilitar o SearchBar durante a busca
     [ObservableProperty] private bool isSearching;
@@ -58,7 +63,15 @@ public partial class CategoryPickerVM(ICategoryService categoryService, IUserSes
         _searchCts = new CancellationTokenSource();
         var token = _searchCts.Token;
 
+        if (string.IsNullOrWhiteSpace(newValue))
+        {
+            IsSearchActive = false;
+            IsSearching = false;
+            return;
+        }
+
         IsSearching = true;
+        IsSearchActive = true;
 
         Task.Run(async () =>
         {
@@ -67,21 +80,18 @@ public partial class CategoryPickerVM(ICategoryService categoryService, IUserSes
                 // Debounce: aguarda 150ms para evitar filtrar a cada tecla
                 await Task.Delay(150, token);
 
-                var filtered = string.IsNullOrWhiteSpace(newValue)
-                    ? _cachedCategories
-                    : FilterCategories(newValue);
+                var filtered = FilterCategories(newValue);
 
-                await MainThread.InvokeOnMainThreadAsync(async () =>
+                await MainThread.InvokeOnMainThreadAsync(() =>
                 {
                     if (token.IsCancellationRequested) return;
-                    await ReloadSourceAsync(filtered, showBusy: false);
+                    FilteredCategories = filtered;
                     IsSearching = false;
                 });
             }
             catch (OperationCanceledException)
             {
-                // Busca cancelada por nova digitação — não faz nada,
-                // a próxima chamada vai resetar IsSearching ao concluir
+                // Busca cancelada por nova digitação — não faz nada
             }
             catch (Exception)
             {
@@ -118,6 +128,8 @@ public partial class CategoryPickerVM(ICategoryService categoryService, IUserSes
     {
         if (_cachedCategories.Count == 0 || _needsRefresh)
         {
+            IsBusy = true;
+
             var allCategories = await categoryService.GetAllAsync();
             // Filter out inactive categories — each category is evaluated by its own Inactive flag only,
             // so active subcategories of inactive parents remain visible.
@@ -134,7 +146,42 @@ public partial class CategoryPickerVM(ICategoryService categoryService, IUserSes
             ? "Nenhuma categoria disponível para este tipo de transação"
             : null;
 
-        await ReloadSourceAsync(_cachedCategories);
+        // Build grouped data for accordion
+        CategoryGroups = BuildGroups();
+
+        IsBusy = false;
+    }
+
+    /// <summary>
+    /// Builds category groups: each parent with its children.
+    /// Orphan subcategories (parent not in the list) are shown as standalone groups.
+    /// </summary>
+    private List<CategoryGroup> BuildGroups()
+    {
+        var parentIds = new HashSet<int>(_cachedCategories
+            .Where(c => c.IsMainCategory && c.ExternalId.HasValue)
+            .Select(c => c.ExternalId!.Value));
+
+        var groups = new List<CategoryGroup>();
+
+        foreach (var cat in _cachedCategories)
+        {
+            if (cat.IsMainCategory)
+            {
+                var children = _cachedCategories
+                    .Where(c => !c.IsMainCategory && c.ParentExternalId == cat.ExternalId)
+                    .ToList();
+
+                groups.Add(new CategoryGroup { Parent = cat, Children = children });
+            }
+            // Orphan subcategory (parent not present after filtering)
+            else if (!cat.ParentExternalId.HasValue || !parentIds.Contains(cat.ParentExternalId.Value))
+            {
+                groups.Add(new CategoryGroup { Parent = cat, Children = [] });
+            }
+        }
+
+        return groups;
     }
 
     /// <summary>
@@ -158,56 +205,6 @@ public partial class CategoryPickerVM(ICategoryService categoryService, IUserSes
         return categories
             .Where(c => c.Type == targetType || c.Type == null)
             .ToList();
-    }
-
-    // ReloadSourceAsync — recria a coleção para forçar o CollectionView a re-renderizar no Android
-    private async Task ReloadSourceAsync(List<CategoryDTO> source, bool showBusy = true)
-    {
-        _currentSource = source;
-        _loadedCount = 0;
-        if (showBusy) IsBusy = true;
-
-        var firstBatch = _currentSource.Take(BatchSize).ToList();
-        _loadedCount = firstBatch.Count;
-
-        await MainThread.InvokeOnMainThreadAsync(() =>
-        {
-            // Trocar a referência da coleção força o CollectionView a re-renderizar completamente,
-            // contornando o bug do Android onde eventos de Reset/Add não invalidam o layout.
-            Categories = new RangeObservableCollection<CategoryDTO>(firstBatch);
-        });
-
-        if (showBusy) IsBusy = false;
-    }
-
-    [RelayCommand]
-    private async Task LoadMore()
-    {
-        if (_isLoadingMore || _loadedCount >= _currentSource.Count) return;
-        _isLoadingMore = true;
-        RemainingItemsThreshold = -1;
-
-        var anchorItem = Categories.ElementAtOrDefault(_loadedCount - 1);
-
-        try
-        {
-            await LoadNextBatchAsync();
-        }
-        finally
-        {
-            if (anchorItem is not null)
-                ScrollToItemRequested?.Invoke(anchorItem);
-
-            _isLoadingMore = false;
-            RemainingItemsThreshold = 5;
-        }
-    }
-
-    private async Task LoadNextBatchAsync()
-    {
-        var batch = _currentSource.Skip(_loadedCount).Take(BatchSize).ToList();
-        _loadedCount += batch.Count;
-        await MainThread.InvokeOnMainThreadAsync(() => Categories.AddRange(batch));
     }
 
     [RelayCommand]
@@ -240,11 +237,6 @@ public partial class CategoryPickerVM(ICategoryService categoryService, IUserSes
 
     public void ApplyQueryAttributes(IDictionary<string, object> query)
     {
-        if (query.TryGetValue("SelectedCategory", out var val) && val is CategoryDTO selected)
-        {
-            SelectedItem = selected;
-        }
-
         if (query.TryGetValue("TransactionType", out var typeVal) && typeVal is TransactionType transactionType)
         {
             _transactionTypeFilter = transactionType;
