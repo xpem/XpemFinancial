@@ -24,5 +24,7 @@ namespace Model.Resp.Api
         public bool IsMainTransactionCategory { get; set; }
 
         public int? ParentTransactionCategoryId { get; set; }
+
+        public int? Type { get; set; }
     }
 }

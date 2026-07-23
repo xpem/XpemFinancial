@@ -95,13 +95,31 @@
                             FontSize="16"
                             Text="{Binding ParentCategoryName, TargetNullValue='Selecionar...'}"
                             VerticalOptions="Center" />
-                        <!--<Label
-                            Margin="10,0,0,0"
-                            FontFamily="Icons"
-                            FontSize="15"
-                            Text="{x:Static Icons:IconFont.AngleRight}"
-                            VerticalOptions="Center" />-->
                     </HorizontalStackLayout>
+                </Border>
+            </VerticalStackLayout>
+
+            <!--  Tipo da categoria (Receita/Despesa/Ambos) — visível apenas para categoria principal  -->
+            <VerticalStackLayout IsVisible="{Binding IsMainCategory}" Spacing="4">
+                <Label Text="Tipo da categoria" />
+                <Border BackgroundColor="{StaticResource InputBackground}" StrokeShape="RoundRectangle 5">
+                    <Picker
+                        Title="Selecionar tipo..."
+                        ItemsSource="{Binding CategoryTypeOptions}"
+                        SelectedIndex="{Binding SelectedCategoryTypeIndex}"
+                        TextColor="{StaticResource FontLight}" />
+                </Border>
+            </VerticalStackLayout>
+
+            <!--  Tipo herdado — visível apenas para subcategorias (read-only)  -->
+            <VerticalStackLayout IsVisible="{Binding IsSubcategory}" Spacing="4">
+                <Label Text="Tipo (herdado)" />
+                <Border Padding="10" BackgroundColor="{StaticResource InputBackground}">
+                    <Label
+                        FontSize="16"
+                        Text="{Binding InheritedTypeDisplayText}"
+                        TextColor="{StaticResource Gray500}"
+                        VerticalOptions="Center" />
                 </Border>
             </VerticalStackLayout>
 

@@ -116,7 +116,6 @@
 
         <!--  FAB - Add Account Button  -->
         <Button
-            Grid.Row="1"
             Margin="16"
             Command="{Binding AddAccountCommand}"
             ContentLayout="Left, 10"

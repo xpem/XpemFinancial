@@ -2,6 +2,7 @@
 using Model.DTO;
 using Model.Resp;
 using Model.Resp.Api;
+using System.Reflection.Metadata;
 using System.Text.Json.Nodes;
 
 namespace Service
@@ -85,7 +86,7 @@ namespace Service
                     }
                 }
             }
-            else if (!apiresp.Success && apiresp.Content is "User/Password incorrect" or "Invalid Email")
+            else if (!apiresp.Success && apiresp.Content.Contains("User/Password incorrect") || apiresp.Content.Contains("Invalid Email"))
                 return new ServiceResp(false, ErrorTypes.WrongEmailOrPassword);
             else
                 return new ServiceResp(false, ErrorTypes.ServerUnavaliable);

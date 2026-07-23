@@ -318,7 +318,10 @@ namespace XpemFinancial.VMs
         async Task OpenCategoryPicker()
         {
             var navigationParameter = new Dictionary<string, object>
-            {        { "SelectedCategory", SelectedCategory }    };
+            {
+                { "SelectedCategory", SelectedCategory },
+                { "TransactionType", SelectedTransactionType }
+            };
 
             await Shell.Current.GoToAsync(nameof(CategoryPicker), true, navigationParameter);
         }

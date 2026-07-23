@@ -8,7 +8,7 @@ using XpemFinancial.Views;
 
 namespace XpemFinancial.VMs;
 
-public partial class CategoryPickerVM(ICategoryService categoryService, IUserSessionService userSessionService) : VMBase
+public partial class CategoryPickerVM(ICategoryService categoryService, IUserSessionService userSessionService) : VMBase, IQueryAttributable
 {
     // Instance-level cache: scoped to this navigation instance.
     // Declared static previously, which caused stale data after logout/login with a different account.
@@ -30,6 +30,17 @@ public partial class CategoryPickerVM(ICategoryService categoryService, IUserSes
 
     // Separado do IsBusy para não esconder a lista nem desabilitar o SearchBar durante a busca
     [ObservableProperty] private bool isSearching;
+
+    /// <summary>
+    /// Empty state message shown when the type filter yields zero results.
+    /// </summary>
+    [ObservableProperty] private string? emptyStateMessage;
+
+    /// <summary>
+    /// Transaction type context used to filter categories by compatible CategoryType.
+    /// Set via navigation parameters when opening the picker.
+    /// </summary>
+    private TransactionType? _transactionTypeFilter;
 
     // Sinaliza que o cache deve ser recarregado na próxima navegação (ex: após criar categoria)
     private bool _needsRefresh = false;
@@ -110,13 +121,43 @@ public partial class CategoryPickerVM(ICategoryService categoryService, IUserSes
             var allCategories = await categoryService.GetAllAsync();
             // Filter out inactive categories — each category is evaluated by its own Inactive flag only,
             // so active subcategories of inactive parents remain visible.
-            _cachedCategories = allCategories.Where(c => !c.Inactive).ToList();
+            var activeCategories = allCategories.Where(c => !c.Inactive).ToList();
+            // Apply transaction type filter to show only compatible categories.
+            _cachedCategories = FilterByTransactionType(activeCategories, _transactionTypeFilter);
             // Pre-compute normalised names once per navigation instance.
             _cachedNormalizedNames = _cachedCategories.Select(x => RemoveDiacritics(x.Name)).ToList();
             _needsRefresh = false;
         }
 
+        // Show empty state message when filter yields zero results
+        EmptyStateMessage = _cachedCategories.Count == 0
+            ? "Nenhuma categoria disponível para este tipo de transação"
+            : null;
+
         await ReloadSourceAsync(_cachedCategories);
+    }
+
+    /// <summary>
+    /// Filters categories based on the transaction type context.
+    /// Income → show Income + Both; Expense → show Expense + Both;
+    /// Transfer/Adjustment/null → show all.
+    /// </summary>
+    public static List<CategoryDTO> FilterByTransactionType(
+        List<CategoryDTO> categories,
+        TransactionType? transactionType)
+    {
+        if (transactionType is null
+            || transactionType == TransactionType.Transfer
+            || transactionType == TransactionType.Adjustment)
+            return categories;
+
+        var targetType = transactionType == TransactionType.Income
+            ? CategoryType.Income
+            : CategoryType.Expense;
+
+        return categories
+            .Where(c => c.Type == targetType || c.Type == null)
+            .ToList();
     }
 
     // ReloadSourceAsync — recria a coleção para forçar o CollectionView a re-renderizar no Android
@@ -202,7 +243,13 @@ public partial class CategoryPickerVM(ICategoryService categoryService, IUserSes
         if (query.TryGetValue("SelectedCategory", out var val) && val is CategoryDTO selected)
         {
             SelectedItem = selected;
-            query.Clear();
         }
+
+        if (query.TryGetValue("TransactionType", out var typeVal) && typeVal is TransactionType transactionType)
+        {
+            _transactionTypeFilter = transactionType;
+        }
+
+        query.Clear();
     }
 }

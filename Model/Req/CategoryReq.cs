@@ -18,5 +18,7 @@ namespace Model.Req
 
         [StringLength(8)]
         public string? Color { get; set; }
+
+        public int? Type { get; set; }
     }
 }

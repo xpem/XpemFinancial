@@ -15,8 +15,13 @@ namespace XpemFinancial.VMs
 
         public static async Task ShowMessage(string title, string message)
         {
+#if WINDOWS
+            if (Application.Current?.MainPage is not null)
+                await Application.Current.MainPage.DisplayAlert(title, message, "OK");
+#else
             var snackbar = Snackbar.Make(message, duration: TimeSpan.FromSeconds(3));
             await snackbar.Show();
+#endif
         }
     }
 }

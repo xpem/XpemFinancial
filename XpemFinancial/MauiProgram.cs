@@ -13,23 +13,20 @@ namespace XpemFinancial
     {
         public static MauiApp CreateMauiApp()
         {
-            //fonts: https://fonts.google.com/specimen/Playfair+Display
-            //icons: https://fontawesome.com/icons/right-to-bracket?s=solid
+            // fonts: https://fonts.google.com/specimen/Playfair+Display
+            // icons: https://fontawesome.com/icons/right-to-bracket?s=solid
             var builder = MauiApp.CreateBuilder();
-
-            builder.UseMauiApp<App>().UseMauiCommunityToolkit(options =>
-            {
-                options.SetShouldEnableSnackbarOnWindows(true);
-            });
 
             builder
                 .UseMauiApp<App>()
-                .ConfigureMauiHandlers(handlers =>
+#if !WINDOWS
+                .UseMauiCommunityToolkit(options =>
                 {
-#if ANDROID
-                    handlers.AddHandler<DatePicker, XpemFinancial.Platforms.Android.ThemedDatePickerHandler>();
-#endif
+                    options.SetShouldEnableSnackbarOnWindows(true);
                 })
+#else
+                .UseMauiCommunityToolkit()
+#endif
                 .ConfigureFonts(fonts =>
                 {
                     fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
@@ -37,7 +34,15 @@ namespace XpemFinancial
                     fonts.AddFont("Free-Solid-900.otf", "Icons");
                 });
 
+#if ANDROID
+            builder.ConfigureMauiHandlers(handlers =>
+            {
+                handlers.AddHandler<DatePicker, XpemFinancial.Platforms.Android.ThemedDatePickerHandler>();
+            });
+#endif
+
             builder.Logging.AddProvider(new CrashFileLoggerProvider());
+            builder.Logging.AddFilter("Microsoft.WindowsAppRuntime", LogLevel.None);
 
 #if DEBUG
             builder.Logging.AddDebug();
@@ -48,18 +53,13 @@ namespace XpemFinancial
             builder.Services.AddRepo();
             builder.Services.AddApiRepo();
             builder.Services.AddSingleton<SyncService>();
-            builder.Services.ShellRoutes();
+            builder.Services.AddShellRoutes();
 
             return builder.Build();
         }
 
-        public static IServiceCollection ShellRoutes(this IServiceCollection services)
+        public static IServiceCollection AddShellRoutes(this IServiceCollection services)
         {
-            // MainPage é raiz do Shell (AppShell.xaml) — registrar só no DI, não como rota
-            //services.AddTransient<Views.MainPage>();
-            //services.AddTransient<VMs.MainVM>();
-
-            // Páginas de navegação secundária
             services.AddTransientWithShellRoute<MainPage, MainVM>(nameof(MainPage));
             services.AddTransientWithShellRoute<Views.TransactionEditPage, VMs.TransactionEditVM>(nameof(Views.TransactionEditPage));
             services.AddTransientWithShellRoute<Views.CategoryPicker, VMs.CategoryPickerVM>(nameof(Views.CategoryPicker));
@@ -72,6 +72,7 @@ namespace XpemFinancial
             services.AddTransientWithShellRoute<Views.SignUpPage, VMs.SignUpVM>(nameof(Views.SignUpPage));
             services.AddTransientWithShellRoute<Views.UpdatePasswordPage, VMs.UpdatePasswordVM>(nameof(Views.UpdatePasswordPage));
             services.AddTransientWithShellRoute<Views.ChartPage, VMs.ChartVM>(nameof(Views.ChartPage));
+
             return services;
         }
     }
