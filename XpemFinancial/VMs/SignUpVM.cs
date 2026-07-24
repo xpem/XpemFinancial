@@ -22,47 +22,46 @@ namespace XpemFinancial.VMs
         {
             ErrorMessageIsVisible = false;
             ErrorMessage = string.Empty;
-            bool isValid = true;
 
             if (string.IsNullOrEmpty(Name) || string.IsNullOrEmpty(Email) || string.IsNullOrEmpty(Password) || string.IsNullOrEmpty(ConfirmPassword))
             {
+                IsRequired = true;
                 ErrorMessageIsVisible = true;
                 ErrorMessage = "Preencha todos os campos obrigatórios";
-                isValid = false;
+                return false;
             }
+
+            IsRequired = false;
 
             if (!ValidateEmail(Email))
             {
                 ErrorMessageIsVisible = true;
                 ErrorMessage = "Digite um email válido";
-                isValid = false;
+                return false;
             }
 
-            if (Password.Length < 4)
+            if (Password is null || Password.Length < 4)
             {
                 ErrorMessageIsVisible = true;
                 ErrorMessage = "A senha deve ter pelo menos 4 caracteres";
-                isValid =  false;
+                return false;
             }
 
-            if (!ConfirmPassword.Equals(Password, StringComparison.Ordinal))
+            if (ConfirmPassword is null || !ConfirmPassword.Equals(Password, StringComparison.Ordinal))
             {
                 ErrorMessageIsVisible = true;
                 ErrorMessage = "As senhas não coincidem";
-                isValid = false;
+                return false;
             }
 
-            if (!isValid)
-                IsRequired = true;
-            else
-                IsRequired = false;
-
-            return isValid;
+            return true;
         }
 
         public static bool ValidateEmail(string email)
         {
-            return Regex.IsMatch(email, @"\A(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)\Z", RegexOptions.IgnoreCase);
+            if (email is null) return false;
+
+                return Regex.IsMatch(email, @"\A(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)\Z", RegexOptions.IgnoreCase);
         }
 
         [RelayCommand]
