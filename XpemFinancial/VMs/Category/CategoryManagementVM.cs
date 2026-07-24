@@ -44,6 +44,12 @@ public partial class CategoryManagementVM(
     }
 
     [RelayCommand]
+    private async Task AddCategory()
+    {
+        await Shell.Current.GoToAsync(nameof(CategoryEditPage));
+    }
+
+    [RelayCommand]
     private async Task EditCategory(CategoryDTO category)
     {
         // System categories are read-only — don't navigate to edit
