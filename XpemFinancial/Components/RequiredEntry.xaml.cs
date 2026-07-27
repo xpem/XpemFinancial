@@ -1,10 +1,27 @@
+using XpemFinancial.Resources;
+
 namespace XpemFinancial.Components;
 
 public partial class RequiredEntry : ContentView
 {
+    private bool _isPasswordVisible;
+
     public RequiredEntry()
     {
         InitializeComponent();
+    }
+
+    /// <summary>
+    /// Propriedade computada que controla o estado real de IsPassword no Entry interno.
+    /// Quando IsPassword é true e o usuário não togglou, retorna true (senha oculta).
+    /// </summary>
+    public bool IsPasswordActive => IsPassword && !_isPasswordVisible;
+
+    private void OnTogglePasswordVisibility(object sender, EventArgs e)
+    {
+        _isPasswordVisible = !_isPasswordVisible;
+        OnPropertyChanged(nameof(IsPasswordActive));
+        TogglePasswordIcon.Text = _isPasswordVisible ? IconFont.EyeSlash : IconFont.Eye;
     }
 
     public static readonly BindableProperty LabelTextProperty = BindableProperty.Create(
@@ -64,7 +81,13 @@ public partial class RequiredEntry : ContentView
         returnType: typeof(bool),
         declaringType: typeof(RequiredEntry),
         defaultValue: false,
-        defaultBindingMode: BindingMode.OneWay);
+        defaultBindingMode: BindingMode.OneWay,
+        propertyChanged: (bindable, _, _) =>
+        {
+            var control = (RequiredEntry)bindable;
+            control._isPasswordVisible = false;
+            control.OnPropertyChanged(nameof(IsPasswordActive));
+        });
 
     public bool IsPassword
     {

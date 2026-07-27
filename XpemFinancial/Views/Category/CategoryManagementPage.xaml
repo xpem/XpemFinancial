@@ -18,19 +18,31 @@
     </ContentPage.Resources>
 
     <Shell.TitleView>
-        <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
-            <Label
+        <Grid VerticalOptions="Fill">
+            <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
+                <Label
+                    FontFamily="Icons"
+                    FontSize="17"
+                    Text="{x:Static Icons:IconFont.Tag}"
+                    TextColor="{StaticResource White}"
+                    VerticalOptions="Center" />
+                <Label
+                    FontSize="17"
+                    Text="Categorias"
+                    TextColor="{StaticResource White}"
+                    VerticalOptions="Center" />
+            </HorizontalStackLayout>
+            <Button
+                BackgroundColor="Transparent"
+                Command="{Binding AddCategoryCommand}"
+                ContentLayout="Left, 6"
                 FontFamily="Icons"
-                FontSize="17"
-                Text="{x:Static Icons:IconFont.Tag}"
+                FontSize="18"
+                HorizontalOptions="End"
+                Text="{x:Static Icons:IconFont.Plus}"
                 TextColor="{StaticResource White}"
                 VerticalOptions="Center" />
-            <Label
-                FontSize="17"
-                Text="Categorias"
-                TextColor="{StaticResource White}"
-                VerticalOptions="Center" />
-        </HorizontalStackLayout>
+        </Grid>
     </Shell.TitleView>
 
     <Grid RowDefinitions="*">

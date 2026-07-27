@@ -188,6 +188,7 @@ public partial class CategoryPickerVM(ICategoryService categoryService, IUserSes
     /// Filters categories based on the transaction type context.
     /// Income → show Income + Both; Expense → show Expense + Both;
     /// Transfer/Adjustment/null → show all.
+    /// Subcategories without an explicit type inherit the type from their parent.
     /// </summary>
     public static List<CategoryDTO> FilterByTransactionType(
         List<CategoryDTO> categories,
@@ -202,8 +203,27 @@ public partial class CategoryPickerVM(ICategoryService categoryService, IUserSes
             ? CategoryType.Income
             : CategoryType.Expense;
 
+        // Index parents by ExternalId for quick lookup
+        var parentLookup = categories
+            .Where(c => c.IsMainCategory && c.ExternalId.HasValue)
+            .ToDictionary(c => c.ExternalId!.Value);
+
         return categories
-            .Where(c => c.Type == targetType || c.Type == null)
+            .Where(c =>
+            {
+                // Category has explicit compatible type
+                if (c.Type == targetType) return true;
+
+                // Subcategory without type → inherit from parent
+                if (c.Type == null && !c.IsMainCategory && c.ParentExternalId.HasValue)
+                {
+                    return parentLookup.TryGetValue(c.ParentExternalId.Value, out var parent)
+                        && (parent.Type == targetType || parent.Type == null);
+                }
+
+                // Main category without type → show (type-agnostic)
+                return c.Type == null;
+            })
             .ToList();
     }
 

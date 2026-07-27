@@ -3,6 +3,7 @@
     x:Class="XpemFinancial.Components.RequiredEntry"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:Icons="clr-namespace:XpemFinancial.Resources"
     x:Name="this">
     <VerticalStackLayout>
         <Label Padding="0,10,0,0" Text="{Binding Source={x:Reference this}, Path=LabelText}" />
@@ -21,11 +22,32 @@
                     <Setter Property="StrokeThickness" Value="1" />
                 </DataTrigger>
             </Border.Triggers>
-            <Entry
-                IsPassword="{Binding Source={x:Reference this}, Path=IsPassword}"
-                IsTextPredictionEnabled="{Binding Source={x:Reference this}, Path=IsTextPredictionEnabled}"
-                MaxLength="{Binding Source={x:Reference this}, Path=MaxLength}"
-                Text="{Binding Source={x:Reference this}, Path=EntryValue}" />
+            <Grid ColumnDefinitions="*, Auto">
+                <Entry
+                    x:Name="InnerEntry"
+                    Grid.Column="0"
+                    IsPassword="{Binding Source={x:Reference this}, Path=IsPasswordActive}"
+                    IsTextPredictionEnabled="{Binding Source={x:Reference this}, Path=IsTextPredictionEnabled}"
+                    MaxLength="{Binding Source={x:Reference this}, Path=MaxLength}"
+                    Text="{Binding Source={x:Reference this}, Path=EntryValue}" />
+                <Label
+                    x:Name="TogglePasswordIcon"
+                    Grid.Column="0"
+                    Margin="0,0,10,0"
+                    FontFamily="Icons"
+                    FontSize="16"
+                    HorizontalOptions="End"
+                    IsVisible="{Binding Source={x:Reference this}, Path=IsPassword}"
+                    SemanticProperties.Description="Alternar visibilidade da senha"
+                    SemanticProperties.Hint="Toque para mostrar ou ocultar a senha"
+                    Text="{x:Static Icons:IconFont.Eye}"
+                    TextColor="{StaticResource Gray300}"
+                    VerticalOptions="Center">
+                    <Label.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnTogglePasswordVisibility" />
+                    </Label.GestureRecognizers>
+                </Label>
+            </Grid>
         </Border>
         <Label
             Padding="0,0,0,0"
