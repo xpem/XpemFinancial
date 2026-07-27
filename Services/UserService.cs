@@ -15,6 +15,8 @@ namespace Service
 
         Task<ServiceResp> SignInAsync(string email, string password);
 
+        Task<ServiceResp> SignInWithGoogleAsync(string idToken);
+
         Task<ServiceResp> SignUpAsync(string name, string email, string password);
 
         Task UpdateLastUpdate(int uid);
@@ -88,6 +90,62 @@ namespace Service
             }
             else if (!apiresp.Success && apiresp.Content.Contains("User/Password incorrect") || apiresp.Content.Contains("Invalid Email"))
                 return new ServiceResp(false, ErrorTypes.WrongEmailOrPassword);
+            else
+                return new ServiceResp(false, ErrorTypes.ServerUnavaliable);
+
+            return new ServiceResp(false, ErrorTypes.Unknown);
+        }
+
+        public async Task<ServiceResp> SignInWithGoogleAsync(string idToken)
+        {
+            var apiresp = await userApiRepo.GoogleSignInAsync(idToken);
+
+            if (apiresp.Success && apiresp.Content is not null)
+            {
+                JsonNode? tokenResp = JsonNode.Parse(apiresp.Content);
+                string? newToken = tokenResp?["token"]?.GetValue<string>();
+                string? refreshToken = tokenResp?["refreshToken"]?.GetValue<string>();
+
+                if (newToken is not null)
+                {
+                    ApiResp resp = await userApiRepo.GetAsync(newToken);
+
+                    if (resp.Success && resp.Content != null)
+                    {
+                        JsonNode? userResponse = JsonNode.Parse(resp.Content);
+                        if (userResponse is not null)
+                        {
+                            UserDTO user = new()
+                            {
+                                Id = userResponse["id"]?.GetValue<int>() ?? 0,
+                                Name = userResponse["name"]?.GetValue<string>(),
+                                Email = userResponse["email"]?.GetValue<string>(),
+                                Token = newToken,
+                                RefreshToken = refreshToken
+                            };
+
+                            UserDTO? actualUser = await userRepo.GetAsync();
+
+                            if (actualUser != null)
+                            {
+                                if (actualUser.Id == user.Id)
+                                    await userRepo.UpdateAsync(user);
+                                else
+                                {
+                                    await buildDbService.CleanLocalDatabaseAsync();
+                                    await userRepo.AddAsync(user);
+                                }
+                            }
+                            else
+                                await userRepo.AddAsync(user);
+
+                            return new ServiceResp(true, user);
+                        }
+                    }
+                }
+            }
+            else if (!apiresp.Success && apiresp.Content is not null && apiresp.Content.Contains("vinculado"))
+                return new ServiceResp(false, ErrorTypes.GoogleAuthEmailLinkedToPassword);
             else
                 return new ServiceResp(false, ErrorTypes.ServerUnavaliable);
 

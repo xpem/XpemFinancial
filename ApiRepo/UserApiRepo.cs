@@ -11,6 +11,7 @@ namespace ApiRepo
         Task<ApiResp> SignUpAsync(string name, string email, string password);
         Task<ApiResp> RecoverPasswordAsync(string email);
         Task<ApiResp> GetTokenAsync(string email, string password);
+        Task<ApiResp> GoogleSignInAsync(string idToken);
         Task<(bool success, string? newToken)> RefreshToken();
         Task<ApiResp> GetAsync(string userToken);
         Task<ApiResp> AuthRequestAsync(RequestsTypes requestsType, string url, string? jsonContent = null);
@@ -20,6 +21,7 @@ namespace ApiRepo
     {
         private const string UserEndpoint = "/user";
         private const string SessionEndpoint = "/user/session";
+        private const string GoogleSessionEndpoint = "/user/session/google";
         private const string RefreshSessionEndpoint = "/user/session/refresh";
         private const string RefreshTokenProperty = "refreshToken";
         private const string TokenProperty = "token";
@@ -49,6 +51,44 @@ namespace ApiRepo
 
             if (resp is null || resp.Content is null)
                 throw new InvalidOperationException("Resposta inválida ao obter token.");
+
+            if (!TryParseJson(resp.Content, out JsonNode? jResp))
+                return new ApiResp { Success = false, Content = resp.Content };
+
+            if (resp.Success)
+            {
+                string? token = GetStringValue(jResp, TokenProperty);
+
+                if (!string.IsNullOrWhiteSpace(token))
+                {
+                    string? refreshToken = GetStringValue(jResp, RefreshTokenProperty);
+                    string content = JsonSerializer.Serialize(new { token, refreshToken });
+
+                    return new ApiResp { Success = true, Content = content };
+                }
+            }
+            else
+            {
+                string? error = GetStringValue(jResp, ErrorsProperty) ?? GetStringValue(jResp, ErrorProperty);
+
+                return new ApiResp
+                {
+                    Success = false,
+                    Content = error ?? resp.Content
+                };
+            }
+
+            return new ApiResp { Success = false, Content = resp.Content };
+        }
+
+        public async Task<ApiResp> GoogleSignInAsync(string idToken)
+        {
+            string json = JsonSerializer.Serialize(new { idToken });
+
+            var resp = await HttpClientFunctions.Request(RequestsTypes.Post, ApiKeys.ApiAddress + GoogleSessionEndpoint, jsonContent: json);
+
+            if (resp is null || resp.Content is null)
+                throw new InvalidOperationException("Resposta inválida ao autenticar com Google.");
 
             if (!TryParseJson(resp.Content, out JsonNode? jResp))
                 return new ApiResp { Success = false, Content = resp.Content };
