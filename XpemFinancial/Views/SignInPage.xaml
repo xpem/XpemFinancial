@@ -62,6 +62,24 @@
             </Button.ImageSource>
         </Button>
 
+        <Button
+            Margin="0,0,0,20"
+            BackgroundColor="{StaticResource White}"
+            Command="{Binding SignInWithGoogleCommand}"
+            ContentLayout="Left, 10"
+            IsEnabled="{Binding BtnSignEnabled}"
+            SemanticProperties.Description="Entrar com Google"
+            SemanticProperties.Hint="Botão para acessar com conta Google"
+            Text="Entrar com Google"
+            TextColor="#333333">
+            <Button.IsVisible>
+                <OnPlatform x:TypeArguments="x:Boolean">
+                    <On Platform="Android" Value="True" />
+                    <On Platform="iOS,WinUI,MacCatalyst" Value="False" />
+                </OnPlatform>
+            </Button.IsVisible>
+        </Button>
+
         <HorizontalStackLayout>
             <Label
                 Margin="0,0,5,0"

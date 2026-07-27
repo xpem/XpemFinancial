@@ -20,5 +20,8 @@
         Unauthorized = 4,
         BodyContentNull = 5,
         EmailAlreadyExists = 6,
+        GoogleAuthEmailLinkedToPassword = 7,
+        GoogleAuthCancelled = 8,
+        GoogleAuthInvalidToken = 9,
     }
 }
