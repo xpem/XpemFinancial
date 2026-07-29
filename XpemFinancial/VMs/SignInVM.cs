@@ -19,9 +19,10 @@ namespace XpemFinancial.VMs
         [ObservableProperty] private string version = ((App)Application.Current)!.Version;
         [ObservableProperty] private bool isRequired;
 
-        // TODO: Substituir pelo Client ID Android do Google Cloud Console
-        private const string GoogleClientId = "314405769421-df6dqs151nbfs2e1rs0hi4o19t5h6frc.apps.googleusercontent.com";
-        private const string RedirectUri = "com.xpem.xpemfinancial:/oauth2redirect";
+        // O app abre o endpoint do servidor, que cuida de todo o OAuth com o Google.
+        // O servidor redireciona de volta via deep link com o token da API já pronto.
+        private const string GoogleSignInStartUrl = "https://xpem.com.br/api/user/session/google/start";
+        private const string CallbackUri = "com.xpem.xpemfinancial://oauth2";
 
         private async Task<bool> VerrifyFields()
         {
@@ -119,26 +120,41 @@ namespace XpemFinancial.VMs
                     return;
                 }
 
+                System.Diagnostics.Debug.WriteLine($"[GoogleSignIn] Abrindo: {GoogleSignInStartUrl}");
+
+                // O servidor cuida de todo o OAuth com o Google e devolve o token da API via deep link
                 var authResult = await WebAuthenticator.Default.AuthenticateAsync(
                     new WebAuthenticatorOptions
                     {
-                        Url = new Uri($"https://accounts.google.com/o/oauth2/v2/auth?client_id={GoogleClientId}&redirect_uri={RedirectUri}&response_type=id_token&scope=openid+email+profile&nonce={Guid.NewGuid()}"),
-                        CallbackUrl = new Uri(RedirectUri)
+                        Url = new Uri(GoogleSignInStartUrl),
+                        CallbackUrl = new Uri(CallbackUri)
                     });
 
-                string? idToken = authResult?.IdToken;
+                System.Diagnostics.Debug.WriteLine($"[GoogleSignIn] Callback recebido: {string.Join(", ", authResult?.Properties.Select(p => $"{p.Key}={p.Value}") ?? [])}");
 
-                if (string.IsNullOrWhiteSpace(idToken))
-                    idToken = authResult?.Properties.GetValueOrDefault("id_token");
-
-                if (string.IsNullOrWhiteSpace(idToken))
+                // O servidor devolve erro no query string em caso de falha
+                if (authResult?.Properties.TryGetValue("error", out string? googleError) == true && !string.IsNullOrWhiteSpace(googleError))
                 {
                     ErrorMessageIsVisible = true;
-                    ErrorMessage = "Não foi possível obter o token do Google.";
+                    ErrorMessage = "Erro ao autenticar com Google.";
+                    System.Diagnostics.Debug.WriteLine($"[GoogleSignIn] Erro recebido do servidor: {googleError}");
                     return;
                 }
 
-                var resp = await userService.SignInWithGoogleAsync(idToken);
+                // Servidor devolve token + refreshToken já prontos no deep link — sem segunda chamada à API
+                string? apiToken = authResult?.Properties.GetValueOrDefault("token");
+                string? refreshToken = authResult?.Properties.GetValueOrDefault("refreshToken");
+
+                System.Diagnostics.Debug.WriteLine($"[GoogleSignIn] token: {(string.IsNullOrWhiteSpace(apiToken) ? "NULO" : "OK")}");
+
+                if (string.IsNullOrWhiteSpace(apiToken))
+                {
+                    ErrorMessageIsVisible = true;
+                    ErrorMessage = "Não foi possível obter o token da sessão.";
+                    return;
+                }
+
+                var resp = await userService.SignInWithGoogleTokenAsync(apiToken, refreshToken);
 
                 if (resp.Success)
                 {
@@ -169,14 +185,18 @@ namespace XpemFinancial.VMs
             catch (TaskCanceledException)
             {
                 // Usuário cancelou o login
+                System.Diagnostics.Debug.WriteLine("[GoogleSignIn] Cancelado pelo usuário.");
             }
             catch (HttpRequestException ex)
             {
+                System.Diagnostics.Debug.WriteLine($"[GoogleSignIn] HttpRequestException: {ex.Message}");
                 ErrorMessageIsVisible = true;
                 ErrorMessage = $"Conexão: {ex.Message}";
             }
             catch (Exception ex)
             {
+                System.Diagnostics.Debug.WriteLine($"[GoogleSignIn] Exception: {ex.GetType().Name}: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[GoogleSignIn] StackTrace: {ex.StackTrace}");
                 ErrorMessageIsVisible = true;
                 ErrorMessage = $"{ex.GetType().Name}: {ex.Message}";
             }

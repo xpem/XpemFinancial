@@ -21,6 +21,8 @@ namespace XpemFinancial.VMs
         IRecurringRuleService recurringRuleService,
         ICategoryService categoryService) : VMBase, IQueryAttributable
     {
+        private static readonly System.Globalization.CultureInfo PtBr = new("pt-BR");
+
         #region Campos e Propriedades
 
         private int TransactionId { get; set; }
@@ -29,7 +31,7 @@ namespace XpemFinancial.VMs
         [ObservableProperty] private DateTime transactionDate;
         [ObservableProperty] private string description;
         [ObservableProperty] private string amount;
-        [ObservableProperty] private CategoryDTO selectedCategory;
+        [ObservableProperty] private CategoryDTO? selectedCategory;
         [ObservableProperty] private List<string> categories;
         [ObservableProperty] private bool installmentPanelIsVisible = false;
         [ObservableProperty] private int numberOfInstallments;
@@ -135,7 +137,7 @@ namespace XpemFinancial.VMs
         public async Task ApplySuggestion(TransactionDescriptionRes suggestion)
         {
             // Atribui direto ao campo para não re-disparar o hook de busca
-            description = suggestion.Description;
+            Description = suggestion.Description;
             OnPropertyChanged(nameof(Description));
 
             if (suggestion.CategoryId.HasValue)
@@ -530,11 +532,11 @@ namespace XpemFinancial.VMs
                 return;
             }
 
-            if (NumberOfInstallments > 0 && decimal.TryParse(Amount, System.Globalization.NumberStyles.Currency, new System.Globalization.CultureInfo("pt-BR"), out decimal totalAmount))
+            if (NumberOfInstallments > 0 && decimal.TryParse(Amount, System.Globalization.NumberStyles.Currency, PtBr, out decimal totalAmount))
             {
-                int installmentsToCalculate = (NumberOfInstallments + 1) - InitialInstallments;
-                decimal _totalAmountInstallments = totalAmount * installmentsToCalculate;
-                TotalAmountInstallments = _totalAmountInstallments.ToString("C", new System.Globalization.CultureInfo("pt-BR"));
+                int remainingInstallments = (NumberOfInstallments + 1) - InitialInstallments;
+                decimal totalAmountInstallments = totalAmount * remainingInstallments;
+                TotalAmountInstallments = totalAmountInstallments.ToString("N2", PtBr);
             }
             else
             {
@@ -548,6 +550,11 @@ namespace XpemFinancial.VMs
             {
                 InstallmentPanelIsVisible = true;
                 InitialInstallments = 1;
+            }
+            else
+            {
+                InstallmentPanelIsVisible = false;
+                InitialInstallments = 0;
             }
         }
 

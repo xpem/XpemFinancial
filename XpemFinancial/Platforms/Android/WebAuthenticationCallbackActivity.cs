@@ -10,6 +10,7 @@ namespace XpemFinancial.Platforms.Android
         DataScheme = CallbackScheme)]
     public class WebAuthenticationCallbackActivity : Microsoft.Maui.Authentication.WebAuthenticatorCallbackActivity
     {
+        // Scheme do deep link que o servidor usa para devolver o token ao app
         private const string CallbackScheme = "com.xpem.xpemfinancial";
     }
 }

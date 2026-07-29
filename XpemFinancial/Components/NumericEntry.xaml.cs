@@ -34,31 +34,50 @@ public partial class NumericEntry : ContentView
     [GeneratedRegex(@"\D")]
     private static partial Regex OnlyDigits();
 
+    private void MoveCursorToEnd()
+    {
+#if ANDROID
+        if (EntryNumeric?.Handler is Microsoft.Maui.Handlers.EntryHandler handler &&
+            handler.PlatformView is AndroidX.AppCompat.Widget.AppCompatEditText editText)
+        {
+            editText.Post(() =>
+            {
+                int pos = editText.Text?.Length ?? 0;
+                editText.SetSelection(pos);
+            });
+            return;
+        }
+#endif
+        EntryNumeric?.Dispatcher.Dispatch(() =>
+        {
+            if (EntryNumeric?.Text is string t)
+                EntryNumeric.CursorPosition = t.Length;
+        });
+    }
+
     private void EntryNumeric_TextChanged(object sender, TextChangedEventArgs e)
     {
         if (_isUpdating || EntryNumeric == null) return;
 
         string digits = OnlyDigits().Replace(e.NewTextValue ?? "", "");
 
-        if (string.IsNullOrEmpty(digits)) digits = "0";
-
-        digits = int.TryParse(digits, out int parsed) ? parsed.ToString() : "0";
+        int parsed = string.IsNullOrEmpty(digits) ? 0 : (int.TryParse(digits, out int p) ? p : 0);
+        string normalized = string.IsNullOrEmpty(digits) ? "" : parsed.ToString();
 
         _isUpdating = true;
         try
         {
-            // Corrige o texto na Entry apenas se necessário (evita loop)
-            if (EntryNumeric.Text != digits)
-                EntryNumeric.Text = digits;
-
-            // Sempre propaga o valor ao ViewModel via binding
+            // Propaga ao ViewModel — _isUpdating bloqueia OnExternalValueChanged
+            // de tocar no EntryNumeric.Text enquanto estamos dentro do TextChanged
             SetValue(TextProperty, parsed);
 
-            EntryNumeric.Dispatcher.Dispatch(() =>
-            {
-                if (EntryNumeric?.Text is string t)
-                    EntryNumeric.CursorPosition = t.Length;
-            });
+            // Só reescreve o texto se for necessário normalizar (ex: "007" → "7")
+            // Não reescreve se o campo está vazio — evita SetSelection em posição inválida
+            if (!string.IsNullOrEmpty(normalized) && EntryNumeric.Text != normalized)
+                EntryNumeric.Text = normalized; // vai disparar novo TextChanged que chama MoveCursorToEnd
+            else if (!string.IsNullOrEmpty(normalized))
+                MoveCursorToEnd();
+            // campo vazio: não chama MoveCursorToEnd — cursor já está em 0 naturalmente
         }
         finally
         {

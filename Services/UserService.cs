@@ -17,6 +17,12 @@ namespace Service
 
         Task<ServiceResp> SignInWithGoogleAsync(string idToken);
 
+        /// <summary>
+        /// Recebe o token da API já emitido pelo servidor após o fluxo OAuth via browser.
+        /// Busca os dados do usuário e salva localmente — sem chamar o endpoint Google do servidor.
+        /// </summary>
+        Task<ServiceResp> SignInWithGoogleTokenAsync(string apiToken, string? refreshToken);
+
         Task<ServiceResp> SignUpAsync(string name, string email, string password);
 
         Task UpdateLastUpdate(int uid);
@@ -94,6 +100,45 @@ namespace Service
                 return new ServiceResp(false, ErrorTypes.ServerUnavaliable);
 
             return new ServiceResp(false, ErrorTypes.Unknown);
+        }
+
+        public async Task<ServiceResp> SignInWithGoogleTokenAsync(string apiToken, string? refreshToken)
+        {
+            // O token já foi emitido pelo servidor — só precisa buscar os dados do usuário
+            ApiResp resp = await userApiRepo.GetAsync(apiToken);
+
+            if (!resp.Success || resp.Content is null)
+                return new ServiceResp(false, ErrorTypes.ServerUnavaliable);
+
+            JsonNode? userResponse = JsonNode.Parse(resp.Content);
+            if (userResponse is null)
+                return new ServiceResp(false, ErrorTypes.Unknown);
+
+            UserDTO user = new()
+            {
+                Id = userResponse["id"]?.GetValue<int>() ?? 0,
+                Name = userResponse["name"]?.GetValue<string>(),
+                Email = userResponse["email"]?.GetValue<string>(),
+                Token = apiToken,
+                RefreshToken = refreshToken
+            };
+
+            UserDTO? actualUser = await userRepo.GetAsync();
+
+            if (actualUser != null)
+            {
+                if (actualUser.Id == user.Id)
+                    await userRepo.UpdateAsync(user);
+                else
+                {
+                    await buildDbService.CleanLocalDatabaseAsync();
+                    await userRepo.AddAsync(user);
+                }
+            }
+            else
+                await userRepo.AddAsync(user);
+
+            return new ServiceResp(true, user);
         }
 
         public async Task<ServiceResp> SignInWithGoogleAsync(string idToken)
