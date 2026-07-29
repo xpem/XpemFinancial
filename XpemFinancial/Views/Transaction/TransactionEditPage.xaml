@@ -230,14 +230,16 @@
                         Text="até"
                         VerticalOptions="Center" />
                     <Components:NumericEntry Text="{Binding NumberOfInstallments}" VerticalOptions="Center" />
-                    <Label
-                        Margin="10,0"
-                        Text="Total restante:"
-                        VerticalOptions="Center" />
-                    <Label
-                        FontAttributes="Bold"
-                        Text="{Binding TotalAmountInstallments}"
-                        VerticalOptions="Center" />
+                    <HorizontalStackLayout>
+                        <Label
+                            Margin="10,0"
+                            Text="Total:"
+                            VerticalOptions="Center" />
+                        <Label
+                            FontAttributes="Bold"
+                            Text="{Binding TotalAmountInstallments}"
+                            VerticalOptions="Center" />
+                    </HorizontalStackLayout>
                 </HorizontalStackLayout>
                 <!--  Escopo de edição — visível apenas ao editar ocorrência recorrente  -->
                 <Border

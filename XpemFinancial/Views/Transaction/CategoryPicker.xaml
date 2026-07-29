@@ -48,26 +48,27 @@
         <DataTemplate x:Key="ExpandableTemplate" x:DataType="utils:CategoryGroup">
             <mct:Expander>
                 <mct:Expander.Header>
-                    <Grid Padding="15,12" ColumnDefinitions="*,Auto">
-                        <!--<Label
-                            Grid.Column="0"
-                            Margin="0,0,8,0"
-                            FontFamily="Icons"
-                            FontSize="13"
-                            IsVisible="{Binding Parent.Type, Converter={StaticResource IsNotNullConverter}}"
-                            Text="{Binding Parent.Type, Converter={StaticResource CategoryTypeIconConverter}}"
-                            TextColor="{Binding Parent.Type, Converter={StaticResource CategoryTypeColorConverter}}"
-                            VerticalOptions="Center" />-->
+                    <!--  Column 0 (*): tappable name area — selects the parent category
+                          Column 1 (56): chevron area — handled by the Expander itself to expand/collapse  -->
+                    <Grid Padding="15,12" ColumnDefinitions="*,56">
+                        <!--  Tapping the name selects the parent category directly  -->
                         <Label
                             Grid.Column="0"
                             FontAttributes="Bold"
                             FontSize="16"
                             Text="{Binding Parent.Name}"
-                            VerticalOptions="Center" />
+                            VerticalOptions="Center">
+                            <Label.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type vms:CategoryPickerVM}}, Path=SelectItemCommand}" CommandParameter="{Binding Parent}" />
+                            </Label.GestureRecognizers>
+                        </Label>
+                        <!--  Chevron: InputTransparent so taps fall through to the Expander header  -->
                         <Label
                             Grid.Column="1"
                             FontFamily="Icons"
                             FontSize="12"
+                            HorizontalOptions="Center"
+                            InputTransparent="True"
                             Opacity="0.6"
                             Text="{x:Static Icons:IconFont.ChevronDown}"
                             TextColor="{StaticResource White}"
