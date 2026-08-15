@@ -43,6 +43,9 @@ namespace ApiRepo
             if (resp.Error == ErrorTypes.ServerUnavaliable)
                 return 0;
 
+            if (resp.Error == ErrorTypes.RefreshTokenExpired)
+                throw new UnauthorizedAccessException("Sessão expirada.");
+
             if (!resp.Success || resp.Content is null)
                 throw new Exception($"Falha ao adicionar regra recorrente na API: {resp.Error}");
 

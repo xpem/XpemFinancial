@@ -23,5 +23,6 @@
         GoogleAuthEmailLinkedToPassword = 7,
         GoogleAuthCancelled = 8,
         GoogleAuthInvalidToken = 9,
+        RefreshTokenExpired = 10,
     }
 }

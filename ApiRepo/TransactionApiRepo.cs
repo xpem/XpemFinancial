@@ -47,6 +47,9 @@ namespace ApiRepo
             if (resp.Error == ErrorTypes.ServerUnavaliable)
                 return 0;
 
+            if (resp.Error == ErrorTypes.RefreshTokenExpired)
+                throw new UnauthorizedAccessException("Sessão expirada.");
+
             if (!resp.Success || resp.Content is null)
                 throw new Exception($"Falha ao adicionar transação na API: {resp.Error}");
 
@@ -68,6 +71,9 @@ namespace ApiRepo
             // Server unreachable — local update already applied, sync will retry later.
             if (resp.Error == ErrorTypes.ServerUnavaliable)
                 return;
+
+            if (resp.Error == ErrorTypes.RefreshTokenExpired)
+                throw new UnauthorizedAccessException("Sessão expirada.");
 
             if (!resp.Success)
                 throw new Exception($"Falha ao atualizar transação na API: {resp.Error}");
