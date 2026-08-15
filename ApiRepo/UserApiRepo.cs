@@ -12,7 +12,7 @@ namespace ApiRepo
         Task<ApiResp> RecoverPasswordAsync(string email);
         Task<ApiResp> GetTokenAsync(string email, string password);
         Task<ApiResp> GoogleSignInAsync(string idToken);
-        Task<(bool success, string? newToken)> RefreshToken();
+        Task<(bool success, string? newToken, ErrorTypes? error)> RefreshToken();
         Task<ApiResp> GetAsync(string userToken);
         Task<ApiResp> AuthRequestAsync(RequestsTypes requestsType, string url, string? jsonContent = null);
     }
@@ -119,27 +119,41 @@ namespace ApiRepo
             return new ApiResp { Success = false, Content = resp.Content };
         }
 
-        public async Task<(bool success, string? newToken)> RefreshToken()
+        public async Task<(bool success, string? newToken, ErrorTypes? error)> RefreshToken()
         {
             UserDTO? user = await userRepo.GetAsync();
 
             if (string.IsNullOrWhiteSpace(user?.RefreshToken))
-                return (false, null);
+                return (false, null, ErrorTypes.RefreshTokenExpired);
 
             string json = JsonSerializer.Serialize(new { refreshToken = user.RefreshToken });
 
             var resp = await HttpClientFunctions.Request(RequestsTypes.Post, ApiKeys.ApiAddress + RefreshSessionEndpoint, jsonContent: json);
 
-            if (!resp.Success || string.IsNullOrWhiteSpace(resp.Content))
-                return (false, null);
+            if (!resp.Success)
+            {
+                // Se o servidor retornou erro, verificar se é refresh token expirado ou inválido
+                if (resp.Error == ErrorTypes.Unauthorized || 
+                    (resp.Content?.Contains("Invalid or expired refresh token") ?? false) ||
+                    (resp.Content?.Contains("expired") ?? false))
+                {
+                    return (false, null, ErrorTypes.RefreshTokenExpired);
+                }
+
+                // Outro tipo de erro (rede, servidor, etc)
+                return (false, null, resp.Error ?? ErrorTypes.ServerUnavaliable);
+            }
+
+            if (string.IsNullOrWhiteSpace(resp.Content))
+                return (false, null, ErrorTypes.Unknown);
 
             if (!TryParseJson(resp.Content, out JsonNode? jResp))
-                return (false, null);
+                return (false, null, ErrorTypes.Unknown);
 
             string? newToken = GetStringValue(jResp, TokenProperty);
 
             if (string.IsNullOrWhiteSpace(newToken))
-                return (false, null);
+                return (false, null, ErrorTypes.Unknown);
 
             string? newRefreshToken = GetStringValue(jResp, RefreshTokenProperty);
 
@@ -147,7 +161,7 @@ namespace ApiRepo
             user.RefreshToken = newRefreshToken;
             await userRepo.UpdateAsync(user);
 
-            return (true, newToken);
+            return (true, newToken, null);
         }
 
         public async Task<ApiResp> AuthRequestAsync(RequestsTypes requestsType, string url, string? jsonContent = null)
@@ -163,11 +177,35 @@ namespace ApiRepo
             if (!resp.TryRefreshToken)
                 return resp;
 
-            (bool refreshTokenSuccess, string? newToken) = await RefreshToken();
+            // Token expirou, tentar refresh
+            (bool refreshTokenSuccess, string? newToken, ErrorTypes? refreshError) = await RefreshToken();
 
-            if (!refreshTokenSuccess || string.IsNullOrWhiteSpace(newToken))
-                return resp;
+            if (!refreshTokenSuccess)
+            {
+                // Refresh falhou - retornar erro específico
+                return new ApiResp
+                {
+                    Success = false,
+                    Error = refreshError ?? ErrorTypes.RefreshTokenExpired,
+                    TryRefreshToken = false,
+                    Content = refreshError == ErrorTypes.RefreshTokenExpired 
+                        ? "Sessão expirada. Por favor, faça login novamente." 
+                        : resp.Content
+                };
+            }
 
+            if (string.IsNullOrWhiteSpace(newToken))
+            {
+                return new ApiResp
+                {
+                    Success = false,
+                    Error = ErrorTypes.Unknown,
+                    TryRefreshToken = false,
+                    Content = "Erro ao renovar token de autenticação."
+                };
+            }
+
+            // Refresh bem-sucedido - tentar novamente a requisição original
             return await HttpClientFunctions.Request(requestsType, url, newToken, jsonContent);
         }
 

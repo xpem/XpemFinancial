@@ -31,6 +31,9 @@ namespace ApiRepo
             if (resp.Error == ErrorTypes.ServerUnavaliable)
                 return req;
 
+            if (resp.Error == ErrorTypes.RefreshTokenExpired)
+                throw new UnauthorizedAccessException("Sessão expirada.");
+
             if (!resp.Success || resp.Content is null)
                 throw new Exception($"Falha ao ajustar balanço na API: {resp.Error}");
 
@@ -62,6 +65,9 @@ namespace ApiRepo
             if (resp.Error == ErrorTypes.ServerUnavaliable)
                 return [];
 
+            if (resp.Error == ErrorTypes.RefreshTokenExpired)
+                throw new UnauthorizedAccessException("Sessão expirada.");
+
             if (!resp.Success)
                 throw new Exception($"Falha ao buscar contas na API: {resp.Error}");
 
@@ -83,6 +89,9 @@ namespace ApiRepo
             if (resp.Error == ErrorTypes.ServerUnavaliable)
                 throw new Exception("Servidor indisponível ao criar conta.");
 
+            if (resp.Error == ErrorTypes.RefreshTokenExpired)
+                throw new UnauthorizedAccessException("Sessão expirada.");
+
             if (!resp.Success || resp.Content is null)
                 throw new Exception($"Falha ao criar conta na API: {resp.Error}");
 
@@ -100,6 +109,9 @@ namespace ApiRepo
 
             if (resp.Error == ErrorTypes.ServerUnavaliable)
                 throw new Exception("Servidor indisponível ao atualizar conta.");
+
+            if (resp.Error == ErrorTypes.RefreshTokenExpired)
+                throw new UnauthorizedAccessException("Sessão expirada.");
 
             if (!resp.Success || resp.Content is null)
                 throw new Exception($"Falha ao atualizar conta na API: {resp.Error}");

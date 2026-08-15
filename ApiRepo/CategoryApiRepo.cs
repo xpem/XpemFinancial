@@ -33,6 +33,9 @@ namespace ApiRepo
             if (!resp.Success || resp.Content is null)
                 throw new Exception($"Falha ao adicionar categoria na API: {resp.Error}");
 
+            if (resp.Error == ErrorTypes.RefreshTokenExpired)
+                throw new UnauthorizedAccessException("Sessão expirada.");
+
             return JsonSerializer.Deserialize<CategoryPushRes>(resp.Content, _jsonOptions)
                 ?? throw new Exception("Resposta inválida ao adicionar categoria na API.");
         }
