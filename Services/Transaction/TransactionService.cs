@@ -344,11 +344,25 @@ namespace Service.Transaction
             }
         }
 
+        /// <summary>
+        /// Soft-deletes (marks as Inactive) all occurrences with Date >= fromDate.
+        /// Occurrences with Date < fromDate are PRESERVED and not modified.
+        /// </summary>
+        /// <param name="recurringRuleId">The recurring rule ID</param>
+        /// <param name="fromDate">The starting date (inclusive). Occurrences before this date are preserved.</param>
         public async Task DeleteFutureOccurrencesAsync(Guid recurringRuleId, DateTime fromDate)
         {
             var occurrences = await GetByRecurringRuleIdAsync(recurringRuleId);
-            foreach (var occurrence in occurrences.Where(o => o.Date >= fromDate))
+            var toDelete = occurrences.Where(o => o.Date >= fromDate && !o.Inactive).ToList();
+            
+            System.Diagnostics.Debug.WriteLine(
+                $"[DeleteFutureOccurrences] Rule {recurringRuleId}: " +
+                $"Found {occurrences.Count()} total, marking {toDelete.Count} as inactive (Date >= {fromDate:yyyy-MM-dd})");
+
+            foreach (var occurrence in toDelete)
             {
+                System.Diagnostics.Debug.WriteLine(
+                    $"  → Marking inactive: ID={occurrence.Id}, Date={occurrence.Date:yyyy-MM-dd}, Desc={occurrence.Description}");
                 occurrence.Inactive = true;
                 occurrence.UpdatedAt = DateTime.Now;
                 await transactionRepo.Update(occurrence);
