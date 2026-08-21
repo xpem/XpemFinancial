@@ -90,10 +90,36 @@ namespace Service.Recurring
                     }
 
                     // Req 6.3: Deduplication by TransactionId — if a record with this
-                    // deterministic Guid already exists, skip generation
+                    // deterministic Guid already exists, skip generation.
+                    // Note: GetByTransactionIdAsync filters out inactive records (Inactive = true),
+                    // so we need to check separately for inactive occurrences that may need reactivation.
                     var existing = await transactionRepo.GetByTransactionIdAsync(occurrence.TransactionId);
                     if (existing is not null)
                     {
+                        existingDates.Add(date.Date);
+                        continue;
+                    }
+
+                    // Check if an inactive occurrence with this TransactionId exists.
+                    // This can happen after EditScope.ThisAndFuture soft-deletes future occurrences
+                    // and then attempts to regenerate them with the same deterministic TransactionId.
+                    var inactiveOccurrence = (await transactionService.GetByRecurringRuleIdAsync(rule.RecurringRuleId))
+                        .FirstOrDefault(t => t.TransactionId == occurrence.TransactionId && t.Inactive);
+                    
+                    if (inactiveOccurrence is not null)
+                    {
+                        // Reactivate and update the existing inactive occurrence instead of creating a new one
+                        inactiveOccurrence.Inactive = false;
+                        inactiveOccurrence.Description = occurrence.Description;
+                        inactiveOccurrence.Amount = occurrence.Amount;
+                        inactiveOccurrence.Type = occurrence.Type;
+                        inactiveOccurrence.CategoryId = occurrence.CategoryId;
+                        inactiveOccurrence.CategoryExternalId = occurrence.CategoryExternalId;
+                        inactiveOccurrence.AccountId = occurrence.AccountId;
+                        inactiveOccurrence.AccountExternalId = occurrence.AccountExternalId;
+                        inactiveOccurrence.Date = occurrence.Date;
+                        inactiveOccurrence.UpdatedAt = DateTime.Now;
+                        await transactionService.UpdateAsync(inactiveOccurrence, isOnline: false);
                         existingDates.Add(date.Date);
                         continue;
                     }

@@ -113,14 +113,31 @@ namespace Service.Recurring
                             rule.AccountId = req.UpdatedRule.AccountId;
                             rule.Frequency = req.UpdatedRule.Frequency;
                             rule.EndDate = req.UpdatedRule.EndDate;
+                            
+                            // Update StartDate to the edited occurrence date.
+                            // This ensures that when syncing with the server, only occurrences
+                            // from this date onwards are regenerated, preserving past occurrences.
+                            rule.StartDate = targetOccurrence.Date;
                             rule.UpdatedAt = DateTime.Now;
 
-                            await transactionService.DeleteFutureOccurrencesAsync(req.RecurringRuleId, targetOccurrence.Date);
+                            // Update the rule in local DB
                             await recurringRuleRepo.UpdateAsync(rule);
-                            await recurringScheduler.GeneratePendingAsync([rule]);
 
+                            // Push rule to server FIRST (if online) to ensure other clients
+                            // see the new StartDate before receiving converted transactions
                             if (isOnline)
                                 await PushRuleAsync(rule);
+
+                            // Convert past occurrences to standalone transactions.
+                            // This preserves them even after sync, since the rule's new StartDate
+                            // will no longer cover these dates.
+                            // IMPORTANT: This updates transactions and pushes them to the server,
+                            // so the rule MUST be updated on the server first to avoid race conditions.
+                            await ConvertPastOccurrencesToStandaloneAsync(req.RecurringRuleId, targetOccurrence.Date, isOnline);
+
+                            // Soft-delete future occurrences and regenerate them with new rule values
+                            await transactionService.DeleteFutureOccurrencesAsync(req.RecurringRuleId, targetOccurrence.Date);
+                            await recurringScheduler.GeneratePendingAsync([rule]);
 
                             break;
                         }
@@ -313,6 +330,27 @@ namespace Service.Recurring
         }
 
         // ── helpers ──────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Converts past recurring occurrences (Date < cutoffDate) into standalone transactions
+        /// by removing their RecurringRuleId link. This preserves them when the rule's StartDate
+        /// is moved forward, ensuring they survive sync operations.
+        /// </summary>
+        private async Task ConvertPastOccurrencesToStandaloneAsync(Guid recurringRuleId, DateTime cutoffDate, bool isOnline)
+        {
+            var allOccurrences = await transactionService.GetByRecurringRuleIdAsync(recurringRuleId);
+            var pastOccurrences = allOccurrences.Where(o => o.Date < cutoffDate && !o.Inactive).ToList();
+
+            foreach (var occurrence in pastOccurrences)
+            {
+                // Remove the recurring rule link to make it a standalone transaction
+                occurrence.RecurringRuleId = null;
+                occurrence.Repetition = Repetition.None;
+                occurrence.UpdatedAt = DateTime.Now;
+                // Push to server immediately if online to maintain consistency
+                await transactionService.UpdateAsync(occurrence, isOnline);
+            }
+        }
 
         private async Task PushRuleAsync(RecurringRuleDTO rule)
         {
