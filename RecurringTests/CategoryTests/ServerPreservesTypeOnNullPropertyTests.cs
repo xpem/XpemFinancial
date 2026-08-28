@@ -98,12 +98,13 @@ public class ServerPreservesTypeOnNullPropertyTests
         using var ctx = factory.CreateDbContext();
         var stored = ctx.TransactionCategory.Single(c => c.CategoryId == categoryId && c.UserId == uid);
 
-        return stored.Type == existingType;
+        // Cast stored.Type to int for comparison (TransactionCategoryType? vs CategoryType comparison)
+        return ((int?)stored.Type) == ((int?)existingType);
     }
 
     /// <summary>
     /// For a new category (not existing on server) with Type=null in the request,
-    /// the server SHALL default to Type=2 (Both).
+    /// the server SHALL preserve Type=null (representing "Both" categories).
     /// **Validates: Requirements 11.1, 11.3**
     /// </summary>
     [Property(MaxTest = 100)]
@@ -135,11 +136,11 @@ public class ServerPreservesTypeOnNullPropertyTests
         };
         await service.UpsertAsync(req, uid);
 
-        // Verify the stored Type defaults to 2 (Both)
+        // Verify the stored Type defaults to null (Both) when not specified
         using var ctx = factory.CreateDbContext();
         var stored = ctx.TransactionCategory.Single(c => c.CategoryId == categoryId && c.UserId == uid);
 
-        return stored.Type == 2;
+        return stored.Type == null;
     }
 
     /// <summary>

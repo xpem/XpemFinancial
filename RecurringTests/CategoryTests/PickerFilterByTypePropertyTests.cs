@@ -20,12 +20,12 @@ namespace RecurringTests.CategoryTests;
 public class PickerFilterByTypePropertyTests
 {
     /// <summary>
-    /// Generates an arbitrary CategoryDTO with a random CategoryType.
+    /// Generates an arbitrary CategoryDTO with a random CategoryType (or null for "both").
     /// </summary>
     private static Gen<CategoryDTO> CategoryWithRandomTypeGen()
     {
         return from name in Gen.Elements("Salary", "Rent", "Food", "Transport", "Gifts", "Health", "Education", "Other")
-               from type in Gen.Elements(CategoryType.Income, CategoryType.Expense, CategoryType.Both)
+               from typeOption in Gen.Elements(0, 1, 2) // 0=Income, 1=Expense, 2=null(both)
                from extId in Gen.Choose(1, 10000)
                select new CategoryDTO
                {
@@ -37,7 +37,7 @@ public class PickerFilterByTypePropertyTests
                    Inactive = false,
                    UserId = 1,
                    SystemDefault = false,
-                   Type = type,
+                   Type = typeOption == 0 ? CategoryType.Income : typeOption == 1 ? CategoryType.Expense : null,
                    CreatedAt = DateTime.UtcNow,
                    UpdatedAt = DateTime.UtcNow,
                };
@@ -54,7 +54,7 @@ public class PickerFilterByTypePropertyTests
     }
 
     /// <summary>
-    /// Property 5a: For Income context, ALL returned categories have Type == Income OR Type == Both.
+    /// Property 5a: For Income context, ALL returned categories have Type == Income OR Type == null (both).
     /// NO categories with Type == Expense appear in the filtered result.
     /// **Validates: Requirements 7.1**
     /// </summary>
@@ -66,21 +66,21 @@ public class PickerFilterByTypePropertyTests
             // Act
             var filtered = CategoryPickerVM.FilterByTransactionType(categories, TransactionType.Income);
 
-            // Assert: every returned category must be Income or Both
-            bool allCompatible = filtered.All(c => c.Type == CategoryType.Income || c.Type == CategoryType.Both);
+            // Assert: every returned category must be Income or null (both)
+            bool allCompatible = filtered.All(c => c.Type == CategoryType.Income || c.Type == null);
 
             // Assert: no Expense-only categories in the result
             bool noExpenseOnly = !filtered.Any(c => c.Type == CategoryType.Expense);
 
             return allCompatible
-                .Label("All returned categories must have Type == Income or Type == Both")
+                .Label("All returned categories must have Type == Income or Type == null (both)")
                 .And(noExpenseOnly)
                 .Label("No categories with Type == Expense should appear in Income context");
         });
     }
 
     /// <summary>
-    /// Property 5b: For Expense context, ALL returned categories have Type == Expense OR Type == Both.
+    /// Property 5b: For Expense context, ALL returned categories have Type == Expense OR Type == null (both).
     /// NO categories with Type == Income appear in the filtered result.
     /// **Validates: Requirements 7.2**
     /// </summary>
@@ -92,14 +92,14 @@ public class PickerFilterByTypePropertyTests
             // Act
             var filtered = CategoryPickerVM.FilterByTransactionType(categories, TransactionType.Expense);
 
-            // Assert: every returned category must be Expense or Both
-            bool allCompatible = filtered.All(c => c.Type == CategoryType.Expense || c.Type == CategoryType.Both);
+            // Assert: every returned category must be Expense or null (both)
+            bool allCompatible = filtered.All(c => c.Type == CategoryType.Expense || c.Type == null);
 
             // Assert: no Income-only categories in the result
             bool noIncomeOnly = !filtered.Any(c => c.Type == CategoryType.Income);
 
             return allCompatible
-                .Label("All returned categories must have Type == Expense or Type == Both")
+                .Label("All returned categories must have Type == Expense or Type == null (both)")
                 .And(noIncomeOnly)
                 .Label("No categories with Type == Income should appear in Expense context");
         });
@@ -107,7 +107,7 @@ public class PickerFilterByTypePropertyTests
 
     /// <summary>
     /// Property 5c: For Income context, ALL compatible categories from the input are present in the result.
-    /// This verifies the filter does not accidentally drop valid Income/Both categories.
+    /// This verifies the filter does not accidentally drop valid Income/null(both) categories.
     /// **Validates: Requirements 7.1**
     /// </summary>
     [Property(MaxTest = 100)]
@@ -118,8 +118,8 @@ public class PickerFilterByTypePropertyTests
             // Act
             var filtered = CategoryPickerVM.FilterByTransactionType(categories, TransactionType.Income);
 
-            // Expected: all categories that are Income or Both
-            var expected = categories.Where(c => c.Type == CategoryType.Income || c.Type == CategoryType.Both).ToList();
+            // Expected: all categories that are Income or null (both)
+            var expected = categories.Where(c => c.Type == CategoryType.Income || c.Type == null).ToList();
 
             bool countMatches = filtered.Count == expected.Count;
 
@@ -130,7 +130,7 @@ public class PickerFilterByTypePropertyTests
 
     /// <summary>
     /// Property 5d: For Expense context, ALL compatible categories from the input are present in the result.
-    /// This verifies the filter does not accidentally drop valid Expense/Both categories.
+    /// This verifies the filter does not accidentally drop valid Expense/null(both) categories.
     /// **Validates: Requirements 7.2**
     /// </summary>
     [Property(MaxTest = 100)]
@@ -141,8 +141,8 @@ public class PickerFilterByTypePropertyTests
             // Act
             var filtered = CategoryPickerVM.FilterByTransactionType(categories, TransactionType.Expense);
 
-            // Expected: all categories that are Expense or Both
-            var expected = categories.Where(c => c.Type == CategoryType.Expense || c.Type == CategoryType.Both).ToList();
+            // Expected: all categories that are Expense or null (both)
+            var expected = categories.Where(c => c.Type == CategoryType.Expense || c.Type == null).ToList();
 
             bool countMatches = filtered.Count == expected.Count;
 

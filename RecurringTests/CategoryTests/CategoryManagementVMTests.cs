@@ -213,7 +213,7 @@ public class CategoryManagementVMTests
 
         // Assert — service methods should never be called since dialog was not confirmed
         await _categoryService.DidNotReceive().UpdateLocalAsync(Arg.Any<CategoryDTO>());
-        await _categoryService.DidNotReceive().PushAsync();
+        await _categoryService.DidNotReceive().PushAsync(Arg.Any<CategoryDTO>());
     }
 
     /// <summary>

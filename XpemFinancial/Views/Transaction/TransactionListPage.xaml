@@ -80,14 +80,13 @@
                     BorderWidth="1"
                     Command="{Binding ToggleFiltersCommand}"
                     CornerRadius="5"
-                    HeightRequest="40"
-                    WidthRequest="40">
+                    Style="{StaticResource NavButton}">
                     <Button.Triggers>
                         <DataTrigger
                             Binding="{Binding ShowFilters}"
                             TargetType="Button"
                             Value="True">
-                            <Setter Property="BackgroundColor" Value="#2bbf69" />
+                            <Setter Property="BackgroundColor" Value="#758292" />
                         </DataTrigger>
                         <DataTrigger
                             Binding="{Binding ShowFilters}"
@@ -100,7 +99,7 @@
                         <FontImageSource
                             FontFamily="Icons"
                             Glyph="{x:Static Icons:IconFont.Filter}"
-                            Size="18"
+                            Size="20"
                             Color="#d6e0eb" />
                     </Button.ImageSource>
                 </Button>
@@ -180,17 +179,25 @@
 
                     <!--  Action Buttons  -->
                     <Grid ColumnDefinitions="*, *" ColumnSpacing="10">
-                        <Button
+                        <!--<Button
                             BackgroundColor="#2bbf69"
                             Command="{Binding SearchByDateRangeCommand}"
                             Text="Buscar por Período"
-                            TextColor="White" />
+                            TextColor="Black" />-->
                         <Button
                             Grid.Column="1"
                             BackgroundColor="#758292"
                             Command="{Binding ClearFiltersCommand}"
                             Text="Limpar Filtros"
-                            TextColor="White" />
+                            TextColor="White">
+                            <Button.ImageSource>
+                                <FontImageSource
+                                    FontFamily="Icons"
+                                    Glyph="{x:Static Icons:IconFont.Xmark}"
+                                    Size="20"
+                                    Color="#d6e0eb" />
+                            </Button.ImageSource>
+                        </Button>
                     </Grid>
                 </VerticalStackLayout>
             </Border>
@@ -230,13 +237,13 @@
                         FontSize="12"
                         HeightRequest="35"
                         Text="Exportar CSV"
-                        TextColor="White">
+                        TextColor="Black">
                         <Button.ImageSource>
                             <FontImageSource
                                 FontFamily="Icons"
                                 Glyph="{x:Static Icons:IconFont.FileExport}"
                                 Size="14"
-                                Color="White" />
+                                Color="Black" />
                         </Button.ImageSource>
                     </Button>
                 </Grid>

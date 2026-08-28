@@ -21,7 +21,7 @@ public class CategoryTypeSerializationPropertyTests
     /// </summary>
     private static Gen<CategoryType> ValidCategoryType()
     {
-        return Gen.Elements(CategoryType.Income, CategoryType.Expense, CategoryType.Both);
+        return Gen.Elements(CategoryType.Income, CategoryType.Expense);
     }
 
     /// <summary>
@@ -48,7 +48,7 @@ public class CategoryTypeSerializationPropertyTests
 
     /// <summary>
     /// Property 1: The integer representations match the spec-defined values
-    /// (Income = 0, Expense = 1, Both = 2), ensuring client-server serialization compatibility.
+    /// (Income = 0, Expense = 1), ensuring client-server serialization compatibility.
     /// **Validates: Requirements 1.3**
     /// </summary>
     [Property(MaxTest = 100)]
@@ -64,7 +64,6 @@ public class CategoryTypeSerializationPropertyTests
                 {
                     CategoryType.Income => intValue == 0,
                     CategoryType.Expense => intValue == 1,
-                    CategoryType.Both => intValue == 2,
                     _ => false
                 };
 
