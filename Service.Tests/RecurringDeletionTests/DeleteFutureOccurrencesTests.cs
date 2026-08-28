@@ -41,13 +41,40 @@ namespace RecurringTests.RecurringDeletionTests
 
         public Task DisposeAsync() => Task.CompletedTask;
 
+        private async Task<(int userId, int accountId)> SeedUserAndAccount()
+        {
+            using var db = await _dbFactory.CreateDbContextAsync();
+            
+            var user = new UserDTO
+            {
+                Email = "test@test.com",
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            db.User.Add(user);
+            await db.SaveChangesAsync();
+
+            var account = new AccountDTO
+            {
+                Name = "Test Account",
+                UserId = user.Id,
+                CurrentBalance = 0,
+                AccountId = Guid.NewGuid(),
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            db.Account.Add(account);
+            await db.SaveChangesAsync();
+
+            return (user.Id, account.Id);
+        }
+
         [Fact]
         public async Task DeleteFutureOccurrences_ShouldPreservePastMonths()
         {
             // Arrange: Criar 4 ocorrências de uma regra recorrente
+            var (userId, accountId) = await SeedUserAndAccount();
             var recurringRuleId = Guid.NewGuid();
-            var userId = 1;
-            var accountId = (int?)null;
 
             var january = new TransactionDTO
             {
@@ -135,9 +162,8 @@ namespace RecurringTests.RecurringDeletionTests
         public async Task DeleteFutureOccurrences_WithAlreadyDeletedPastOccurrence_ShouldNotReactivate()
         {
             // Arrange: Criar ocorrências onde fevereiro já foi excluído manualmente
+            var (userId, accountId) = await SeedUserAndAccount();
             var recurringRuleId = Guid.NewGuid();
-            var userId = 1;
-            var accountId = (int?)null;
 
             var january = new TransactionDTO
             {
@@ -210,9 +236,8 @@ namespace RecurringTests.RecurringDeletionTests
         public async Task DeleteFutureOccurrences_EntireRule_ShouldDeleteAllOccurrences()
         {
             // Arrange
+            var (userId, accountId) = await SeedUserAndAccount();
             var recurringRuleId = Guid.NewGuid();
-            var userId = 1;
-            var accountId = (int?)null;
 
             var january = new TransactionDTO
             {

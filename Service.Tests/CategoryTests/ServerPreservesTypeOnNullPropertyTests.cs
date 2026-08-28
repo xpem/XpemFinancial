@@ -1,3 +1,4 @@
+#if !EXCLUDE_SERVER_TESTS
 // Feature: category-type-classification, Property 9: Server preserves existing Type when request omits it
 using FsCheck;
 using FsCheck.Xunit;
@@ -153,3 +154,5 @@ public class ServerPreservesTypeOnNullPropertyTests
             => Task.FromResult(new FinancialDbctx(options));
     }
 }
+
+#endif

@@ -150,7 +150,7 @@ namespace Repo
             if (transactionId == Guid.Empty) return null;
 
             using var db = await DbCtx.CreateDbContextAsync();
-            return await db.Transaction.FirstOrDefaultAsync(t => t.TransactionId == transactionId && !t.Inactive);
+            return await db.Transaction.FirstOrDefaultAsync(t => t.TransactionId == transactionId);
         }
 
         public async Task<DateTime> GetMaxUpdatedAtAsync()

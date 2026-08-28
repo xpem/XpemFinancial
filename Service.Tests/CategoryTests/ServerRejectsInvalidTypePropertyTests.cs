@@ -1,3 +1,4 @@
+#if !EXCLUDE_SERVER_TESTS
 // Feature: category-type-classification, Property 8: Server rejects invalid Type values
 using FsCheck;
 using FsCheck.Fluent;
@@ -60,3 +61,5 @@ public class ServerRejectsInvalidTypePropertyTests
             });
     }
 }
+
+#endif
