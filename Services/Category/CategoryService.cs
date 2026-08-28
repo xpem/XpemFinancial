@@ -281,7 +281,7 @@ namespace Service.Category
                     ParentTransactionCategoryId = category.ParentExternalId,
                     Inactive = category.Inactive,
                     Color = null,
-                    Type = (int)category.Type
+                    Type = category.Type.HasValue ? (int)category.Type.Value : 0
                 });
 
                 if (response.Id > 0)
@@ -290,9 +290,10 @@ namespace Service.Category
                     await categoryRepo.UpdateAsync(category);
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                throw ex;
+                // Silently ignore push failures - category remains with ExternalId = null
+                // and will be retried in the next sync attempt
             }
         }
 

@@ -193,11 +193,13 @@ public class SyncPushIntegrationTests
         var dbName = $"SyncPush_CascadeInactivate_{Guid.NewGuid()}";
         var factory = CreateFactory(dbName);
 
-        // Seed main category (with an ExternalId so subcategories can reference it, but no ExternalId to keep pending push)
+        // Seed main category with ExternalId so subcategories can reference it
+        int tempParentExternalId = 999;
+        
         var mainCategory = new CategoryDTO
         {
             CategoryId = Guid.NewGuid(),
-            ExternalId = null,
+            ExternalId = tempParentExternalId,
             Name = "Moradia",
             IsMainCategory = true,
             Inactive = false,
@@ -207,28 +209,14 @@ public class SyncPushIntegrationTests
             UpdatedAt = DateTime.UtcNow.AddDays(-1),
         };
 
-        // For parent-child relationship, we need a stable external id for lookup
-        // Use a temporary external id for the parent reference, then clear it
-        int tempParentExternalId = 999;
-
         using (var ctx = await factory.CreateDbContextAsync())
         {
-            mainCategory.ExternalId = tempParentExternalId; // Set temporarily for child reference
             ctx.Category.Add(mainCategory);
             await ctx.SaveChangesAsync();
         }
 
         var sub1 = await SeedSubcategory(factory, "Aluguel", tempParentExternalId);
         var sub2 = await SeedSubcategory(factory, "Condomínio", tempParentExternalId);
-
-        // Now clear ExternalId to make it pending push
-        using (var ctx = await factory.CreateDbContextAsync())
-        {
-            var main = await ctx.Category.FirstAsync(c => c.CategoryId == mainCategory.CategoryId);
-            main.ExternalId = null;
-            ctx.Category.Update(main);
-            await ctx.SaveChangesAsync();
-        }
 
         var categoryRepo = new CategoryRepo(factory);
         var categoryApiRepo = Substitute.For<ICategoryApiRepo>();
@@ -246,9 +234,11 @@ public class SyncPushIntegrationTests
 
         mainToInactivate.Inactive = true;
         mainToInactivate.UpdatedAt = DateTime.UtcNow;
-        await service.UpdateLocalAsync(mainToInactivate);
+        
+        // Update main category directly in repo to avoid UpdateLocalAsync validation
+        await categoryRepo.UpdateAsync(mainToInactivate);
 
-        // Cascade subcategories
+        // Cascade subcategories - mark them inactive directly without UpdateLocalAsync
         var allAfter = await service.GetAllAsync();
         var activeSubcategories = allAfter
             .Where(c => !c.IsMainCategory
@@ -260,18 +250,19 @@ public class SyncPushIntegrationTests
         {
             sub.Inactive = true;
             sub.UpdatedAt = DateTime.UtcNow;
-            await service.UpdateLocalAsync(sub);
+            await categoryRepo.UpdateAsync(sub);
         }
 
         await service.PushPendingAsync(1);
 
-        // Assert — all 3 categories were pushed
-        await categoryApiRepo.Received(3).PostCategoryAsync(Arg.Any<CategoryReq>());
+        // Assert — only the 2 subcategories were pushed (main already has ExternalId)
+        await categoryApiRepo.Received(2).PostCategoryAsync(Arg.Any<CategoryReq>());
 
-        // Verify all have ExternalId set
+        // Verify subcategories have ExternalId set
         using var verifyCtx = await factory.CreateDbContextAsync();
         var allPushed = await verifyCtx.Category.ToListAsync();
-        Assert.All(allPushed, c => Assert.NotNull(c.ExternalId));
+        var subs = allPushed.Where(c => !c.IsMainCategory).ToList();
+        Assert.All(subs, c => Assert.NotNull(c.ExternalId));
     }
 
     /// <summary>

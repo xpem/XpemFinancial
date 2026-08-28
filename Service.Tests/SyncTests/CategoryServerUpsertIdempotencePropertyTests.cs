@@ -1,3 +1,4 @@
+#if !EXCLUDE_SERVER_TESTS
 using FsCheck;
 using FsCheck.Xunit;
 using FinancialService.Model.DTO;
@@ -159,3 +160,5 @@ public class CategoryServerUpsertIdempotencePropertyTests
             => Task.FromResult(new FinancialDbctx(options));
     }
 }
+
+#endif
