@@ -184,6 +184,11 @@ public partial class CategoryEditVM(
 
             await Shell.Current.GoToAsync("..");
         }
+        catch (UnauthorizedAccessException)
+        {
+            await VMBase.ShowMessage("Sessão expirada", "Sessão expirada. Faça login novamente.");
+            await Shell.Current.GoToAsync($"//SignInPage");
+        }
         catch (Exception ex)
         {
             await VMBase.ShowMessage("Erro", $"Não foi possível salvar a categoria: {ex.Message}");
@@ -260,6 +265,11 @@ public partial class CategoryEditVM(
             var message = newInactiveState ? "Categoria inativada com sucesso." : "Categoria reativada com sucesso.";
             await VMBase.ShowMessage("Sucesso", message);
             await Shell.Current.GoToAsync("..");
+        }
+        catch (UnauthorizedAccessException)
+        {
+            await VMBase.ShowMessage("Sessão expirada", "Sessão expirada. Faça login novamente.");
+            await Shell.Current.GoToAsync($"//SignInPage");
         }
         catch (Exception ex)
         {

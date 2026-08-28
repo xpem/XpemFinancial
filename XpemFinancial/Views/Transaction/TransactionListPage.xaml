@@ -1,0 +1,364 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="XpemFinancial.Views.Transaction.TransactionListPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:Icons="clr-namespace:XpemFinancial.Resources"
+    xmlns:Utils="clr-namespace:XpemFinancial.Utils"
+    xmlns:dto="clr-namespace:Model.DTO;assembly=Model"
+    xmlns:vms="clr-namespace:XpemFinancial.VMs.Transaction"
+    x:DataType="vms:TransactionListVM"
+    Shell.FlyoutBehavior="Flyout">
+
+    <Shell.TitleView>
+        <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
+            <Label
+                FontFamily="Icons"
+                FontSize="17"
+                Text="{x:Static Icons:IconFont.ListCheck}"
+                TextColor="{StaticResource White}"
+                VerticalOptions="Center" />
+            <Label
+                FontSize="17"
+                Text="Transações"
+                TextColor="{StaticResource White}"
+                VerticalOptions="Center" />
+        </HorizontalStackLayout>
+    </Shell.TitleView>
+
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <Utils:AmountToColorConverter x:Key="AmountToColorConverter" />
+            <Utils:IsRecurringConverter x:Key="IsRecurringConverter" />
+            <Utils:IsFutureDateConverter x:Key="IsFutureDateConverter" />
+
+            <Style x:Key="NavButton" TargetType="Button">
+                <Setter Property="BorderColor" Value="#9da9b9" />
+                <Setter Property="BorderWidth" Value="1" />
+                <Setter Property="CornerRadius" Value="0" />
+                <Setter Property="HeightRequest" Value="20" />
+                <Setter Property="BackgroundColor" Value="Transparent" />
+            </Style>
+        </ResourceDictionary>
+    </ContentPage.Resources>
+
+    <ScrollView>
+        <VerticalStackLayout Padding="10" Spacing="10">
+
+            <!--  Navigation and Period Display  -->
+            <Grid ColumnDefinitions="*, Auto">
+                <HorizontalStackLayout Margin="0,0,0,0">
+                    <Button Command="{Binding LoadPreviousPeriodCommand}" Style="{StaticResource NavButton}">
+                        <Button.ImageSource>
+                            <FontImageSource
+                                FontFamily="Icons"
+                                Glyph="{x:Static Icons:IconFont.CaretLeft}"
+                                Size="20" />
+                        </Button.ImageSource>
+                    </Button>
+                    <Border Margin="5,0" Stroke="#9da9b9">
+                        <Label
+                            Margin="10"
+                            HeightRequest="20"
+                            Text="{Binding MonthYearDisplay}"
+                            TextColor="#d6e0eb" />
+                    </Border>
+                    <Button Command="{Binding LoadNextPeriodCommand}" Style="{StaticResource NavButton}">
+                        <Button.ImageSource>
+                            <FontImageSource
+                                FontFamily="Icons"
+                                Glyph="{x:Static Icons:IconFont.CaretRight}"
+                                Size="20" />
+                        </Button.ImageSource>
+                    </Button>
+                </HorizontalStackLayout>
+
+                <!--  Filter Toggle Button  -->
+                <Button
+                    Grid.Column="1"
+                    BorderColor="#9da9b9"
+                    BorderWidth="1"
+                    Command="{Binding ToggleFiltersCommand}"
+                    CornerRadius="5"
+                    HeightRequest="40"
+                    WidthRequest="40">
+                    <Button.Triggers>
+                        <DataTrigger
+                            Binding="{Binding ShowFilters}"
+                            TargetType="Button"
+                            Value="True">
+                            <Setter Property="BackgroundColor" Value="#2bbf69" />
+                        </DataTrigger>
+                        <DataTrigger
+                            Binding="{Binding ShowFilters}"
+                            TargetType="Button"
+                            Value="False">
+                            <Setter Property="BackgroundColor" Value="Transparent" />
+                        </DataTrigger>
+                    </Button.Triggers>
+                    <Button.ImageSource>
+                        <FontImageSource
+                            FontFamily="Icons"
+                            Glyph="{x:Static Icons:IconFont.Filter}"
+                            Size="18"
+                            Color="#d6e0eb" />
+                    </Button.ImageSource>
+                </Button>
+            </Grid>
+
+            <!--  Loading indicator  -->
+            <ActivityIndicator
+                HorizontalOptions="Center"
+                IsRunning="{Binding IsBusy}"
+                IsVisible="{Binding IsBusy}"
+                Color="#2bbf69" />
+
+            <!--  Search Filters  -->
+            <Border
+                Padding="10"
+                IsVisible="{Binding ShowFilters}"
+                Stroke="#232c39"
+                StrokeShape="5">
+                <VerticalStackLayout Spacing="10">
+                    <!--  Search by Description  -->
+                    <Entry
+                        Placeholder="Buscar por descrição..."
+                        PlaceholderColor="#758292"
+                        Text="{Binding SearchDescription}"
+                        TextColor="#d6e0eb" />
+
+                    <!--  Category Picker  -->
+                    <Picker
+                        Title="Filtrar por Categoria"
+                        ItemDisplayBinding="{Binding Name}"
+                        ItemsSource="{Binding AvailableCategories}"
+                        SelectedItem="{Binding SelectedCategory}"
+                        TextColor="#d6e0eb"
+                        TitleColor="#758292" />
+
+                    <!--  Date Range  -->
+                    <!--<Grid ColumnDefinitions="*, *" ColumnSpacing="10">
+                        <VerticalStackLayout>
+                            <Label
+                                FontSize="12"
+                                Text="Data Inicial"
+                                TextColor="#758292" />
+                            <DatePicker
+                                Date="{Binding StartDate}"
+                                Format="dd/MM/yyyy"
+                                TextColor="#d6e0eb" />
+                        </VerticalStackLayout>
+                        <VerticalStackLayout Grid.Column="1">
+                            <Label
+                                FontSize="12"
+                                Text="Data Final"
+                                TextColor="#758292" />
+                            <DatePicker
+                                Date="{Binding EndDate}"
+                                Format="dd/MM/yyyy"
+                                TextColor="#d6e0eb" />
+                        </VerticalStackLayout>
+                    </Grid>-->
+
+                    <!--  Income/Expense Filters  -->
+                    <Grid ColumnDefinitions="*, *" ColumnSpacing="10">
+                        <HorizontalStackLayout Spacing="5">
+                            <CheckBox IsChecked="{Binding FilterIncomeOnly}" Color="#2bbf69" />
+                            <Label
+                                Text="Apenas Entradas"
+                                TextColor="#d6e0eb"
+                                VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+                        <HorizontalStackLayout Grid.Column="1" Spacing="5">
+                            <CheckBox IsChecked="{Binding FilterExpenseOnly}" Color="#f75c5c" />
+                            <Label
+                                Text="Apenas Saídas"
+                                TextColor="#d6e0eb"
+                                VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+                    </Grid>
+
+                    <!--  Action Buttons  -->
+                    <Grid ColumnDefinitions="*, *" ColumnSpacing="10">
+                        <Button
+                            BackgroundColor="#2bbf69"
+                            Command="{Binding SearchByDateRangeCommand}"
+                            Text="Buscar por Período"
+                            TextColor="White" />
+                        <Button
+                            Grid.Column="1"
+                            BackgroundColor="#758292"
+                            Command="{Binding ClearFiltersCommand}"
+                            Text="Limpar Filtros"
+                            TextColor="White" />
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+
+            <!--  Transaction List  -->
+            <!--<Border
+                Padding="0"
+                Stroke="#232c39"
+                StrokeShape="5">-->
+            <Grid RowDefinitions="Auto, *">
+
+                <!--  Header with count and export button  -->
+                <Grid
+                    Padding="10"
+                    BackgroundColor="#232c39"
+                    ColumnDefinitions="*, Auto">
+                    <HorizontalStackLayout Spacing="10" VerticalOptions="Center">
+                        <Label
+                            FontAttributes="Bold"
+                            FontSize="20"
+                            Text="Transações"
+                            TextColor="#d6e0eb"
+                            VerticalOptions="Center" />
+                        <Label
+                            FontSize="16"
+                            Text="{Binding FilteredTransactions.Count, StringFormat='({0})'}"
+                            TextColor="#758292"
+                            VerticalOptions="Center" />
+                    </HorizontalStackLayout>
+
+                    <!--  Export Button  -->
+                    <Button
+                        Grid.Column="1"
+                        BackgroundColor="#2bbf69"
+                        Command="{Binding ExportToCsvCommand}"
+                        CornerRadius="5"
+                        FontSize="12"
+                        HeightRequest="35"
+                        Text="Exportar CSV"
+                        TextColor="White">
+                        <Button.ImageSource>
+                            <FontImageSource
+                                FontFamily="Icons"
+                                Glyph="{x:Static Icons:IconFont.FileExport}"
+                                Size="14"
+                                Color="White" />
+                        </Button.ImageSource>
+                    </Button>
+                </Grid>
+
+                <!--  List  -->
+                <CollectionView
+                    Grid.Row="1"
+                    Margin="0,10,0,0"
+                    ItemsSource="{Binding FilteredTransactions}"
+                    SelectedItem="{Binding SelectedTransaction}"
+                    SelectionMode="Single">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="dto:TransactionDTO">
+                            <Border
+                                Margin="5"
+                                Padding="10"
+                                Stroke="#232c39"
+                                StrokeShape="5">
+                                <Grid
+                                    ColumnDefinitions="*, Auto"
+                                    RowDefinitions="Auto, Auto, Auto"
+                                    RowSpacing="5">
+
+                                    <!--  Description  -->
+                                    <Label
+                                        FontAttributes="Bold"
+                                        FontSize="15"
+                                        LineBreakMode="TailTruncation"
+                                        Text="{Binding Description}"
+                                        TextColor="#d6e0eb" />
+
+                                    <!--  Amount and Recurring Icon  -->
+                                    <HorizontalStackLayout Grid.Column="1" Spacing="5">
+                                        <Label
+                                            FontAttributes="Bold"
+                                            FontSize="16"
+                                            HorizontalTextAlignment="End"
+                                            Text="{Binding Amount, StringFormat='{0:N2}'}"
+                                            TextColor="{Binding Amount, Converter={StaticResource AmountToColorConverter}}"
+                                            VerticalOptions="Center" />
+                                        <Image
+                                            HeightRequest="14"
+                                            IsVisible="{Binding RecurringRuleId, Converter={StaticResource IsRecurringConverter}}"
+                                            VerticalOptions="Center"
+                                            WidthRequest="14">
+                                            <Image.Source>
+                                                <FontImageSource
+                                                    FontFamily="Icons"
+                                                    Glyph="{x:Static Icons:IconFont.ArrowsRotate}"
+                                                    Size="14"
+                                                    Color="#6cc8ef" />
+                                            </Image.Source>
+                                        </Image>
+                                    </HorizontalStackLayout>
+
+                                    <!--  Date and Category  -->
+                                    <HorizontalStackLayout Grid.Row="1" Spacing="10">
+                                        <Label
+                                            FontAttributes="{Binding Date, Converter={StaticResource IsFutureDateConverter}}"
+                                            FontSize="13"
+                                            Text="{Binding Date, StringFormat='{0:dd/MM/yyyy}'}"
+                                            TextColor="#758292" />
+                                        <Label
+                                            FontSize="13"
+                                            Text="{Binding Category.Name}"
+                                            TextColor="#6cc8ef" />
+                                    </HorizontalStackLayout>
+
+                                    <!--  Account Name (if multiple)  -->
+                                    <Label
+                                        Grid.Row="2"
+                                        FontAttributes="Italic"
+                                        FontSize="11"
+                                        IsVisible="{Binding Source={RelativeSource AncestorType={x:Type vms:TransactionListVM}}, Path=HasMultipleAccounts}"
+                                        LineBreakMode="TailTruncation"
+                                        Text="{Binding Account.Name}"
+                                        TextColor="#758292" />
+
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                    <CollectionView.EmptyView>
+                        <VerticalStackLayout
+                            Margin="20"
+                            HorizontalOptions="Center"
+                            Spacing="10">
+                            <Label
+                                FontSize="40"
+                                HorizontalOptions="Center"
+                                Text="📋"
+                                TextColor="#758292" />
+                            <Label
+                                HorizontalOptions="Center"
+                                HorizontalTextAlignment="Center"
+                                Text="Nenhuma transação encontrada para os filtros selecionados."
+                                TextColor="#758292" />
+                        </VerticalStackLayout>
+                    </CollectionView.EmptyView>
+                </CollectionView>
+
+            </Grid>
+            <!--</Border>-->
+
+            <!--  Floating Action Button  -->
+            <Button
+                Margin="0,10,0,0"
+                BackgroundColor="#2bbf69"
+                Command="{Binding GoToNewTransactionCommand}"
+                CornerRadius="25"
+                HeightRequest="50"
+                HorizontalOptions="End"
+                WidthRequest="50">
+                <Button.ImageSource>
+                    <FontImageSource
+                        FontFamily="Icons"
+                        Glyph="{x:Static Icons:IconFont.Plus}"
+                        Size="24"
+                        Color="White" />
+                </Button.ImageSource>
+            </Button>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>
