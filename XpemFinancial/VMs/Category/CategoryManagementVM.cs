@@ -98,6 +98,11 @@ public partial class CategoryManagementVM(
             await categoryService.PushAsync(category);
             await InitializeAsync();
         }
+        catch (UnauthorizedAccessException)
+        {
+            await ShowMessage("Sessão expirada", "Sessão expirada. Faça login novamente.");
+            await Shell.Current.GoToAsync($"//SignInPage");
+        }
         catch
         {
             await ShowMessage("Erro", "Erro ao inativar categoria");
@@ -135,6 +140,11 @@ public partial class CategoryManagementVM(
 
             await categoryService.PushAsync(category);
             await InitializeAsync();
+        }
+        catch (UnauthorizedAccessException)
+        {
+            await ShowMessage("Sessão expirada", "Sessão expirada. Faça login novamente.");
+            await Shell.Current.GoToAsync($"//SignInPage");
         }
         catch
         {

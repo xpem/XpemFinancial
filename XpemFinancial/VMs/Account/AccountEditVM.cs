@@ -128,6 +128,11 @@ public partial class AccountEditVM(IAccountService accountService, IUserSessionS
 
             await Shell.Current.GoToAsync("..");
         }
+        catch (UnauthorizedAccessException)
+        {
+            await ShowMessage("Sessão expirada", "Sessão expirada. Faça login novamente.");
+            await Shell.Current.GoToAsync($"//SignInPage");
+        }
         catch (InvalidOperationException ex)
         {
             await ShowMessage("Erro", ex.Message);
@@ -158,6 +163,11 @@ public partial class AccountEditVM(IAccountService accountService, IUserSessionS
             await accountService.DeactivateAsync(_existingAccount.Id);
             await ShowMessage("Sucesso", "Conta desativada.");
             await Shell.Current.GoToAsync("..");
+        }
+        catch (UnauthorizedAccessException)
+        {
+            await ShowMessage("Sessão expirada", "Sessão expirada. Faça login novamente.");
+            await Shell.Current.GoToAsync($"//SignInPage");
         }
         catch (InvalidOperationException ex)
         {

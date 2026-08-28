@@ -479,15 +479,14 @@ namespace XpemFinancial.VMs
 
             var result = await recurringRuleService.CancelAsync(req, IsOn);
 
-            if (result.Success)
-            {
-                _ = VMBase.ShowMessage("Sucesso", "Transações excluídas com sucesso!");
-                await Shell.Current.GoToAsync("..");
-            }
-            else
+            if (!result.Success)
             {
                 _ = VMBase.ShowMessage("Erro", result.Content?.ToString() ?? "Não foi possível excluir as transações.");
+                return;
             }
+
+            _ = VMBase.ShowMessage("Sucesso", "Transações excluídas com sucesso!");
+            await Shell.Current.GoToAsync("..");
         }
 
         /// Maps a Repetition value (used on occurrences) back to the Frequency enum used on RecurringRuleDTO.
@@ -615,22 +614,34 @@ namespace XpemFinancial.VMs
         {
             if (TransactionId == 0) return;
 
-            var page = Application.Current!.Windows[0].Page!;
-            var transaction = await transactionService.GetByIdAsync(TransactionId);
-            if (transaction == null) return;
-
-            if (transaction.RecurringRuleId != null)
+            try
             {
-                await HandleDeleteRecurringAsync(transaction, page);
-                return;
+                var page = Application.Current!.Windows[0].Page!;
+                var transaction = await transactionService.GetByIdAsync(TransactionId);
+                if (transaction == null) return;
+
+                if (transaction.RecurringRuleId != null)
+                {
+                    await HandleDeleteRecurringAsync(transaction, page);
+                    return;
+                }
+
+                bool confirmed = await page.DisplayAlertAsync("Excluir transação", "Deseja excluir esta transação?", "Excluir", "Cancelar");
+                if (!confirmed) return;
+
+                await transactionService.DeleteAsync(TransactionId, IsOn);
+                _ = VMBase.ShowMessage("Sucesso", "Transação excluída com sucesso!");
+                await Shell.Current.GoToAsync("..");
             }
-
-            bool confirmed = await page.DisplayAlertAsync("Excluir transação", "Deseja excluir esta transação?", "Excluir", "Cancelar");
-            if (!confirmed) return;
-
-            await transactionService.DeleteAsync(TransactionId, IsOn);
-            _ = VMBase.ShowMessage("Sucesso", "Transação excluída com sucesso!");
-            await Shell.Current.GoToAsync("..");
+            catch (UnauthorizedAccessException)
+            {
+                await ShowMessage("Sessão expirada", "Sessão expirada. Faça login novamente.");
+                await Shell.Current.GoToAsync($"//{nameof(SignInPage)}");
+            }
+            catch (Exception ex)
+            {
+                await ShowMessage("Erro", $"Erro ao excluir transação: {ex.Message}");
+            }
         }
 
         [RelayCommand]
@@ -647,120 +658,132 @@ namespace XpemFinancial.VMs
 
             var user = await userSessionService.GetCurrentUserAsync();
 
-            // ── Edição de transação existente ────────────────────────────────
-            if (IsEditing && TransactionId != 0)
+            try
             {
-                var existingTransaction = await transactionService.GetByIdAsync(TransactionId);
-                if (existingTransaction == null) return;
-
-                // Ocorrência recorrente: usa o escopo selecionado nos radio buttons
-                if (existingTransaction.RecurringRuleId != null)
+                // ── Edição de transação existente ────────────────────────────────
+                if (IsEditing && TransactionId != 0)
                 {
-                    var result = await EditRecurrencyAsync(existingTransaction, amountValue);
-                    if (!result.Success)
+                    var existingTransaction = await transactionService.GetByIdAsync(TransactionId);
+                    if (existingTransaction == null) return;
+
+                    // Ocorrência recorrente: usa o escopo selecionado nos radio buttons
+                    if (existingTransaction.RecurringRuleId != null)
                     {
-                        _ = VMBase.ShowMessage("Erro", result.Content?.ToString() ?? "Não foi possível editar a recorrência.");
+                        var result = await EditRecurrencyAsync(existingTransaction, amountValue);
+                        if (!result.Success)
+                        {
+                            _ = VMBase.ShowMessage("Erro", result.Content?.ToString() ?? "Não foi possível editar a recorrência.");
+                            return;
+                        }
+                        _ = VMBase.ShowMessage("Sucesso", "Transação recorrente editada com sucesso!");
+                        await Shell.Current.GoToAsync("..");
                         return;
                     }
-                    _ = VMBase.ShowMessage("Sucesso", "Transação recorrente editada com sucesso!");
+
+                    // Transação normal: atualiza os campos editáveis
+                    existingTransaction.Date = TransactionDate;
+                    existingTransaction.Description = (string.IsNullOrEmpty(Description) ? SelectedCategory?.Name : Description)?.Trim() ?? existingTransaction.Description;
+                    existingTransaction.Amount = amountValue;
+                    existingTransaction.Type = SelectedTransactionType;
+                    existingTransaction.Note = Note?.Trim();
+                    existingTransaction.CategoryId = SelectedCategory?.Id ?? existingTransaction.CategoryId;
+                    existingTransaction.CategoryExternalId = SelectedCategory?.ExternalId ?? existingTransaction.CategoryExternalId;
+                    existingTransaction.UpdatedAt = DateTime.Now;
+                    existingTransaction.AccountId = SelectedAccount!.Id;
+                    existingTransaction.AccountExternalId = SelectedAccount!.ExternalId;
+
+                    // Transfer: propaga conta destino; não-transfer: limpa campos de destino
+                    if (SelectedTransactionType == TransactionType.Transfer)
+                    {
+                        existingTransaction.DestinationAccountId = SelectedDestinationAccount!.Id;
+                        existingTransaction.DestinationAccountExternalId = SelectedDestinationAccount!.ExternalId;
+                    }
+                    else
+                    {
+                        existingTransaction.DestinationAccountId = null;
+                        existingTransaction.DestinationAccountExternalId = null;
+                    }
+
+                    await transactionService.UpdateAsync(existingTransaction, IsOn);
+                    _ = VMBase.ShowMessage("Sucesso", "Transação atualizada com sucesso!");
                     await Shell.Current.GoToAsync("..");
                     return;
                 }
 
-                // Transação normal: atualiza os campos editáveis
-                existingTransaction.Date = TransactionDate;
-                existingTransaction.Description = (string.IsNullOrEmpty(Description) ? SelectedCategory?.Name : Description)?.Trim() ?? existingTransaction.Description;
-                existingTransaction.Amount = amountValue;
-                existingTransaction.Type = SelectedTransactionType;
-                existingTransaction.Note = Note?.Trim();
-                existingTransaction.CategoryId = SelectedCategory?.Id ?? existingTransaction.CategoryId;
-                existingTransaction.CategoryExternalId = SelectedCategory?.ExternalId ?? existingTransaction.CategoryExternalId;
-                existingTransaction.UpdatedAt = DateTime.Now;
-                existingTransaction.AccountId = SelectedAccount!.Id;
-                existingTransaction.AccountExternalId = SelectedAccount!.ExternalId;
+                // ── Criação de nova transação ────────────────────────────────────
 
-                // Transfer: propaga conta destino; não-transfer: limpa campos de destino
-                if (SelectedTransactionType == TransactionType.Transfer)
+                // Caminho para regras recorrentes
+                if (SelectedRepetition == Repetition.Recurring)
                 {
-                    existingTransaction.DestinationAccountId = SelectedDestinationAccount!.Id;
-                    existingTransaction.DestinationAccountExternalId = SelectedDestinationAccount!.ExternalId;
-                }
-                else
-                {
-                    existingTransaction.DestinationAccountId = null;
-                    existingTransaction.DestinationAccountExternalId = null;
-                }
+                    var rule = new RecurringRuleDTO
+                    {
+                        Description = (string.IsNullOrEmpty(Description) ? SelectedCategory?.Name : Description)?.Trim(),
+                        Amount = amountValue,
+                        Type = SelectedTransactionType,
+                        CategoryId = SelectedCategory?.Id ?? 0,
+                        CategoryExternalId = SelectedCategory?.ExternalId,
+                        AccountId = SelectedAccount!.Id,
+                        Frequency = Frequency.Monthly,
+                        StartDate = TransactionDate,
+                        EndDate = null,
+                        UserId = user.Id,
+                    };
 
-                await transactionService.UpdateAsync(existingTransaction, IsOn);
-                _ = VMBase.ShowMessage("Sucesso", "Transação atualizada com sucesso!");
-                await Shell.Current.GoToAsync("..");
-                return;
-            }
+                    var result = await recurringRuleService.SaveAsync(rule, IsOn);
 
-            // ── Criação de nova transação ────────────────────────────────────
+                    if (!result.Success)
+                    {
+                        _ = VMBase.ShowMessage("Erro", result.Content?.ToString() ?? "Não foi possível salvar a regra recorrente.");
+                        return;
+                    }
 
-            // Caminho para regras recorrentes
-            if (SelectedRepetition == Repetition.Recurring)
-            {
-                var rule = new RecurringRuleDTO
-                {
-                    Description = (string.IsNullOrEmpty(Description) ? SelectedCategory?.Name : Description)?.Trim(),
-                    Amount = amountValue,
-                    Type = SelectedTransactionType,
-                    CategoryId = SelectedCategory?.Id ?? 0,
-                    CategoryExternalId = SelectedCategory?.ExternalId,
-                    AccountId = SelectedAccount!.Id,
-                    Frequency = Frequency.Monthly,
-                    StartDate = TransactionDate,
-                    EndDate = null,
-                    UserId = user.Id,
-                };
-
-                var result = await recurringRuleService.SaveAsync(rule, IsOn);
-
-                if (!result.Success)
-                {
-                    _ = VMBase.ShowMessage("Erro", result.Content?.ToString() ?? "Não foi possível salvar a regra recorrente.");
+                    _ = VMBase.ShowMessage("Sucesso", "Transação recorrente salva com sucesso!");
+                    await Shell.Current.GoToAsync("..");
                     return;
                 }
 
-                _ = VMBase.ShowMessage("Sucesso", "Transação recorrente salva com sucesso!");
+                var transaction = new TransactionDTO()
+                {
+                    Date = TransactionDate,
+                    Amount = amountValue,
+                    Description = (string.IsNullOrEmpty(Description) ? SelectedCategory?.Name : Description)?.Trim() ?? string.Empty,
+                    Type = SelectedTransactionType,
+                    Repetition = SelectedRepetition,
+                    Note = Note?.Trim(),
+                    CategoryId = SelectedCategory?.Id ?? 0,
+                    CategoryExternalId = SelectedCategory?.ExternalId,
+                    AccountExternalId = SelectedAccount!.ExternalId,
+                    UserId = user.Id,
+                    CreatedAt = DateTime.UtcNow,
+                    AccountId = SelectedAccount!.Id
+                };
+
+                if (SelectedTransactionType == TransactionType.Transfer)
+                {
+                    transaction.DestinationAccountId = SelectedDestinationAccount?.Id;
+                    transaction.DestinationAccountExternalId = SelectedDestinationAccount?.ExternalId;
+                }
+
+                if (transaction.Repetition == Repetition.Monthly)
+                {
+                    transaction.Installment = InitialInstallments;
+                    transaction.TotalInstallments = NumberOfInstallments;
+                }
+
+                await transactionService.AddAsync(transaction, IsOn);
+
+                _ = VMBase.ShowMessage("Sucesso", "Transação salva com sucesso!");
                 await Shell.Current.GoToAsync("..");
-                return;
             }
-
-            var transaction = new TransactionDTO()
+            catch (UnauthorizedAccessException)
             {
-                Date = TransactionDate,
-                Amount = amountValue,
-                Description = (string.IsNullOrEmpty(Description) ? SelectedCategory?.Name : Description)?.Trim() ?? string.Empty,
-                Type = SelectedTransactionType,
-                Repetition = SelectedRepetition,
-                Note = Note?.Trim(),
-                CategoryId = SelectedCategory?.Id ?? 0,
-                CategoryExternalId = SelectedCategory?.ExternalId,
-                AccountExternalId = SelectedAccount!.ExternalId,
-                UserId = user.Id,
-                CreatedAt = DateTime.UtcNow,
-                AccountId = SelectedAccount!.Id
-            };
-
-            if (SelectedTransactionType == TransactionType.Transfer)
-            {
-                transaction.DestinationAccountId = SelectedDestinationAccount?.Id;
-                transaction.DestinationAccountExternalId = SelectedDestinationAccount?.ExternalId;
+                await ShowMessage("Sessão expirada", "Sessão expirada. Faça login novamente.");
+                await Shell.Current.GoToAsync($"//{nameof(SignInPage)}");
             }
-
-            if (transaction.Repetition == Repetition.Monthly)
+            catch (Exception ex)
             {
-                transaction.Installment = InitialInstallments;
-                transaction.TotalInstallments = NumberOfInstallments;
+                await ShowMessage("Erro", $"Erro ao salvar transação: {ex.Message}");
             }
-
-            await transactionService.AddAsync(transaction, IsOn);
-
-            _ = VMBase.ShowMessage("Sucesso", "Transação salva com sucesso!");
-            await Shell.Current.GoToAsync("..");
         }
 
         private async Task<ServiceResp> EditRecurrencyAsync(TransactionDTO existingTransaction, decimal amountValue)
