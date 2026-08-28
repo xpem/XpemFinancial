@@ -23,7 +23,7 @@ public class SyncRoundTripTypePropertyTests
     /// </summary>
     private static Gen<CategoryType> ValidCategoryType()
     {
-        return Gen.Elements(CategoryType.Income, CategoryType.Expense, CategoryType.Both);
+        return Gen.Elements(CategoryType.Income, CategoryType.Expense);
     }
 
     /// <summary>
@@ -44,7 +44,7 @@ public class SyncRoundTripTypePropertyTests
                 int pushed = (int)original;
 
                 // Simulate Pull: deserialize int via SafeParseCategoryType (what PullAsync does)
-                CategoryType pulled = CategoryService.SafeParseCategoryType(pushed);
+                CategoryType? pulled = CategoryService.SafeParseCategoryType(pushed);
 
                 // Assert: round-trip preserves the original value
                 return (pulled == original)

@@ -21,19 +21,19 @@ namespace RecurringTests.CategoryTests;
 public class MainCategoryRequiresTypePropertyTests
 {
     /// <summary>
-    /// Generates a valid CategoryType enum member (Income, Expense, or Both).
+    /// Generates a valid CategoryType enum member (Income or Expense).
     /// </summary>
     private static Gen<CategoryType> ValidCategoryType()
     {
-        return Gen.Elements(CategoryType.Income, CategoryType.Expense, CategoryType.Both);
+        return Gen.Elements(CategoryType.Income, CategoryType.Expense);
     }
 
     /// <summary>
-    /// Generates a valid SelectedCategoryTypeIndex (0, 1, or 2) that maps to a valid CategoryType.
+    /// Generates a valid SelectedCategoryTypeIndex (0 or 1) that maps to a valid CategoryType.
     /// </summary>
     private static Gen<int> ValidCategoryTypeIndex()
     {
-        return Gen.Elements(0, 1, 2);
+        return Gen.Elements(0, 1);
     }
 
     /// <summary>
@@ -139,7 +139,7 @@ public class MainCategoryRequiresTypePropertyTests
 
     /// <summary>
     /// Property 10: The SelectedCategoryType derivation logic correctly maps any valid index
-    /// to the corresponding CategoryType enum value (index 0 → Income, 1 → Expense, 2 → Both).
+    /// to the corresponding CategoryType enum value (index 0 → Income, 1 → Expense).
     /// **Validates: Requirements 2.4, 6.4**
     /// </summary>
     [Property(MaxTest = 100)]

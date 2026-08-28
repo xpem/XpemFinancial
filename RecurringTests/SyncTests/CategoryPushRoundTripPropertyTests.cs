@@ -74,7 +74,7 @@ public class CategoryPushRoundTripPropertyTests
         var categoryRepo = new CategoryRepo(factory);
         var service = new CategoryService(categoryRepo, categoryApiRepo, syncCursorRepo);
 
-        await service.PushAsync();
+        await service.PushPendingAsync(1);
 
         // Verify: the captured request contains the correct CategoryId
         return capturedReq is not null && capturedReq.CategoryId == categoryId;
@@ -121,7 +121,7 @@ public class CategoryPushRoundTripPropertyTests
         var categoryRepo = new CategoryRepo(factory);
         var service = new CategoryService(categoryRepo, categoryApiRepo, syncCursorRepo);
 
-        await service.PushAsync();
+        await service.PushPendingAsync(1);
 
         // Verify: the local record now has ExternalId = serverId
         using (var ctx = await factory.CreateDbContextAsync())
@@ -175,7 +175,7 @@ public class CategoryPushRoundTripPropertyTests
         var service = new CategoryService(categoryRepo, categoryApiRepo, syncCursorRepo);
 
         // First push — should push the record and persist ExternalId
-        await service.PushAsync();
+        await service.PushPendingAsync(1);
 
         // Second call to GetPendingPushAsync — should NOT include the pushed record
         var pendingAfterPush = await categoryRepo.GetPendingPushAsync();

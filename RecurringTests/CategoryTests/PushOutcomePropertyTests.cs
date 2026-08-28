@@ -124,8 +124,8 @@ public class PushOutcomePropertyTests
         var categoryRepo = new CategoryRepo(factory);
         var service = new CategoryService(categoryRepo, categoryApiRepo, syncCursorRepo);
 
-        // Act
-        await service.PushAsync();
+        // Act - Pass userId for PushPendingAsync
+        await service.PushPendingAsync(1);
 
         // Verify
         using (var ctx = await factory.CreateDbContextAsync())

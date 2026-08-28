@@ -26,7 +26,7 @@ public class PickerUnfilteredPropertyTests
     {
         return from name in Gen.Elements("Food", "Transport", "Health", "Salary", "Rent", "Entertainment", "Gifts", "Insurance")
                from isMain in Gen.Elements(true, false)
-               from type in Gen.Elements(CategoryType.Income, CategoryType.Expense, CategoryType.Both)
+               from typeOption in Gen.Elements(0, 1, 2) // 0=Income, 1=Expense, 2=null(both)
                from extId in Gen.Choose(1, 1000)
                from parentExtId in Gen.Choose(1, 100)
                select new CategoryDTO
@@ -39,7 +39,7 @@ public class PickerUnfilteredPropertyTests
                    Inactive = false,
                    UserId = 1,
                    SystemDefault = false,
-                   Type = type,
+                   Type = typeOption == 0 ? CategoryType.Income : typeOption == 1 ? CategoryType.Expense : null,
                    CreatedAt = DateTime.UtcNow,
                    UpdatedAt = DateTime.UtcNow,
                };

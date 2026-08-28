@@ -37,7 +37,7 @@ public class ReparentTypeUpdatePropertyTests
     /// </summary>
     private static Gen<CategoryType> ValidCategoryType()
     {
-        return Gen.Elements(CategoryType.Income, CategoryType.Expense, CategoryType.Both);
+        return Gen.Elements(CategoryType.Income, CategoryType.Expense);
     }
 
     /// <summary>

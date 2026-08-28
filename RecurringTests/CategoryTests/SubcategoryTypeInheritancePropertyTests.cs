@@ -25,7 +25,7 @@ public class SubcategoryTypeInheritancePropertyTests
     /// </summary>
     private static Gen<CategoryType> ValidCategoryType()
     {
-        return Gen.Elements(CategoryType.Income, CategoryType.Expense, CategoryType.Both);
+        return Gen.Elements(CategoryType.Income, CategoryType.Expense);
     }
 
     /// <summary>
@@ -83,7 +83,7 @@ public class SubcategoryTypeInheritancePropertyTests
                     IsMainCategory = false,
                     ParentExternalId = parentExternalId,
                     UserId = 1,
-                    Type = CategoryType.Both // initial value doesn't matter — should be overwritten
+                    Type = null // initial value doesn't matter — should be overwritten
                 };
 
                 // Act

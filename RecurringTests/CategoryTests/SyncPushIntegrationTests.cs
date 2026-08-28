@@ -89,7 +89,7 @@ public class SyncPushIntegrationTests
         category.Inactive = true;
         category.UpdatedAt = DateTime.UtcNow;
         await service.UpdateLocalAsync(category);
-        await service.PushAsync();
+        await service.PushAsync(category);
 
         // Assert — PushAsync was called and the API received the category
         await categoryApiRepo.Received(1).PostCategoryAsync(
@@ -128,7 +128,7 @@ public class SyncPushIntegrationTests
         category.Inactive = false;
         category.UpdatedAt = DateTime.UtcNow;
         await service.UpdateLocalAsync(category);
-        await service.PushAsync();
+        await service.PushAsync(category);
 
         // Assert — API received the reactivated category
         await categoryApiRepo.Received(1).PostCategoryAsync(
@@ -167,7 +167,7 @@ public class SyncPushIntegrationTests
         category.Name = "Educação Continuada";
         category.UpdatedAt = DateTime.UtcNow;
         await service.UpdateLocalAsync(category);
-        await service.PushAsync();
+        await service.PushAsync(category);
 
         // Assert — API received the edited category with updated name
         await categoryApiRepo.Received(1).PostCategoryAsync(
@@ -263,7 +263,7 @@ public class SyncPushIntegrationTests
             await service.UpdateLocalAsync(sub);
         }
 
-        await service.PushAsync();
+        await service.PushPendingAsync(1);
 
         // Assert — all 3 categories were pushed
         await categoryApiRepo.Received(3).PostCategoryAsync(Arg.Any<CategoryReq>());
@@ -351,7 +351,7 @@ public class SyncPushIntegrationTests
             await service.UpdateLocalAsync(parent);
         }
 
-        await service.PushAsync();
+        await service.PushPendingAsync(1);
 
         // Assert — the subcategory was pushed (it has no ExternalId)
         // Parent already has ExternalId so it won't be in pending push
