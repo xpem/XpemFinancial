@@ -19,17 +19,29 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
       - name: Cache NuGet packages
         uses: actions/cache@v4
         with:
           path: ~/.nuget/packages
-          key: ${{ runner.os }}-nuget-tests-${{ hashFiles('Service.Tests/**/*.csproj', 'Model/**/*.csproj', 'Repo/**/*.csproj', 'Services/**/*.csproj', 'ApiRepo/**/*.csproj') }}
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
           restore-keys: |
-            ${{ runner.os }}-nuget-tests-
             ${{ runner.os }}-nuget-
 
       - name: Restore dependencies
-        run: dotnet restore Service.Tests/Service.Tests.csproj --locked-mode
+        env:
+          DOTNET_SYSTEM_NET_HTTP_USESOCKETSHTTPHANDLER: 0
+          NUGET_HTTP_TIMEOUT: 7200
+        run: |
+          for i in 1 2 3; do
+            dotnet restore Service.Tests/Service.Tests.csproj --locked-mode && break
+            echo "Restore attempt $i failed, retrying in 10s..."
+            sleep 10
+          done
 
       - name: Run Unit Tests
         run: dotnet test Service.Tests/Service.Tests.csproj --framework net10.0 --configuration Release --no-restore
@@ -43,13 +55,10 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Cache NuGet packages
-        uses: actions/cache@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
         with:
-          path: ~/.nuget/packages
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
-          restore-keys: |
-            ${{ runner.os }}-nuget-
+          dotnet-version: '10.0.x'
 
       # Ajustado para v4.0.0 (Garante o uso de Node 20)
       - name: Setup Java (Requisito para o Android SDK)
@@ -64,6 +73,14 @@ jobs:
 
       - name: Install MAUI Android Workload
         run: dotnet workload install maui-android
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
 
       - name: Generate ApiKeys.cs
         run: |
