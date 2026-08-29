@@ -12,14 +12,12 @@ namespace ApiRepo
         {
             try
             {
-                HttpClient httpClient = new(new HttpClientHandler
-                {
-                    SslProtocols = System.Security.Authentication.SslProtocols.Tls12
-                               | System.Security.Authentication.SslProtocols.Tls13
-                })
+                HttpClient httpClient = new()
                 {
                     Timeout = RequestTimeout
                 };
+
+                httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("XpemFinancial/1.0 (Android)");
 
                 if (userToken is not null)
                     httpClient.DefaultRequestHeaders.Add("authorization", "bearer " + userToken);
@@ -60,17 +58,13 @@ namespace ApiRepo
                     Content = await httpResponse.Content.ReadAsStringAsync()
                 };
             }
-            catch (HttpRequestException)
+            catch (HttpRequestException ex)
             {
-                // Server is unreachable, no network, or connection refused.
-                // Return a failure response instead of throwing so callers can decide
-                // whether to retry later (e.g. background sync) without crashing the UI flow.
-                return new ApiResp() { Success = false, Error = ErrorTypes.ServerUnavaliable };
+                return new ApiResp() { Success = false, Error = ErrorTypes.ServerUnavaliable, Content = $"[HttpRequestException] {ex.Message} | Inner: {ex.InnerException?.Message}" };
             }
-            catch (TaskCanceledException)
+            catch (TaskCanceledException ex)
             {
-                // Request timed out.
-                return new ApiResp() { Success = false, Error = ErrorTypes.ServerUnavaliable };
+                return new ApiResp() { Success = false, Error = ErrorTypes.ServerUnavaliable, Content = $"[TaskCanceledException] {ex.Message} | Inner: {ex.InnerException?.Message}" };
             }
         }
     }

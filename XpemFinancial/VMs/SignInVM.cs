@@ -78,8 +78,8 @@ namespace XpemFinancial.VMs
                     ErrorMessage = resp.Content switch
                     {
                         ErrorTypes.WrongEmailOrPassword => "Email ou senha incorretos",
-                        ErrorTypes.ServerUnavaliable => "Servidor indisponível",
-                        _ => "Erro desconhecido. Tente novamente."
+                        string s when s.StartsWith(ErrorTypes.ServerUnavaliable.ToString()) => $"Servidor indisponível: {s}",
+                        _ => $"Erro desconhecido: {resp.Content}"
                     };
                 }
             }
@@ -170,8 +170,8 @@ namespace XpemFinancial.VMs
                         ErrorMessage = error switch
                         {
                             ErrorTypes.GoogleAuthEmailLinkedToPassword => "Este email já está vinculado a login com senha. Use email e senha.",
-                            ErrorTypes.ServerUnavaliable => "Servidor indisponível",
-                            _ => "Erro ao autenticar com Google"
+                            ErrorTypes.ServerUnavaliable => $"Servidor indisponível: {resp.Content}",
+                            _ => $"Erro ao autenticar com Google: {resp.Content}"
                         };
                     }
                     else

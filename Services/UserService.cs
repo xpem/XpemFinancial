@@ -99,7 +99,7 @@ namespace Service
                 if (apiresp.Content?.Contains("User/Password incorrect") == true || apiresp.Content?.Contains("Invalid Email") == true)
                     return new ServiceResp(false, ErrorTypes.WrongEmailOrPassword);
                 
-                return new ServiceResp(false, ErrorTypes.ServerUnavaliable);
+                return new ServiceResp(false, $"{ErrorTypes.ServerUnavaliable}: {apiresp.Content}");
             }
 
             return new ServiceResp(false, ErrorTypes.Unknown);
