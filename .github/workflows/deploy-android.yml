@@ -19,11 +19,6 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '10.0.x'
-
       - name: Setup Java (Requisito para o Android SDK)
         uses: actions/setup-java@v4.0.0
         with:
@@ -36,13 +31,8 @@ jobs:
       - name: Install MAUI Android Workload
         run: dotnet workload install maui-android
 
-      - name: Cache NuGet packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.nuget/packages
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-nuget-
+      - name: Run Unit Tests
+        run: dotnet test --framework net10.0
 
       - name: Generate ApiKeys.cs
         run: |
@@ -57,12 +47,6 @@ jobs:
               }
           }
           EOF
-
-      - name: Restore main project
-        run: dotnet restore XpemFinancial/XpemFinancial.csproj
-
-      - name: Run Unit Tests
-        run: dotnet test Service.Tests/Service.Tests.csproj --framework net10.0 --configuration Release
 
       - name: Decode Android Keystore
         run: |
