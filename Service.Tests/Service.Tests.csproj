@@ -9,6 +9,8 @@
     <NoWarn>$(NoWarn);NU1605</NoWarn>
     <!-- Define constant to exclude server integration tests when FinancialService is not available -->
     <DefineConstants>$(DefineConstants);EXCLUDE_SERVER_TESTS</DefineConstants>
+    <!-- Generate lock file for repeatable restores in CI -->
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
   </PropertyGroup>
 
   <ItemGroup>
