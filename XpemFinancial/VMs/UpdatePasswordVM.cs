@@ -34,11 +34,31 @@ namespace XpemFinancial.VMs
             }
             else
             {
-                _ = userService.RecoverPassword(Email);
+                IsBusy = true;
+                try
+                {
+                    string? result = await userService.RecoverPassword(Email);
 
-                await ShowMessage("Aviso", "Email de alteração de senha enviado!");
-
-                await Shell.Current.GoToAsync("..");
+                    if (result is not null)
+                    {
+                        await ShowMessage("Aviso", "Email de alteração de senha enviado!");
+                        await Shell.Current.GoToAsync("..");
+                    }
+                    else
+                    {
+                        App.WriteCrashLog("RecoverPassword.Failed", $"Email: {Email}, Result: null");
+                        await ShowMessage("Erro", "Não foi possível enviar o email. Verifique se o email está cadastrado.");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    App.WriteCrashLog("RecoverPassword.Exception", $"Email: {Email}{Environment.NewLine}{ex}");
+                    await ShowMessage("Erro", "Erro ao conectar com o servidor. Tente novamente.");
+                }
+                finally
+                {
+                    IsBusy = false;
+                }
             }
         }
 
