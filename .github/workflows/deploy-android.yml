@@ -11,9 +11,19 @@ on:
       - closed
 
 jobs:
+  # TODO: Adicionar testes automatizados
+  # O restore de pacotes NuGet para o projeto de testes (Service.Tests) está muito lento (~8min+).
+  # O publish MAUI funciona porque o workload já tem pacotes pré-configurados.
+  # Plano: primeiro implementar testes na action do UniqueServer (projeto mais simples),
+  # validar que o cache de pacotes NuGet no servidor resolve o problema,
+  # e depois replicar a solução aqui.
+  # Por enquanto, rodar testes localmente antes de merge.
+  
   build-test-and-release:
     if: (github.event_name == 'push' || github.event.pull_request.merged == true) && !contains(github.server_url, 'github.com')
     runs-on: ubuntu-latest
+    env:
+      NODE_OPTIONS: --dns-result-order=ipv4first
 
     steps:
       - name: Checkout Code
