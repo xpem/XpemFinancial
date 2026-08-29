@@ -94,10 +94,13 @@ namespace Service
                     }
                 }
             }
-            else if (!apiresp.Success && apiresp.Content.Contains("User/Password incorrect") || apiresp.Content.Contains("Invalid Email"))
-                return new ServiceResp(false, ErrorTypes.WrongEmailOrPassword);
-            else
+            else if (!apiresp.Success)
+            {
+                if (apiresp.Content?.Contains("User/Password incorrect") == true || apiresp.Content?.Contains("Invalid Email") == true)
+                    return new ServiceResp(false, ErrorTypes.WrongEmailOrPassword);
+                
                 return new ServiceResp(false, ErrorTypes.ServerUnavaliable);
+            }
 
             return new ServiceResp(false, ErrorTypes.Unknown);
         }

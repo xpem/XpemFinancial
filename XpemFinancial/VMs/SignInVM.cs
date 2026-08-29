@@ -71,28 +71,27 @@ namespace XpemFinancial.VMs
                 }
                 else
                 {
-                    string errorMessage = "";
-
-                    if (resp.Content is not null and ErrorTypes error)
-                    {
-                        if (error == ErrorTypes.WrongEmailOrPassword)
-                            errorMessage = "Email ou senha incorretos";
-                        else if (error == ErrorTypes.ServerUnavaliable)
-                            errorMessage = "Servidor indisponível";
-                    }
-                    else throw new Exception("Invalid Content");
+                    string errorDetail = $"Email: {Email}, ErrorType: {resp.Content}, RawContent: {resp.Content?.ToString() ?? "null"}";
+                    App.WriteCrashLog("SignIn.Failed", errorDetail);
 
                     ErrorMessageIsVisible = true;
-                    ErrorMessage = errorMessage;
+                    ErrorMessage = resp.Content switch
+                    {
+                        ErrorTypes.WrongEmailOrPassword => "Email ou senha incorretos",
+                        ErrorTypes.ServerUnavaliable => "Servidor indisponível",
+                        _ => "Erro desconhecido. Tente novamente."
+                    };
                 }
             }
             catch (HttpRequestException ex)
             {
+                App.WriteCrashLog("SignIn.HttpRequestException", $"Email: {Email}{Environment.NewLine}{ex}");
                 ErrorMessageIsVisible = true;
                 ErrorMessage = $"Conexão: {ex.Message}";
             }
             catch (Exception ex)
             {
+                App.WriteCrashLog("SignIn.Exception", $"Email: {Email}{Environment.NewLine}{ex}");
                 ErrorMessageIsVisible = true;
                 ErrorMessage = $"{ex.GetType().Name}: {ex.Message}";
             }

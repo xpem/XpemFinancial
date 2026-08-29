@@ -61,7 +61,7 @@ namespace XpemFinancial
             };
         }
 
-        private static void WriteCrashLog(string source, string content)
+        public static void WriteCrashLog(string source, string content)
         {
             try
             {
