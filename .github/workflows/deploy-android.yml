@@ -11,7 +11,7 @@ on:
       - closed
 
 jobs:
-  test:
+  build-test-and-release:
     if: (github.event_name == 'push' || github.event.pull_request.merged == true) && !contains(github.server_url, 'github.com')
     runs-on: ubuntu-latest
 
@@ -24,50 +24,12 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      - name: Cache NuGet packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.nuget/packages
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-nuget-
-
-      - name: Restore dependencies
-        env:
-          DOTNET_SYSTEM_NET_HTTP_USESOCKETSHTTPHANDLER: 0
-          NUGET_HTTP_TIMEOUT: 7200
-        run: |
-          for i in 1 2 3; do
-            dotnet restore Service.Tests/Service.Tests.csproj --locked-mode && break
-            echo "Restore attempt $i failed, retrying in 10s..."
-            sleep 10
-          done
-
-      - name: Run Unit Tests
-        run: dotnet test Service.Tests/Service.Tests.csproj --framework net10.0 --configuration Release --no-restore
-
-  build-and-release:
-    needs: test
-    if: (github.event_name == 'push' || github.event.pull_request.merged == true) && !contains(github.server_url, 'github.com')
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '10.0.x'
-
-      # Ajustado para v4.0.0 (Garante o uso de Node 20)
       - name: Setup Java (Requisito para o Android SDK)
         uses: actions/setup-java@v4.0.0
         with:
           distribution: 'zulu'
           java-version: '17'
 
-      # Ajustado para v3.0.0 (Garante o uso de Node 20)
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3.0.0
 
@@ -95,6 +57,12 @@ jobs:
               }
           }
           EOF
+
+      - name: Restore main project
+        run: dotnet restore XpemFinancial/XpemFinancial.csproj
+
+      - name: Run Unit Tests
+        run: dotnet test Service.Tests/Service.Tests.csproj --framework net10.0 --configuration Release
 
       - name: Decode Android Keystore
         run: |
