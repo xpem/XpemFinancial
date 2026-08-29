@@ -11,13 +11,45 @@ on:
       - closed
 
 jobs:
-  build-and-release:
+  test:
     if: (github.event_name == 'push' || github.event.pull_request.merged == true) && !contains(github.server_url, 'github.com')
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-tests-${{ hashFiles('Service.Tests/**/*.csproj', 'Model/**/*.csproj', 'Repo/**/*.csproj', 'Services/**/*.csproj', 'ApiRepo/**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-tests-
+            ${{ runner.os }}-nuget-
+
+      - name: Restore dependencies
+        run: dotnet restore Service.Tests/Service.Tests.csproj --locked-mode
+
+      - name: Run Unit Tests
+        run: dotnet test Service.Tests/Service.Tests.csproj --framework net10.0 --configuration Release --no-restore
+
+  build-and-release:
+    needs: test
+    if: (github.event_name == 'push' || github.event.pull_request.merged == true) && !contains(github.server_url, 'github.com')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
 
       # Ajustado para v4.0.0 (Garante o uso de Node 20)
       - name: Setup Java (Requisito para o Android SDK)
@@ -32,9 +64,6 @@ jobs:
 
       - name: Install MAUI Android Workload
         run: dotnet workload install maui-android
-
-      - name: Run Unit Tests
-        run: dotnet test Service.Tests/Service.Tests.csproj --framework net10.0 --configuration Release
 
       - name: Generate ApiKeys.cs
         run: |
