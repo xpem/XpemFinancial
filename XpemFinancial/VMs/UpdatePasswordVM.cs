@@ -37,16 +37,16 @@ namespace XpemFinancial.VMs
                 IsBusy = true;
                 try
                 {
-                    string? result = await userService.RecoverPassword(Email);
+                    var (success, message) = await userService.RecoverPassword(Email);
 
-                    if (result is not null)
+                    if (success)
                     {
                         await ShowMessage("Aviso", "Email de alteração de senha enviado!");
                         await Shell.Current.GoToAsync("..");
                     }
                     else
                     {
-                        App.WriteCrashLog("RecoverPassword.Failed", $"Email: {Email}, Result: null");
+                        App.WriteCrashLog("RecoverPassword.Failed", $"Email: {Email}, Motivo: {message}");
                         await ShowMessage("Erro", "Não foi possível enviar o email. Verifique se o email está cadastrado.");
                     }
                 }

@@ -27,7 +27,7 @@ namespace Service
 
         Task UpdateLastUpdate(int uid);
 
-        Task<string?> RecoverPassword(string email);
+        Task<(bool success, string? message)> RecoverPassword(string email);
 
         Task UpdateIncludePreviousBalanceAsync(bool value, int uid);
     }
@@ -236,19 +236,29 @@ namespace Service
         public async Task UpdateIncludePreviousBalanceAsync(bool value, int uid)
             => await userRepo.UpdateIncludePreviousBalanceAsync(value, uid);
 
-        public async Task<string?> RecoverPassword(string email)
+        public async Task<(bool success, string? message)> RecoverPassword(string email)
         {
             email = email.ToLower();
             ApiResp? resp = await userApiRepo.RecoverPasswordAsync(email);
 
-            if (resp is not null && resp.Content is not null)
-            {
-                JsonNode? jResp = JsonNode.Parse(resp.Content);
-                if (jResp is not null)
-                    return jResp["Mensagem"]?.GetValue<string>();
-            }
+            if (resp is null)
+                return (false, "Resposta nula da API");
 
-            return null;
+            if (!resp.Success)
+                return (false, $"API retornou erro: {resp.Error?.ToString() ?? "desconhecido"}, Content: {resp.Content ?? "null"}");
+
+            if (resp.Content is null)
+                return (false, "API retornou sucesso mas Content é null");
+
+            JsonNode? jResp = JsonNode.Parse(resp.Content);
+            if (jResp is null)
+                return (false, $"Não foi possível fazer parse do JSON: {resp.Content}");
+
+            string? mensagem = jResp["Mensagem"]?.GetValue<string>();
+            if (mensagem is null)
+                return (false, $"Campo 'Mensagem' não encontrado no JSON: {resp.Content}");
+
+            return (true, mensagem);
         }
     }
 }
