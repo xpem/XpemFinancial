@@ -38,7 +38,11 @@
     </Shell.ItemTemplate>
 
     <Shell.FlyoutHeader>
-        <Components:FlyoutHeader Name="{Binding Name}" Email="{Binding Email}" />
+        <Components:FlyoutHeader
+            Email="{Binding Email}"
+            HasSyncError="{Binding HasSyncError}"
+            LastSyncDate="{Binding LastSyncDate}"
+            Name="{Binding Name}" />
     </Shell.FlyoutHeader>
 
 

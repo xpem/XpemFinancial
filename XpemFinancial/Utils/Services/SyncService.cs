@@ -44,6 +44,12 @@ namespace XpemFinancial.Utils.Services
         public bool ThreadIsRunning => _threadStarted == 1;
 
         /// <summary>
+        /// UTC timestamp of the last successfully completed sync cycle.
+        /// Null until at least one full cycle has succeeded.
+        /// </summary>
+        public DateTime? LastSuccessfulSync { get; private set; }
+
+        /// <summary>
         /// Raised on the thread-pool after each completed sync cycle (success or handled error).
         /// Subscribers that need to update the UI should marshal back to the main thread themselves.
         /// </summary>
@@ -126,6 +132,9 @@ namespace XpemFinancial.Utils.Services
 
                         DateTime transactionLastUpdate = await transactionService.GetLastUpdatedAtAsync().ConfigureAwait(false);
                         await transactionService.PullAsync(user.Id, transactionLastUpdate).ConfigureAwait(false);
+
+                        // All steps completed — record the successful sync time.
+                        LastSuccessfulSync = DateTime.Now;
                     }
                 }
                 finally
@@ -175,6 +184,7 @@ namespace XpemFinancial.Utils.Services
             Timer = null;
             Interlocked.Exchange(ref _threadStarted, 0);
             Synchronizing = SyncStatus.Sleeping;
+            LastSuccessfulSync = null;
         }
     }
 
