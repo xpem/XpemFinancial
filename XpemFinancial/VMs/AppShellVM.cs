@@ -17,6 +17,12 @@ namespace XpemFinancial.VMs
         [ObservableProperty]
         private string? name;
 
+        [ObservableProperty]
+        private string? lastSyncDate;
+
+        [ObservableProperty]
+        private bool hasSyncError;
+
         public async Task UserFlyoutAsync()
         {
             try
@@ -54,10 +60,28 @@ namespace XpemFinancial.VMs
         }
 
         public void Init()
-        {            
+        {
             WeakReferenceMessenger.Default.Register<UserLoggedInMessage>(this, async (r, m) =>
             {
                 await UserFlyoutAsync();
+            });
+
+            syncService.SyncCompleted += OnSyncCompleted;
+        }
+
+        private void OnSyncCompleted()
+        {
+            bool isError = syncService.Synchronizing == SyncStatus.ServerOff
+                        || syncService.Synchronizing == SyncStatus.Unauthorized;
+
+            string? dateText = syncService.LastSuccessfulSync.HasValue
+                ? $"Sync: {syncService.LastSuccessfulSync.Value:dd/MM HH:mm}"
+                : null;
+
+            MainThread.BeginInvokeOnMainThread(() =>
+            {
+                HasSyncError = isError;
+                LastSyncDate = dateText;
             });
         }
     }

@@ -4,7 +4,13 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:Icons="clr-namespace:XpemFinancial.Resources"
+    xmlns:utils="clr-namespace:XpemFinancial.Utils"
     x:Name="this">
+    <ContentView.Resources>
+        <ResourceDictionary>
+            <utils:IsNotNullConverter x:Key="IsNotNullConverter" />
+        </ResourceDictionary>
+    </ContentView.Resources>
     <FlexLayout HorizontalOptions="Fill">
         <FlexLayout.Background>
             <LinearGradientBrush>
@@ -16,6 +22,7 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="40" />
                 <RowDefinition Height="40" />
+                <RowDefinition Height="26" />
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="60" />
@@ -23,7 +30,7 @@
             </Grid.ColumnDefinitions>
             <Label
                 Grid.Row="0"
-                Grid.RowSpan="2"
+                Grid.RowSpan="3"
                 Grid.Column="0"
                 FontFamily="Icons"
                 FontSize="30"
@@ -51,6 +58,34 @@
                 Text="{Binding Source={x:Reference this}, Path=Email}"
                 TextColor="White"
                 VerticalOptions="Start" />
+            <!-- Sync status row -->
+            <HorizontalStackLayout
+                Grid.Row="2"
+                Grid.Column="1"
+                Spacing="5"
+                VerticalOptions="Center">
+                <Label
+                    FontFamily="Icons"
+                    FontSize="12"
+                    IsVisible="{Binding Source={x:Reference this}, Path=HasSyncError}"
+                    Text="{x:Static Icons:IconFont.TriangleExclamation}"
+                    TextColor="{StaticResource Expense}"
+                    VerticalOptions="Center" />
+                <Label
+                    FontFamily="OpenSansRegular"
+                    FontSize="11"
+                    IsVisible="{Binding Source={x:Reference this}, Path=HasSyncError}"
+                    Text="Falha na sincronização"
+                    TextColor="{StaticResource Expense}"
+                    VerticalOptions="Center" />
+                <Label
+                    FontFamily="OpenSansRegular"
+                    FontSize="11"
+                    IsVisible="{Binding Source={x:Reference this}, Path=LastSyncDate, Converter={StaticResource IsNotNullConverter}}"
+                    Text="{Binding Source={x:Reference this}, Path=LastSyncDate}"
+                    TextColor="#aaaaaa"
+                    VerticalOptions="Center" />
+            </HorizontalStackLayout>
         </Grid>
     </FlexLayout>
 </ContentView>
