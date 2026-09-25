@@ -18,6 +18,7 @@ namespace Service.Transaction
         Task<DateTime> GetLastUpdatedAtAsync();
         Task<IEnumerable<TransactionDTO>> GetByMonthYear(DateTime monthYear, int? accountId = null);
         Task<IEnumerable<TransactionDTO>> GetByYear(int year, int? accountId = null);
+        Task<IEnumerable<TransactionDTO>> GetByDateRangeAsync(DateTime from, DateTime to, int? accountId = null);
         Task<decimal> GetPreviousBalanceAsync(DateTime monthYear, int? accountId = null);
         Task<decimal?> GetBalanceAsync(int accountId);
         Task<TransactionDTO> GetByIdAsync(int id);
@@ -491,6 +492,11 @@ namespace Service.Transaction
         public async Task<IEnumerable<TransactionDTO>> GetByYear(int year, int? accountId = null)
         {
             return await transactionRepo.GetByYear(year, accountId);
+        }
+
+        public async Task<IEnumerable<TransactionDTO>> GetByDateRangeAsync(DateTime from, DateTime to, int? accountId = null)
+        {
+            return await transactionRepo.GetByDateRangeAsync(from, to, accountId);
         }
 
         //calculo do saldo anteior, que é o total das transações até o inicio do mes selecionado, considera todas as transações de ajuste, entrada e saída.

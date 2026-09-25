@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="XpemFinancial.Views.AveragesProjectionsPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:Icons="clr-namespace:XpemFinancial.Resources"
+    xmlns:Utils="clr-namespace:XpemFinancial.Utils"
+    xmlns:vms="clr-namespace:XpemFinancial.VMs"
+    x:DataType="vms:AveragesProjectionsVM"
+    Shell.FlyoutBehavior="Flyout">
+
+    <Shell.TitleView>
+        <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
+            <Label
+                FontFamily="Icons"
+                FontSize="17"
+                Text="{x:Static Icons:IconFont.ChartLine}"
+                TextColor="{StaticResource White}"
+                VerticalOptions="Center" />
+            <Label
+                FontSize="17"
+                Text="Médias e Projeções"
+                TextColor="{StaticResource White}"
+                VerticalOptions="Center" />
+        </HorizontalStackLayout>
+    </Shell.TitleView>
+
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <Utils:AmountToColorConverter x:Key="AmountToColorConverter" />
+        </ResourceDictionary>
+    </ContentPage.Resources>
+
+    <ScrollView Margin="0">
+        <VerticalStackLayout Padding="10" Spacing="10">
+
+            <Label
+                FontSize="13"
+                Text="Últimos 6 meses + projeção de 3 meses"
+                TextColor="#9da9b9" />
+
+            <!--  Loading indicator  -->
+            <ActivityIndicator
+                HorizontalOptions="Center"
+                IsRunning="{Binding IsBusy}"
+                IsVisible="{Binding IsBusy}"
+                Color="#2bbf69" />
+
+            <!--  Stat tiles: Entrada média / Saída média / Saldo médio  -->
+            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
+                <Border Padding="10" Stroke="#232c39" StrokeShape="RoundRectangle 5">
+                    <VerticalStackLayout Spacing="4">
+                        <Label
+                            FontSize="12"
+                            Text="Entrada média"
+                            TextColor="#9da9b9" />
+                        <Label
+                            FontAttributes="Bold"
+                            FontSize="16"
+                            Text="{Binding AverageIncome, StringFormat='{0:N2}'}"
+                            TextColor="{StaticResource Income}" />
+                    </VerticalStackLayout>
+                </Border>
+                <Border Grid.Column="1" Padding="10" Stroke="#232c39" StrokeShape="RoundRectangle 5">
+                    <VerticalStackLayout Spacing="4">
+                        <Label
+                            FontSize="12"
+                            Text="Saída média"
+                            TextColor="#9da9b9" />
+                        <Label
+                            FontAttributes="Bold"
+                            FontSize="16"
+                            Text="{Binding AverageExpense, StringFormat='{0:N2}'}"
+                            TextColor="{StaticResource Expense}" />
+                    </VerticalStackLayout>
+                </Border>
+                <Border Grid.Column="2" Padding="10" Stroke="#232c39" StrokeShape="RoundRectangle 5">
+                    <VerticalStackLayout Spacing="4">
+                        <Label
+                            FontSize="12"
+                            Text="Saldo médio"
+                            TextColor="#9da9b9" />
+                        <Label
+                            FontAttributes="Bold"
+                            FontSize="16"
+                            Text="{Binding AverageBalance, StringFormat='{0:N2}'}"
+                            TextColor="{Binding AverageBalance, Converter={StaticResource AmountToColorConverter}}" />
+                    </VerticalStackLayout>
+                </Border>
+            </Grid>
+
+            <Border>
+                <!--  Chart canvas  -->
+                <GraphicsView
+                    x:Name="ChartCanvas"
+                    HeightRequest="320"
+                    HorizontalOptions="Fill" />
+            </Border>
+
+            <!--  Legend  -->
+            <HorizontalStackLayout Spacing="16">
+                <HorizontalStackLayout Spacing="6">
+                    <BoxView
+                        CornerRadius="2"
+                        HeightRequest="10"
+                        VerticalOptions="Center"
+                        WidthRequest="20"
+                        Color="#2bbf69" />
+                    <Label
+                        FontSize="12"
+                        Text="Entradas"
+                        TextColor="#d6e0eb"
+                        VerticalOptions="Center" />
+                </HorizontalStackLayout>
+                <HorizontalStackLayout Spacing="6">
+                    <BoxView
+                        CornerRadius="2"
+                        HeightRequest="10"
+                        VerticalOptions="Center"
+                        WidthRequest="20"
+                        Color="#f75c5c" />
+                    <Label
+                        FontSize="12"
+                        Text="Saídas"
+                        TextColor="#d6e0eb"
+                        VerticalOptions="Center" />
+                </HorizontalStackLayout>
+            </HorizontalStackLayout>
+
+            <Label
+                FontAttributes="Italic"
+                FontSize="11"
+                Text="Linha pontilhada = projeção baseada na média dos últimos 6 meses."
+                TextColor="#758292" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

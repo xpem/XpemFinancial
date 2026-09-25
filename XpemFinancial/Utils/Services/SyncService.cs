@@ -148,11 +148,10 @@ namespace XpemFinancial.Utils.Services
             }
             catch (HttpRequestException ex)
             {
-                bool refused = ex.InnerException?.Message.Contains(
-                    "No connection could be made because the target machine actively refused it.",
-                    StringComparison.OrdinalIgnoreCase) == true;
-
-                Synchronizing = refused ? SyncStatus.ServerOff : SyncStatus.Sleeping;
+                // Any HTTP-level failure means the server is unreachable — show the warning icon.
+                // Previously only "actively refused" was matched, which missed timeouts, DNS
+                // failures, SSL errors, and any other transport-layer problems.
+                Synchronizing = SyncStatus.ServerOff;
 
                 Debug.WriteLine($"[SyncService] HTTP error during sync: {ex.Message}");
             }
