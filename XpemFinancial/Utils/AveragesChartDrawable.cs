@@ -23,12 +23,19 @@ namespace XpemFinancial.Utils
         /// <summary>Number of leading points that are real (historical) data; the rest are projection.</summary>
         public int RealPointCount { get; set; } = 6;
 
+        /// <summary>Day (1-based) of the historical income point that deviates most from the median, if any.</summary>
+        public int? IncomeOutlierIndex { get; set; }
+
+        /// <summary>Day (1-based) of the historical expense point that deviates most from the median, if any.</summary>
+        public int? ExpenseOutlierIndex { get; set; }
+
         // ── colours ───────────────────────────────────────────────────────────
         private static readonly Color IncomeColor = Color.FromArgb("#2bbf69");
         private static readonly Color ExpenseColor = Color.FromArgb("#f75c5c");
         private static readonly Color GridColor = Color.FromArgb("#2b3548");
         private static readonly Color AxisLabelColor = Color.FromArgb("#9da9b9");
         private static readonly Color BackgroundColor = Color.FromArgb("#191d24");
+        private static readonly Color OutlierRingColor = Color.FromArgb("#ffcc00");
 
         // ── layout constants (in device-independent pixels) ───────────────────
         private const float PadLeft = 58f;
@@ -97,9 +104,13 @@ namespace XpemFinancial.Utils
                 canvas.StrokeDashPattern = null;
             }
 
+            // ── Median reference lines (flat height already carried by the projected points) ──
+            DrawReferenceLine(canvas, IncomePoints, plotW, plotH, IncomeColor);
+            DrawReferenceLine(canvas, ExpensePoints, plotW, plotH, ExpenseColor);
+
             // ── Series lines ──────────────────────────────────────────────────
-            DrawSeries(canvas, IncomePoints, plotW, plotH, IncomeColor);
-            DrawSeries(canvas, ExpensePoints, plotW, plotH, ExpenseColor);
+            DrawSeries(canvas, IncomePoints, plotW, plotH, IncomeColor, IncomeOutlierIndex);
+            DrawSeries(canvas, ExpensePoints, plotW, plotH, ExpenseColor, ExpenseOutlierIndex);
 
             // ── Axes (drawn on top of grid) ───────────────────────────────────
             canvas.StrokeColor = AxisLabelColor;
@@ -108,7 +119,33 @@ namespace XpemFinancial.Utils
             canvas.DrawLine(PadLeft, PadTop + plotH, PadLeft + plotW, PadTop + plotH);
         }
 
-        private void DrawSeries(ICanvas canvas, List<ChartPoint> points, float plotW, float plotH, Color color)
+        /// <summary>
+        /// Thin dotted line spanning the whole plot width at the series' median height — the
+        /// same height already used for the flat projection — so the real, jagged history can
+        /// be visually compared against the "typical" baseline.
+        /// </summary>
+        private void DrawReferenceLine(ICanvas canvas, List<ChartPoint> points, float plotW, float plotH, Color color)
+        {
+            if (points.Count == 0) return;
+
+            decimal medianValue = points[^1].Value;
+            float y = PadTop + ValueToY((double)medianValue, plotH);
+
+            canvas.StrokeColor = color.WithAlpha(0.35f);
+            canvas.StrokeSize = 1f;
+            canvas.StrokeDashPattern = [2, 4];
+            canvas.DrawLine(PadLeft, y, PadLeft + plotW, y);
+            canvas.StrokeDashPattern = null;
+
+            // Label the exact value this line represents (the median actually used for the projection),
+            // so it's readable directly on the chart, not just in the stat tile above it.
+            canvas.FontSize = LabelFontSize;
+            canvas.FontColor = color;
+            canvas.DrawString(FormatValue((double)medianValue), PadLeft + 4f, y - LabelFontSize - 4f, 60f, LabelFontSize + 2f,
+                HorizontalAlignment.Left, VerticalAlignment.Bottom);
+        }
+
+        private void DrawSeries(ICanvas canvas, List<ChartPoint> points, float plotW, float plotH, Color color, int? outlierIndex)
         {
             if (points.Count == 0) return;
 
@@ -117,18 +154,18 @@ namespace XpemFinancial.Utils
             // Solid segment: points[0..realCount)
             if (realCount > 0)
             {
-                DrawSegment(canvas, points.Take(realCount).ToList(), plotW, plotH, color, dashed: false);
+                DrawSegment(canvas, points.Take(realCount).ToList(), plotW, plotH, color, dashed: false, outlierIndex);
             }
 
             // Dashed segment: from the last real point (transition) through the projected points.
             if (realCount < points.Count)
             {
                 var dashedPoints = points.Skip(Math.Max(realCount - 1, 0)).ToList();
-                DrawSegment(canvas, dashedPoints, plotW, plotH, color, dashed: true);
+                DrawSegment(canvas, dashedPoints, plotW, plotH, color, dashed: true, outlierIndex: null);
             }
         }
 
-        private void DrawSegment(ICanvas canvas, List<ChartPoint> points, float plotW, float plotH, Color color, bool dashed)
+        private void DrawSegment(ICanvas canvas, List<ChartPoint> points, float plotW, float plotH, Color color, bool dashed, int? outlierIndex)
         {
             if (points.Count == 0) return;
 
@@ -169,6 +206,13 @@ namespace XpemFinancial.Utils
                 {
                     canvas.FillColor = color;
                     canvas.FillCircle(x, y, 3f);
+
+                    if (outlierIndex.HasValue && pt.Day == outlierIndex.Value)
+                    {
+                        canvas.StrokeColor = OutlierRingColor;
+                        canvas.StrokeSize = 2f;
+                        canvas.DrawCircle(x, y, 6f);
+                    }
                 }
             }
         }

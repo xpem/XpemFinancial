@@ -36,7 +36,7 @@
 
             <Label
                 FontSize="13"
-                Text="Últimos 6 meses + projeção de 3 meses"
+                Text="{Binding SubtitleText}"
                 TextColor="#9da9b9" />
 
             <!--  Loading indicator  -->
@@ -125,12 +125,28 @@
                         TextColor="#d6e0eb"
                         VerticalOptions="Center" />
                 </HorizontalStackLayout>
+                <HorizontalStackLayout Spacing="6">
+                    <Border
+                        Padding="0"
+                        BackgroundColor="Transparent"
+                        HeightRequest="14"
+                        Stroke="#ffcc00"
+                        StrokeShape="RoundRectangle 7"
+                        StrokeThickness="2"
+                        VerticalOptions="Center"
+                        WidthRequest="14" />
+                    <Label
+                        FontSize="12"
+                        Text="Fora do padrão"
+                        TextColor="#d6e0eb"
+                        VerticalOptions="Center" />
+                </HorizontalStackLayout>
             </HorizontalStackLayout>
 
             <Label
                 FontAttributes="Italic"
                 FontSize="11"
-                Text="Linha pontilhada = projeção baseada na média dos últimos 6 meses."
+                Text="Linha pontilhada grossa = projeção baseada na mediana. Linha pontilhada fina = nível típico (mediana) dos últimos 6 meses, para comparar com os valores reais."
                 TextColor="#758292" />
 
         </VerticalStackLayout>
