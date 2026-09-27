@@ -9,11 +9,11 @@ namespace XpemFinancial.Utils;
 /// </summary>
 public class IsFutureDateConverter : IValueConverter
 {
-    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
         => value is DateTime date && date.Date > DateTime.Today
             ? FontAttributes.Italic
             : FontAttributes.None;
 
-    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         => throw new NotImplementedException();
 }

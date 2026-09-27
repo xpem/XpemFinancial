@@ -214,7 +214,7 @@
                             VerticalTextAlignment="Center" />
                         <Label
                             Grid.Column="1"
-                            FontSize="Large"
+                            FontSize="22"
                             HorizontalOptions="End"
                             IsVisible="{Binding IncludePreviousBalance}"
                             Text="{Binding PreviousBalance, StringFormat='{}{0:N2}'}"
@@ -229,7 +229,7 @@
                         <Label
                             Grid.Row="1"
                             Grid.Column="1"
-                            FontSize="Large"
+                            FontSize="22"
                             HorizontalOptions="End"
                             Text="{Binding Income, StringFormat='{}{0:N2}'}"
                             TextColor="{StaticResource Income}" />
@@ -242,7 +242,7 @@
                         <Label
                             Grid.Row="2"
                             Grid.Column="1"
-                            FontSize="Large"
+                            FontSize="22"
                             HorizontalOptions="End"
                             Text="{Binding Expense, StringFormat='{}{0:N2}'}"
                             TextColor="{StaticResource Expense}" />
@@ -257,7 +257,7 @@
                             Grid.Row="4"
                             Grid.ColumnSpan="2"
                             FontAttributes="Bold"
-                            FontSize="Large"
+                            FontSize="22"
                             HorizontalOptions="End"
                             Text="{Binding Total, StringFormat='{}{0:N2}'}"
                             TextColor="#d6e0eb"

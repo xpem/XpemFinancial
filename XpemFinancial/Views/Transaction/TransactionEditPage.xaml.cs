@@ -40,17 +40,19 @@ public partial class TransactionEditPage : ContentPage
         }
     }
 
-    private async void OnSugestaoSelected(object sender, SelectionChangedEventArgs e)
+    private async void OnSugestaoSelected(object? sender, SelectionChangedEventArgs e)
     {
         if (e.CurrentSelection.FirstOrDefault() is not Model.Res.TransactionDescriptionRes item)
             return;
 
         var vm = (TransactionEditVM)BindingContext;
         await vm.ApplySuggestion(item);
-        ((CollectionView)sender).SelectedItem = null;
+
+        if (sender is CollectionView cv)
+            cv.SelectedItem = null;
     }
 
-    private void OnDescriptionEntrySizeChanged(object sender, EventArgs e)
+    private void OnDescriptionEntrySizeChanged(object? sender, EventArgs e)
     {
         PositionSuggestionList();
     }

@@ -165,6 +165,7 @@ public partial class CategoryEditVM(
             else
             {
                 var user = await userSessionService.GetCurrentUserAsync();
+                if (user is null) return;
 
                 var category = new CategoryDTO
                 {

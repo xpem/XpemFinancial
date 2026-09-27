@@ -45,7 +45,7 @@ namespace XpemFinancial.VMs
         [RelayCommand]
         private async Task SignOut()
         {
-            bool resp = await Application.Current.Windows[0].Page.DisplayAlertAsync("Confirmação", "Deseja sair e retornar a tela inicial?", "Sim", "Cancelar");
+            bool resp = await Application.Current!.Windows[0].Page!.DisplayAlertAsync("Confirmação", "Deseja sair e retornar a tela inicial?", "Sim", "Cancelar");
 
             if (resp)
             {

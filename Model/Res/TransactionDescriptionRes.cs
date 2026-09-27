@@ -8,11 +8,11 @@ namespace Model.Res
     {
         public int TransactionID { get; set; }
 
-        public string Description { get; set; }
+        public required string Description { get; set; }
 
         public int? CategoryId { get; set; }
 
-        public string CategoryName { get; set; }
+        public required string CategoryName { get; set; }
 
         public int? AccountId { get; set; }
     }

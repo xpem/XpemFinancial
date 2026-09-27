@@ -16,7 +16,7 @@ public partial class SignInPage : ContentPage
         CrashLogLabel.IsVisible = File.Exists(App.CrashLogPath);
     }
 
-    private async void OnViewCrashLogTapped(object sender, TappedEventArgs e)
+    private async void OnViewCrashLogTapped(object? sender, TappedEventArgs e)
     {
         if (!File.Exists(App.CrashLogPath))
         {

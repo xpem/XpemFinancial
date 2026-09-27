@@ -321,9 +321,11 @@ namespace XpemFinancial.VMs
         {
             var navigationParameter = new Dictionary<string, object>
             {
-                { "SelectedCategory", SelectedCategory },
                 { "TransactionType", SelectedTransactionType }
             };
+
+            if (SelectedCategory is not null)
+                navigationParameter["SelectedCategory"] = SelectedCategory;
 
             await Shell.Current.GoToAsync(nameof(CategoryPicker), true, navigationParameter);
         }
@@ -507,7 +509,7 @@ namespace XpemFinancial.VMs
             }
         }
 
-        partial void OnAmountChanged(string? oldValue, string newValue)
+        partial void OnAmountChanged(string oldValue, string newValue)
         {
             if (oldValue != newValue)
             {
@@ -657,6 +659,7 @@ namespace XpemFinancial.VMs
                 amountValue = Math.Abs(amountValue);
 
             var user = await userSessionService.GetCurrentUserAsync();
+            if (user is null) return;
 
             try
             {
@@ -795,7 +798,7 @@ namespace XpemFinancial.VMs
                 Description = (string.IsNullOrEmpty(Description) ? SelectedCategory?.Name : Description)?.Trim(),
                 Amount = amountValue,
                 Type = SelectedTransactionType,
-                CategoryId = SelectedCategory?.Id ?? existingTransaction.CategoryId.Value,
+                CategoryId = SelectedCategory?.Id ?? existingTransaction.CategoryId ?? 0,
                 CategoryExternalId = SelectedCategory?.ExternalId,
                 AccountId = SelectedAccount?.Id ?? existingTransaction.AccountId,
                 Frequency = Frequency.Monthly,

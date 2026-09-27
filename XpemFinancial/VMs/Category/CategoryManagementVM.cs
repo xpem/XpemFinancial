@@ -9,8 +9,7 @@ using XpemFinancial.VMs.Category;
 namespace XpemFinancial.VMs;
 
 public partial class CategoryManagementVM(
-    ICategoryService categoryService,
-    IUserSessionService userSessionService) : VMBase
+    ICategoryService categoryService) : VMBase
 {
     [ObservableProperty]
     public partial List<CategoryDisplayItem> Categories { get; set; } = [];

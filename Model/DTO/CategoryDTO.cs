@@ -13,10 +13,8 @@ namespace Model.DTO
         /// </summary>
         public Guid CategoryId { get; set; }
 
-        public int? ExternalId { get; set; }
-
         [StringLength(50)]
-        public string Name { get; set; }
+        public required string Name { get; set; }
 
         public int? ParentExternalId { get; set; }
 
@@ -24,7 +22,7 @@ namespace Model.DTO
 
         public int UserId { get; set; }
 
-        public UserDTO User { get; set; }
+        public UserDTO User { get; set; } = null!;
 
         public bool SystemDefault { get; set; }
 
