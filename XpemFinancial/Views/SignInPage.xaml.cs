@@ -26,7 +26,7 @@ public partial class SignInPage : ContentPage
 
         string log = await File.ReadAllTextAsync(App.CrashLogPath);
 
-        bool clear = await DisplayAlert(
+        bool clear = await DisplayAlertAsync(
             "Log de erros",
             log.Length > 2000 ? "..." + log[^2000..] : log,
             "Limpar log",

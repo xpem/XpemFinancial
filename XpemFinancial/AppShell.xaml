@@ -6,12 +6,19 @@
     xmlns:Components="clr-namespace:XpemFinancial.Components"
     xmlns:icons="clr-namespace:XpemFinancial.Resources"
     xmlns:local="clr-namespace:XpemFinancial.Views"
+    xmlns:utils="clr-namespace:XpemFinancial.Utils"
     Title="XpemFinancial"
     BackgroundColor="#10151e"
     FlyoutBackgroundColor="{StaticResource PageBackground}"
     FlyoutHeaderBehavior="CollapseOnScroll"
     ForegroundColor="{StaticResource FontLight}"
     Shell.TitleColor="White">
+
+    <Shell.Resources>
+        <ResourceDictionary>
+            <utils:IsNotNullConverter x:Key="IsNotNullConverter" />
+        </ResourceDictionary>
+    </Shell.Resources>
 
     <Shell.ItemTemplate>
         <DataTemplate>
@@ -38,11 +45,7 @@
     </Shell.ItemTemplate>
 
     <Shell.FlyoutHeader>
-        <Components:FlyoutHeader
-            Email="{Binding Email}"
-            HasSyncError="{Binding HasSyncError}"
-            LastSyncDate="{Binding LastSyncDate}"
-            Name="{Binding Name}" />
+        <Components:FlyoutHeader Name="{Binding Name}" Email="{Binding Email}" />
     </Shell.FlyoutHeader>
 
 
@@ -71,6 +74,10 @@
         <ShellContent ContentTemplate="{DataTemplate local:ChartPage}" />
     </FlyoutItem>
 
+    <FlyoutItem Title="Médias e Projeções" Icon="{x:Static icons:IconFont.ChartLine}">
+        <ShellContent ContentTemplate="{DataTemplate local:AveragesProjectionsPage}" />
+    </FlyoutItem>
+
     <FlyoutItem Title="Transações" Icon="{x:Static icons:IconFont.ListCheck}">
         <ShellContent ContentTemplate="{DataTemplate local:Transaction.TransactionListPage}" />
     </FlyoutItem>
@@ -78,6 +85,32 @@
     <Shell.FlyoutFooterTemplate>
         <DataTemplate>
             <StackLayout>
+                <!-- Sync status block -->
+                <HorizontalStackLayout
+                    Margin="14,8,10,0"
+                    Spacing="6">
+                    <Label
+                        FontFamily="Icons"
+                        FontSize="13"
+                        IsVisible="{Binding HasSyncError}"
+                        Text="{x:Static icons:IconFont.TriangleExclamation}"
+                        TextColor="{StaticResource Expense}"
+                        VerticalOptions="Center" />
+                    <Label
+                        FontFamily="OpenSansRegular"
+                        FontSize="12"
+                        IsVisible="{Binding HasSyncError}"
+                        Text="Falha na sincronização"
+                        TextColor="{StaticResource Expense}"
+                        VerticalOptions="Center" />
+                    <Label
+                        FontFamily="OpenSansRegular"
+                        FontSize="12"
+                        IsVisible="{Binding LastSyncDate, Converter={StaticResource IsNotNullConverter}}"
+                        Text="{Binding LastSyncDate}"
+                        TextColor="#aaaaaa"
+                        VerticalOptions="Center" />
+                </HorizontalStackLayout>
                 <Button
                     x:Name="BtnSignOut"
                     Margin="10,10,10,10"

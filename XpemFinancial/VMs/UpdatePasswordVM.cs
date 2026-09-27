@@ -7,8 +7,8 @@ namespace XpemFinancial.VMs
 {
     public partial class UpdatePasswordVM(IUserService userService) : VMBase
     {
-        [ObservableProperty] private string email;
-        [ObservableProperty] private bool isRequired;
+        [ObservableProperty] public partial string Email { get; set; }
+        [ObservableProperty] public partial bool IsRequired { get; set; }
 
         [RelayCommand]
         private async Task UpdatePassword()

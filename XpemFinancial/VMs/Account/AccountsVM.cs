@@ -14,16 +14,16 @@ public partial class AccountsVM(
     ITransactionService transactionService) : VMBase
 {
     [ObservableProperty]
-    private List<AccountDTO> activeAccounts = [];
+    public partial List<AccountDTO> ActiveAccounts { get; set; } = [];
 
     [ObservableProperty]
-    private List<AccountDTO> inactiveAccounts = [];
+    public partial List<AccountDTO> InactiveAccounts { get; set; } = [];
 
     [ObservableProperty]
-    private bool hasInactiveAccounts;
+    public partial bool HasInactiveAccounts { get; set; }
 
     [ObservableProperty]
-    private decimal generalBalance;
+    public partial decimal GeneralBalance { get; set; }
 
     public async Task InitializeAsync()
     {

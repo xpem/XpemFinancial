@@ -19,7 +19,7 @@ namespace XpemFinancial.VMs
         ITransactionService transactionService,
         SyncService syncService) : VMBase
     {
-        [ObservableProperty] private double progress;
+        [ObservableProperty] public partial double Progress { get; set; }
 
         public async Task SyncProcess()
         {

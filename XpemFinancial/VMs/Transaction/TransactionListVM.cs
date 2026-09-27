@@ -16,21 +16,21 @@ namespace XpemFinancial.VMs.Transaction
         IAccountService accountService,
         ICategoryService categoryService) : VMBase
     {
-        [ObservableProperty] private string monthYearDisplay = string.Empty;
-        [ObservableProperty] private ObservableCollection<TransactionDTO> transactions = [];
-        [ObservableProperty] private ObservableCollection<TransactionDTO> filteredTransactions = [];
-        [ObservableProperty] private TransactionDTO? selectedTransaction;
-        [ObservableProperty] private bool hasMultipleAccounts;
-        
+        [ObservableProperty] public partial string MonthYearDisplay { get; set; } = string.Empty;
+        [ObservableProperty] public partial ObservableCollection<TransactionDTO> Transactions { get; set; } = [];
+        [ObservableProperty] public partial ObservableCollection<TransactionDTO> FilteredTransactions { get; set; } = [];
+        [ObservableProperty] public partial TransactionDTO? SelectedTransaction { get; set; }
+        [ObservableProperty] public partial bool HasMultipleAccounts { get; set; }
+
         // Search fields
-        [ObservableProperty] private string searchDescription = string.Empty;
-        [ObservableProperty] private DateTime startDate = DateTime.Now.AddMonths(-1);
-        [ObservableProperty] private DateTime endDate = DateTime.Now;
-        [ObservableProperty] private ObservableCollection<CategoryDTO> availableCategories = [];
-        [ObservableProperty] private CategoryDTO? selectedCategory;
-        [ObservableProperty] private bool filterIncomeOnly;
-        [ObservableProperty] private bool filterExpenseOnly;
-        [ObservableProperty] private bool showFilters = false;
+        [ObservableProperty] public partial string SearchDescription { get; set; } = string.Empty;
+        [ObservableProperty] public partial DateTime StartDate { get; set; } = DateTime.Now.AddMonths(-1);
+        [ObservableProperty] public partial DateTime EndDate { get; set; } = DateTime.Now;
+        [ObservableProperty] public partial ObservableCollection<CategoryDTO> AvailableCategories { get; set; } = [];
+        [ObservableProperty] public partial CategoryDTO? SelectedCategory { get; set; }
+        [ObservableProperty] public partial bool FilterIncomeOnly { get; set; }
+        [ObservableProperty] public partial bool FilterExpenseOnly { get; set; }
+        [ObservableProperty] public partial bool ShowFilters { get; set; } = false;
 
         private DateTime _selectedDate;
         private int? _currentUserId;

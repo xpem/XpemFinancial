@@ -18,25 +18,25 @@ namespace XpemFinancial.VMs
         IRecurringRuleService recurringRuleService,
         IUserService userService) : VMBase
     {
-        [ObservableProperty] private ObservableCollection<TransactionDTO> transactions;
-        [ObservableProperty] private TransactionDTO selectedTransaction;
-        [ObservableProperty] private bool includePreviousBalance;
-        [ObservableProperty] private decimal previousBalance;
-        [ObservableProperty] private decimal income;
-        [ObservableProperty] private decimal expense;
-        [ObservableProperty] private decimal total;
+        [ObservableProperty] public partial ObservableCollection<TransactionDTO> Transactions { get; set; }
+        [ObservableProperty] public partial TransactionDTO SelectedTransaction { get; set; }
+        [ObservableProperty] public partial bool IncludePreviousBalance { get; set; }
+        [ObservableProperty] public partial decimal PreviousBalance { get; set; }
+        [ObservableProperty] public partial decimal Income { get; set; }
+        [ObservableProperty] public partial decimal Expense { get; set; }
+        [ObservableProperty] public partial decimal Total { get; set; }
         //[ObservableProperty] private decimal generalBalance;
-        [ObservableProperty] private bool isNullAccount = false;
-        [ObservableProperty] private bool isNotNullAccount = false;
-        [ObservableProperty] private string monthYearDisplay;
-        [ObservableProperty] private ObservableCollection<MonthOption> monthOptions = [];
-        [ObservableProperty] private MonthOption? selectedMonthOption;
-        [ObservableProperty] private bool isRequired;
+        [ObservableProperty] public partial bool IsNullAccount { get; set; } = false;
+        [ObservableProperty] public partial bool IsNotNullAccount { get; set; } = false;
+        [ObservableProperty] public partial string MonthYearDisplay { get; set; }
+        [ObservableProperty] public partial ObservableCollection<MonthOption> MonthOptions { get; set; } = [];
+        [ObservableProperty] public partial MonthOption? SelectedMonthOption { get; set; }
+        [ObservableProperty] public partial bool IsRequired { get; set; }
 
         // ── Account filter (Task 12) ──
-        [ObservableProperty] private ObservableCollection<AccountFilterItem> accountFilterOptions = [];
-        [ObservableProperty] private AccountFilterItem? selectedAccountFilter;
-        [ObservableProperty] private bool hasMultipleAccounts;
+        [ObservableProperty] public partial ObservableCollection<AccountFilterItem> AccountFilterOptions { get; set; } = [];
+        [ObservableProperty] public partial AccountFilterItem? SelectedAccountFilter { get; set; }
+        [ObservableProperty] public partial bool HasMultipleAccounts { get; set; }
 
         /// <summary>
         /// Preserves the selected account filter across VM re-creations within the same app session.

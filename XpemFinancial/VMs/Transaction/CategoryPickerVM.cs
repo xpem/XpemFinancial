@@ -19,27 +19,27 @@ public partial class CategoryPickerVM(ICategoryService categoryService, IUserSes
     /// <summary>
     /// Grouped categories for the accordion (Expander) view.
     /// </summary>
-    [ObservableProperty] private List<CategoryGroup> categoryGroups = [];
+    [ObservableProperty] public partial List<CategoryGroup> CategoryGroups { get; set; } = [];
 
     /// <summary>
     /// Flat filtered list shown during search.
     /// </summary>
-    [ObservableProperty] private List<CategoryDTO> filteredCategories = [];
+    [ObservableProperty] public partial List<CategoryDTO> FilteredCategories { get; set; } = [];
 
     /// <summary>
     /// Whether the search bar has text (controls which view is visible).
     /// </summary>
-    [ObservableProperty] private bool isSearchActive;
+    [ObservableProperty] public partial bool IsSearchActive { get; set; }
 
-    [ObservableProperty] private string searchText;
+    [ObservableProperty] public partial string SearchText { get; set; }
 
     // Separado do IsBusy para não esconder a lista nem desabilitar o SearchBar durante a busca
-    [ObservableProperty] private bool isSearching;
+    [ObservableProperty] public partial bool IsSearching { get; set; }
 
     /// <summary>
     /// Empty state message shown when the type filter yields zero results.
     /// </summary>
-    [ObservableProperty] private string? emptyStateMessage;
+    [ObservableProperty] public partial string? EmptyStateMessage { get; set; }
 
     /// <summary>
     /// Transaction type context used to filter categories by compatible CategoryType.

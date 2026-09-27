@@ -7,7 +7,7 @@ namespace XpemFinancial.VMs
     {
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(IsNotBusy))]
-        private bool isBusy;
+        public partial bool IsBusy { get; set; }
 
         public bool IsNotBusy => !IsBusy;
 
@@ -16,8 +16,9 @@ namespace XpemFinancial.VMs
         public static async Task ShowMessage(string title, string message)
         {
 #if WINDOWS
-            if (Application.Current?.MainPage is not null)
-                await Application.Current.MainPage.DisplayAlert(title, message, "OK");
+            var window = Application.Current?.Windows.Count > 0 ? Application.Current.Windows[0] : null;
+            if (window?.Page is not null)
+                await window.Page.DisplayAlertAsync(title, message, "OK");
 #else
             var snackbar = Snackbar.Make(message, duration: TimeSpan.FromSeconds(3));
             await snackbar.Show();
