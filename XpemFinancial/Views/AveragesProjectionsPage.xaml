@@ -3,6 +3,7 @@
     x:Class="XpemFinancial.Views.AveragesProjectionsPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:Components="clr-namespace:XpemFinancial.Components"
     xmlns:Icons="clr-namespace:XpemFinancial.Resources"
     xmlns:Utils="clr-namespace:XpemFinancial.Utils"
     xmlns:vms="clr-namespace:XpemFinancial.VMs"
@@ -141,6 +142,19 @@
                         TextColor="#d6e0eb"
                         VerticalOptions="Center" />
                 </HorizontalStackLayout>
+                <HorizontalStackLayout IsVisible="{Binding IsScenarioActive}" Spacing="6">
+                    <BoxView
+                        CornerRadius="2"
+                        HeightRequest="10"
+                        VerticalOptions="Center"
+                        WidthRequest="20"
+                        Color="#6cc8ef" />
+                    <Label
+                        FontSize="12"
+                        Text="Cenário simulado"
+                        TextColor="#d6e0eb"
+                        VerticalOptions="Center" />
+                </HorizontalStackLayout>
             </HorizontalStackLayout>
 
             <Label
@@ -148,6 +162,96 @@
                 FontSize="11"
                 Text="Linha pontilhada grossa = projeção baseada na mediana. Linha pontilhada fina = nível típico (mediana) dos últimos 6 meses, para comparar com os valores reais."
                 TextColor="#758292" />
+
+            <!--  Simulação de cenário  -->
+            <Border Padding="10" Stroke="#232c39" StrokeShape="RoundRectangle 5">
+                <VerticalStackLayout Spacing="10">
+                    <HorizontalStackLayout Spacing="0" VerticalOptions="Center">
+                        <CheckBox IsChecked="{Binding IsScenarioActive}" Color="White" />
+                        <Label
+                            FontAttributes="Bold"
+                            Text="Simular cenário"
+                            TextColor="#d6e0eb"
+                            VerticalOptions="Center">
+                            <Label.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding ToggleScenarioCommand}" />
+                            </Label.GestureRecognizers>
+                        </Label>
+                    </HorizontalStackLayout>
+
+                    <VerticalStackLayout IsVisible="{Binding IsScenarioActive}" Spacing="10">
+                        <HorizontalStackLayout Spacing="0">
+                            <Button
+                                BorderColor="#9da9b9"
+                                BorderWidth="1"
+                                Command="{Binding SetScenarioTargetCommand}"
+                                CommandParameter="{x:Boolean False}"
+                                CornerRadius="0"
+                                FontSize="13"
+                                HeightRequest="30"
+                                Text="Entrada"
+                                TextColor="#d6e0eb">
+                                <Button.Triggers>
+                                    <DataTrigger
+                                        Binding="{Binding IsScenarioExpense}"
+                                        TargetType="Button"
+                                        Value="False">
+                                        <Setter Property="BackgroundColor" Value="{StaticResource Income}" />
+                                        <Setter Property="TextColor" Value="{StaticResource White}" />
+                                    </DataTrigger>
+                                    <DataTrigger
+                                        Binding="{Binding IsScenarioExpense}"
+                                        TargetType="Button"
+                                        Value="True">
+                                        <Setter Property="BackgroundColor" Value="Transparent" />
+                                        <Setter Property="TextColor" Value="#d6e0eb" />
+                                    </DataTrigger>
+                                </Button.Triggers>
+                            </Button>
+                            <Button
+                                BorderColor="#9da9b9"
+                                BorderWidth="1"
+                                Command="{Binding SetScenarioTargetCommand}"
+                                CommandParameter="{x:Boolean True}"
+                                CornerRadius="0"
+                                FontSize="13"
+                                HeightRequest="30"
+                                Text="Saída"
+                                TextColor="#d6e0eb">
+                                <Button.Triggers>
+                                    <DataTrigger
+                                        Binding="{Binding IsScenarioExpense}"
+                                        TargetType="Button"
+                                        Value="True">
+                                        <Setter Property="BackgroundColor" Value="{StaticResource Expense}" />
+                                        <Setter Property="TextColor" Value="{StaticResource White}" />
+                                    </DataTrigger>
+                                    <DataTrigger
+                                        Binding="{Binding IsScenarioExpense}"
+                                        TargetType="Button"
+                                        Value="False">
+                                        <Setter Property="BackgroundColor" Value="Transparent" />
+                                        <Setter Property="TextColor" Value="#d6e0eb" />
+                                    </DataTrigger>
+                                </Button.Triggers>
+                            </Button>
+                        </HorizontalStackLayout>
+
+                        <VerticalStackLayout Spacing="4">
+                            <Label
+                                FontSize="12"
+                                Text="Variação mensal (ex.: 1000,00 para um aumento)"
+                                TextColor="#9da9b9" />
+                            <Components:CurrencyEntry Text="{Binding ScenarioDeltaText}" />
+                        </VerticalStackLayout>
+
+                        <Label
+                            FontSize="13"
+                            Text="{Binding ScenarioSummary}"
+                            TextColor="#6cc8ef" />
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+            </Border>
 
         </VerticalStackLayout>
     </ScrollView>

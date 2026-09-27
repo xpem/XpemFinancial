@@ -29,6 +29,9 @@ namespace XpemFinancial.Utils
         /// <summary>Day (1-based) of the historical expense point that deviates most from the median, if any.</summary>
         public int? ExpenseOutlierIndex { get; set; }
 
+        /// <summary>User-entered "what-if" line (transition point + 3 projected months); null when the scenario is off.</summary>
+        public List<ChartPoint>? SimulatedProjectionPoints { get; set; }
+
         // ── colours ───────────────────────────────────────────────────────────
         private static readonly Color IncomeColor = Color.FromArgb("#2bbf69");
         private static readonly Color ExpenseColor = Color.FromArgb("#f75c5c");
@@ -36,6 +39,7 @@ namespace XpemFinancial.Utils
         private static readonly Color AxisLabelColor = Color.FromArgb("#9da9b9");
         private static readonly Color BackgroundColor = Color.FromArgb("#191d24");
         private static readonly Color OutlierRingColor = Color.FromArgb("#ffcc00");
+        private static readonly Color SimulatedColor = Color.FromArgb("#6cc8ef");
 
         // ── layout constants (in device-independent pixels) ───────────────────
         private const float PadLeft = 58f;
@@ -111,6 +115,10 @@ namespace XpemFinancial.Utils
             // ── Series lines ──────────────────────────────────────────────────
             DrawSeries(canvas, IncomePoints, plotW, plotH, IncomeColor, IncomeOutlierIndex);
             DrawSeries(canvas, ExpensePoints, plotW, plotH, ExpenseColor, ExpenseOutlierIndex);
+
+            // ── Simulated "what-if" scenario line (solid, drawn on top so it stands out) ──
+            if (SimulatedProjectionPoints is { Count: > 0 })
+                DrawSegment(canvas, SimulatedProjectionPoints, plotW, plotH, SimulatedColor, dashed: false, outlierIndex: null);
 
             // ── Axes (drawn on top of grid) ───────────────────────────────────
             canvas.StrokeColor = AxisLabelColor;

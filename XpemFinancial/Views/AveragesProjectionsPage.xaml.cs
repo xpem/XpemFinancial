@@ -29,6 +29,7 @@ namespace XpemFinancial.Views
             _drawable.MaxValue = _vm.MaxValue;
             _drawable.IncomeOutlierIndex = _vm.IncomeOutlierIndex;
             _drawable.ExpenseOutlierIndex = _vm.ExpenseOutlierIndex;
+            _drawable.SimulatedProjectionPoints = _vm.SimulatedProjectionPoints;
 
             MainThread.BeginInvokeOnMainThread(() => ChartCanvas.Invalidate());
         }

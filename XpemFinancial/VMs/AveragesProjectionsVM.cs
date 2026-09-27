@@ -1,6 +1,8 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using Model.DTO;
 using Service.Transaction;
+using System.Globalization;
 
 namespace XpemFinancial.VMs
 {
@@ -22,10 +24,20 @@ namespace XpemFinancial.VMs
         /// </summary>
         private const decimal OutlierDeviationRatio = 0.5m;
 
+        private static readonly CultureInfo PtBr = new("pt-BR");
+
         [ObservableProperty] private decimal averageIncome;
         [ObservableProperty] private decimal averageExpense;
         [ObservableProperty] private decimal averageBalance;
         [ObservableProperty] private string subtitleText = $"Últimos {HistoryMonths} meses + projeção de {ProjectionMonths} meses.";
+
+        [ObservableProperty] private bool isScenarioActive;
+        [ObservableProperty] private bool isScenarioExpense = true;
+        [ObservableProperty] private string scenarioDeltaText = "0,00";
+        [ObservableProperty] private string scenarioSummary = string.Empty;
+
+        /// <summary>Linha simulada (ponto de transição + 3 meses projetados), null quando o cenário está inativo.</summary>
+        public List<ChartPoint>? SimulatedProjectionPoints { get; private set; }
 
         /// <summary>Pontos de entrada: 6 reais (histórico) + 3 projetados.</summary>
         public List<ChartPoint> IncomePoints { get; private set; } = [];
@@ -51,6 +63,16 @@ namespace XpemFinancial.VMs
 
         /// <summary>Raised quando os dados mudam, para o GraphicsView se invalidar.</summary>
         public event Action? DataChanged;
+
+        partial void OnIsScenarioActiveChanged(bool value) => RecomputeScenario();
+        partial void OnIsScenarioExpenseChanged(bool value) => RecomputeScenario();
+        partial void OnScenarioDeltaTextChanged(string value) => RecomputeScenario();
+
+        [RelayCommand]
+        private void ToggleScenario() => IsScenarioActive = !IsScenarioActive;
+
+        [RelayCommand]
+        private void SetScenarioTarget(bool isExpense) => IsScenarioExpense = isExpense;
 
         public async Task InitializeAsync() => await LoadAsync();
 
@@ -145,12 +167,49 @@ namespace XpemFinancial.VMs
                 var allValues = incomePoints.Select(p => p.Value).Concat(expensePoints.Select(p => p.Value));
                 MaxValue = allValues.Any() ? Math.Max(allValues.Max(), 1) : 1;
 
+                RecomputeScenario();
                 DataChanged?.Invoke();
             }
             finally
             {
                 IsBusy = false;
             }
+        }
+
+        /// <summary>
+        /// Recalcula a linha simulada e a frase-resumo a partir de <see cref="AverageIncome"/>/
+        /// <see cref="AverageExpense"/> já carregados — puro, sem I/O, para reagir instantaneamente
+        /// enquanto o usuário digita/alterna o cenário.
+        /// </summary>
+        private void RecomputeScenario()
+        {
+            if (!IsScenarioActive || !decimal.TryParse(ScenarioDeltaText, NumberStyles.Currency, PtBr, out decimal delta))
+            {
+                SimulatedProjectionPoints = null;
+                ScenarioSummary = string.Empty;
+                DataChanged?.Invoke();
+                return;
+            }
+
+            decimal baseline = IsScenarioExpense ? AverageExpense : AverageIncome;
+            decimal simulatedValue = baseline + delta;
+
+            var points = new List<ChartPoint> { new(RealPointCount, baseline) };
+            for (int i = 1; i <= ProjectionMonths; i++)
+                points.Add(new ChartPoint(RealPointCount + i, simulatedValue));
+
+            SimulatedProjectionPoints = points;
+
+            decimal simulatedBalance = IsScenarioExpense
+                ? AverageBalance - delta
+                : AverageBalance + delta;
+
+            string label = IsScenarioExpense ? "saída" : "entrada";
+            ScenarioSummary =
+                $"Com esse cenário, sua {label} média passaria de {baseline.ToString("C", PtBr)} para {simulatedValue.ToString("C", PtBr)} — " +
+                $"o saldo médio projetado iria de {AverageBalance.ToString("C", PtBr)} para {simulatedBalance.ToString("C", PtBr)}.";
+
+            DataChanged?.Invoke();
         }
 
         /// <summary>

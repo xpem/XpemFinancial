@@ -640,4 +640,91 @@ public class AveragesProjectionsPropertyTests
 
         return transactions;
     }
+
+    /// <summary>
+    /// Mirrors AveragesProjectionsVM.RecomputeScenario: the "what-if" line (transition point +
+    /// 3 projected months, flat at baseline+delta) and the resulting simulated balance.
+    /// </summary>
+    private static (List<ChartPoint> Points, decimal SimulatedBalance, decimal Baseline, decimal SimulatedValue)
+        ComputeScenario(decimal averageIncome, decimal averageExpense, decimal averageBalance, bool isScenarioExpense, decimal delta, int realPointCount)
+    {
+        decimal baseline = isScenarioExpense ? averageExpense : averageIncome;
+        decimal simulatedValue = baseline + delta;
+
+        var points = new List<ChartPoint> { new(realPointCount, baseline) };
+        for (int i = 1; i <= ProjectionMonths; i++)
+            points.Add(new ChartPoint(realPointCount + i, simulatedValue));
+
+        decimal simulatedBalance = isScenarioExpense ? averageBalance - delta : averageBalance + delta;
+
+        return (points, simulatedBalance, baseline, simulatedValue);
+    }
+
+    /// <summary>
+    /// Generates a random (AverageIncome, AverageExpense, Delta, IsExpense) tuple for scenario
+    /// simulation properties — Delta can be negative (e.g. simulating a cost reduction) or
+    /// positive (e.g. a rent increase).
+    /// </summary>
+    private static Gen<(decimal AverageIncome, decimal AverageExpense, decimal Delta, bool IsExpense)> ScenarioInput()
+    {
+        return from incomeInt in Gen.Choose(0, 100_000)
+               from expenseInt in Gen.Choose(0, 100_000)
+               from deltaInt in Gen.Choose(-100_000, 100_000)
+               from isExpense in Gen.Elements(true, false)
+               select (incomeInt / 100m, expenseInt / 100m, deltaInt / 100m, isExpense);
+    }
+
+    /// <summary>
+    /// Property 11: The simulated scenario's 3 projected points are always exactly
+    /// baseline + delta (flat) — same "flat projection" construction used by the automatic
+    /// median-based projection, just shifted by the user's hypothetical delta.
+    /// </summary>
+    [Property(MaxTest = 100)]
+    [Trait("Property", "11")]
+    public Property ScenarioProjectedPoints_AreAlwaysBaselinePlusDelta()
+    {
+        return Prop.ForAll(
+            ScenarioInput().ToArbitrary(),
+            input =>
+            {
+                decimal averageBalance = input.AverageIncome - input.AverageExpense;
+                var result = ComputeScenario(
+                    input.AverageIncome, input.AverageExpense, averageBalance, input.IsExpense, input.Delta, HistoryMonths);
+
+                var projected = result.Points.Skip(1).ToList(); // drop the transition point, keep the 3 projected months
+                decimal expectedValue = result.Baseline + input.Delta;
+
+                bool allEqual = projected.All(p => p.Value == expectedValue);
+
+                return allEqual
+                    .Label($"All 3 simulated points should equal {expectedValue}")
+                    .And(projected.Count == ProjectionMonths)
+                    .Label($"Expected {ProjectionMonths} projected points, got {projected.Count}")
+                    .And(result.SimulatedValue == expectedValue)
+                    .Label($"SimulatedValue should be baseline+delta ({expectedValue}), was {result.SimulatedValue}");
+            });
+    }
+
+    /// <summary>
+    /// Property 12: The simulated balance always equals AverageBalance - delta when the
+    /// scenario targets Saída, and AverageBalance + delta when it targets Entrada.
+    /// </summary>
+    [Property(MaxTest = 100)]
+    [Trait("Property", "12")]
+    public Property SimulatedBalance_AlwaysReflectsTheDeltaWithCorrectSign()
+    {
+        return Prop.ForAll(
+            ScenarioInput().ToArbitrary(),
+            input =>
+            {
+                decimal averageBalance = input.AverageIncome - input.AverageExpense;
+                var result = ComputeScenario(
+                    input.AverageIncome, input.AverageExpense, averageBalance, input.IsExpense, input.Delta, HistoryMonths);
+
+                decimal expected = input.IsExpense ? averageBalance - input.Delta : averageBalance + input.Delta;
+
+                return (result.SimulatedBalance == expected)
+                    .Label($"Expected simulated balance {expected}, got {result.SimulatedBalance}");
+            });
+    }
 }
