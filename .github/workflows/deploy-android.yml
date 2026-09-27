@@ -36,7 +36,7 @@ jobs:
           java-version: '17'
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3.0.0
+        uses: android-actions/setup-android@v4.0.4
 
       # Workload já instalado no servidor - reinstalar se atualizar o .NET SDK
       # - name: Install MAUI Android Workload
