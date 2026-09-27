@@ -16,16 +16,16 @@ public partial class CategoryEditVM(
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsSubcategory))]
-    private bool isMainCategory = true;
+    public partial bool IsMainCategory { get; set; } = true;
 
-    [ObservableProperty] private string name = string.Empty;
-    [ObservableProperty] private CategoryDTO? parentCategory;
-    [ObservableProperty] private string? parentCategoryName;
-    [ObservableProperty] private bool isEditMode;
-    [ObservableProperty] private bool canChangeType = true;
-    [ObservableProperty] private bool isInactive;
-    [ObservableProperty] private string inheritedTypeDisplayText = string.Empty;
-    [ObservableProperty] private int selectedCategoryTypeIndex = -1;
+    [ObservableProperty] public partial string Name { get; set; } = string.Empty;
+    [ObservableProperty] public partial CategoryDTO? ParentCategory { get; set; }
+    [ObservableProperty] public partial string? ParentCategoryName { get; set; }
+    [ObservableProperty] public partial bool IsEditMode { get; set; }
+    [ObservableProperty] public partial bool CanChangeType { get; set; } = true;
+    [ObservableProperty] public partial bool IsInactive { get; set; }
+    [ObservableProperty] public partial string InheritedTypeDisplayText { get; set; } = string.Empty;
+    [ObservableProperty] public partial int SelectedCategoryTypeIndex { get; set; } = -1;
 
     /// <summary>
     /// Options for the CategoryType picker: Receita (Income), Despesa (Expense), Ambos (Both).

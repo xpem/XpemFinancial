@@ -26,15 +26,15 @@ namespace XpemFinancial.VMs
 
         private static readonly CultureInfo PtBr = new("pt-BR");
 
-        [ObservableProperty] private decimal averageIncome;
-        [ObservableProperty] private decimal averageExpense;
-        [ObservableProperty] private decimal averageBalance;
-        [ObservableProperty] private string subtitleText = $"Últimos {HistoryMonths} meses + projeção de {ProjectionMonths} meses.";
+        [ObservableProperty] public partial decimal AverageIncome { get; set; }
+        [ObservableProperty] public partial decimal AverageExpense { get; set; }
+        [ObservableProperty] public partial decimal AverageBalance { get; set; }
+        [ObservableProperty] public partial string SubtitleText { get; set; } = $"Últimos {HistoryMonths} meses + projeção de {ProjectionMonths} meses.";
 
-        [ObservableProperty] private bool isScenarioActive;
-        [ObservableProperty] private bool isScenarioExpense = true;
-        [ObservableProperty] private string scenarioDeltaText = "0,00";
-        [ObservableProperty] private string scenarioSummary = string.Empty;
+        [ObservableProperty] public partial bool IsScenarioActive { get; set; }
+        [ObservableProperty] public partial bool IsScenarioExpense { get; set; } = true;
+        [ObservableProperty] public partial string ScenarioDeltaText { get; set; } = "0,00";
+        [ObservableProperty] public partial string ScenarioSummary { get; set; } = string.Empty;
 
         /// <summary>Linha simulada (ponto de transição + 3 meses projetados), null quando o cenário está inativo.</summary>
         public List<ChartPoint>? SimulatedProjectionPoints { get; private set; }

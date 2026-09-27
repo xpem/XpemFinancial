@@ -9,14 +9,14 @@ namespace XpemFinancial.VMs
 {
     public partial class SignUpVM(IUserService userService) : VMBase
     {
-        [ObservableProperty] private string name;
-        [ObservableProperty] private string email;
-        [ObservableProperty] private string password;
-        [ObservableProperty] private string confirmPassword;
-        [ObservableProperty] private bool btnSignUpEnabled = true;
-        [ObservableProperty] private bool errorMessageIsVisible;
-        [ObservableProperty] private bool isRequired;
-        [ObservableProperty] private string errorMessage;
+        [ObservableProperty] public partial string Name { get; set; }
+        [ObservableProperty] public partial string Email { get; set; }
+        [ObservableProperty] public partial string Password { get; set; }
+        [ObservableProperty] public partial string ConfirmPassword { get; set; }
+        [ObservableProperty] public partial bool BtnSignUpEnabled { get; set; } = true;
+        [ObservableProperty] public partial bool ErrorMessageIsVisible { get; set; }
+        [ObservableProperty] public partial bool IsRequired { get; set; }
+        [ObservableProperty] public partial string ErrorMessage { get; set; }
 
         private bool VerifyFields()
         {
@@ -79,7 +79,7 @@ namespace XpemFinancial.VMs
             BtnSignUpEnabled = false;
             try
             {
-                var resp = await userService.SignUpAsync(name, email, password);
+                var resp = await userService.SignUpAsync(Name, Email, Password);
 
                 if (!resp.Success)
                 {

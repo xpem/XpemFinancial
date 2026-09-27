@@ -22,16 +22,16 @@ namespace XpemFinancial.VMs
         IUserService userService,
         IAccountService accountService) : VMBase
     {
-        [ObservableProperty] private string monthYearDisplay = string.Empty;
-        [ObservableProperty] private ObservableCollection<TransactionDTO> transactions = [];
-        [ObservableProperty] private TransactionDTO? selectedTransaction;
-        [ObservableProperty] private bool includePreviousBalance;
+        [ObservableProperty] public partial string MonthYearDisplay { get; set; } = string.Empty;
+        [ObservableProperty] public partial ObservableCollection<TransactionDTO> Transactions { get; set; } = [];
+        [ObservableProperty] public partial TransactionDTO? SelectedTransaction { get; set; }
+        [ObservableProperty] public partial bool IncludePreviousBalance { get; set; }
         //[ObservableProperty] private decimal generalBalance;
 
-        [ObservableProperty] private bool isAnnualMode;
-        [ObservableProperty] private bool isAnnualCumulative = true;
-        [ObservableProperty] private ObservableCollection<TransactionDTO> topExpenses = [];
-        [ObservableProperty] private bool hasMultipleAccounts;
+        [ObservableProperty] public partial bool IsAnnualMode { get; set; }
+        [ObservableProperty] public partial bool IsAnnualCumulative { get; set; } = true;
+        [ObservableProperty] public partial ObservableCollection<TransactionDTO> TopExpenses { get; set; } = [];
+        [ObservableProperty] public partial bool HasMultipleAccounts { get; set; }
 
         /// <summary>Cumulative income points, ordered by day.</summary>
         public List<ChartPoint> IncomePoints { get; private set; } = [];

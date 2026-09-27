@@ -13,26 +13,26 @@ public partial class AccountEditVM(IAccountService accountService, IUserSessionS
     private AccountDTO? _existingAccount;
 
     [ObservableProperty]
-    private string name = string.Empty;
+    public partial string Name { get; set; } = string.Empty;
 
     [ObservableProperty]
-    private int selectedTypeIndex;
+    public partial int SelectedTypeIndex { get; set; }
 
     [ObservableProperty]
-    private bool includeInGeneralBalance = true;
+    public partial bool IncludeInGeneralBalance { get; set; } = true;
 
     [ObservableProperty]
-    private bool isEditMode;
+    public partial bool IsEditMode { get; set; }
 
     [ObservableProperty]
-    private string pageTitle = "Nova Conta";
+    public partial string PageTitle { get; set; } = "Nova Conta";
 
     // ── Ajuste de saldo ──
     [ObservableProperty]
-    private string currentBalance = string.Empty;
+    public partial string CurrentBalance { get; set; } = string.Empty;
 
     [ObservableProperty]
-    private bool isActiveAccount;
+    public partial bool IsActiveAccount { get; set; }
 
     private decimal _originalBalance;
 

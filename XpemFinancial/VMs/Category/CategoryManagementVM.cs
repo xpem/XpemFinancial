@@ -13,10 +13,10 @@ public partial class CategoryManagementVM(
     IUserSessionService userSessionService) : VMBase
 {
     [ObservableProperty]
-    private List<CategoryDisplayItem> categories = [];
+    public partial List<CategoryDisplayItem> Categories { get; set; } = [];
 
     [ObservableProperty]
-    private bool hasNoCategories;
+    public partial bool HasNoCategories { get; set; }
 
     public async Task InitializeAsync()
     {

@@ -27,30 +27,30 @@ namespace XpemFinancial.VMs
 
         private int TransactionId { get; set; }
 
-        [ObservableProperty] private string transactionTypeColor;
-        [ObservableProperty] private DateTime transactionDate;
-        [ObservableProperty] private string description;
-        [ObservableProperty] private string amount;
-        [ObservableProperty] private CategoryDTO? selectedCategory;
-        [ObservableProperty] private List<string> categories;
-        [ObservableProperty] private bool installmentPanelIsVisible = false;
-        [ObservableProperty] private int numberOfInstallments;
-        [ObservableProperty] private int initialInstallments;
-        [ObservableProperty] private string totalAmountInstallments = "0,00";
-        [ObservableProperty] private string selectedCategoryName;
-        [ObservableProperty] private bool isRequired;
-        [ObservableProperty] private Repetition selectedRepetition;
-        [ObservableProperty] private TransactionType selectedTransactionType;
-        [ObservableProperty] private bool isEditing = false;
-        [ObservableProperty] private string titleIcon;
-        [ObservableProperty] private string note;
-        [ObservableProperty] private List<AccountDTO> activeAccounts = [];
-        [ObservableProperty] private AccountDTO? selectedAccount;
-        [ObservableProperty] private List<AccountDTO> destinationAccounts = [];
-        [ObservableProperty] private AccountDTO? selectedDestinationAccount;
-        [ObservableProperty] private bool isTransfer;
-        [ObservableProperty] private bool suggestionsVisible = false;
-        [ObservableProperty] private string pageTitle;
+        [ObservableProperty] public partial string TransactionTypeColor { get; set; }
+        [ObservableProperty] public partial DateTime TransactionDate { get; set; }
+        [ObservableProperty] public partial string Description { get; set; }
+        [ObservableProperty] public partial string Amount { get; set; }
+        [ObservableProperty] public partial CategoryDTO? SelectedCategory { get; set; }
+        [ObservableProperty] public partial List<string> Categories { get; set; }
+        [ObservableProperty] public partial bool InstallmentPanelIsVisible { get; set; } = false;
+        [ObservableProperty] public partial int NumberOfInstallments { get; set; }
+        [ObservableProperty] public partial int InitialInstallments { get; set; }
+        [ObservableProperty] public partial string TotalAmountInstallments { get; set; } = "0,00";
+        [ObservableProperty] public partial string SelectedCategoryName { get; set; }
+        [ObservableProperty] public partial bool IsRequired { get; set; }
+        [ObservableProperty] public partial Repetition SelectedRepetition { get; set; }
+        [ObservableProperty] public partial TransactionType SelectedTransactionType { get; set; }
+        [ObservableProperty] public partial bool IsEditing { get; set; } = false;
+        [ObservableProperty] public partial string TitleIcon { get; set; }
+        [ObservableProperty] public partial string Note { get; set; }
+        [ObservableProperty] public partial List<AccountDTO> ActiveAccounts { get; set; } = [];
+        [ObservableProperty] public partial AccountDTO? SelectedAccount { get; set; }
+        [ObservableProperty] public partial List<AccountDTO> DestinationAccounts { get; set; } = [];
+        [ObservableProperty] public partial AccountDTO? SelectedDestinationAccount { get; set; }
+        [ObservableProperty] public partial bool IsTransfer { get; set; }
+        [ObservableProperty] public partial bool SuggestionsVisible { get; set; } = false;
+        [ObservableProperty] public partial string PageTitle { get; set; }
 
         /// <summary>
         /// Stores the existing transaction's DestinationAccountId when editing a transfer, for pre-selection.
@@ -73,14 +73,14 @@ namespace XpemFinancial.VMs
 
         // Esta propriedade apenas facilita a exibição no botão/label da View
         // Ela será atualizada sempre que a SelectedCategory mudar
-        public string CategoryDisplayName => selectedCategory?.Name ?? "Sem Categoria";
+        public string CategoryDisplayName => SelectedCategory?.Name ?? "Sem Categoria";
 
         /// <summary>
         /// When editing a transaction that references an inactive category, this holds
         /// the original category name for display purposes (Req 6.3). The picker will NOT
         /// pre-select it (Req 6.4) — user must choose a new active category before saving.
         /// </summary>
-        [ObservableProperty] private string? inactiveCategoryDisplayName;
+        [ObservableProperty] public partial string? InactiveCategoryDisplayName { get; set; }
 
         /// <summary>
         /// True when the transaction being edited references an inactive category.
@@ -92,7 +92,7 @@ namespace XpemFinancial.VMs
         /// Scope selected via the inline radio buttons when editing a recurring occurrence.
         /// Defaults to ThisOnly — the safest option.
         /// </summary>
-        [ObservableProperty] private EditScope selectedEditScope = EditScope.ThisOnly;
+        [ObservableProperty] public partial EditScope SelectedEditScope { get; set; } = EditScope.ThisOnly;
 
         /// <summary>
         /// True when the transaction being edited belongs to a recurring rule.

@@ -10,14 +10,14 @@ namespace XpemFinancial.VMs
 {
     public partial class SignInVM(IUserService userService, IUserSessionService userSessionService) : VMBase
     {
-        [ObservableProperty] private string email;
-        [ObservableProperty] private string password;
-        [ObservableProperty] private string errorMessage;
-        [ObservableProperty] private bool errorMessageIsVisible;
-        [ObservableProperty] private string signInText = "Acessar";
-        [ObservableProperty] private bool btnSignEnabled = true;
-        [ObservableProperty] private string version = ((App)Application.Current)!.Version;
-        [ObservableProperty] private bool isRequired;
+        [ObservableProperty] public partial string Email { get; set; }
+        [ObservableProperty] public partial string Password { get; set; }
+        [ObservableProperty] public partial string ErrorMessage { get; set; }
+        [ObservableProperty] public partial bool ErrorMessageIsVisible { get; set; }
+        [ObservableProperty] public partial string SignInText { get; set; } = "Acessar";
+        [ObservableProperty] public partial bool BtnSignEnabled { get; set; } = true;
+        [ObservableProperty] public partial string Version { get; set; } = ((App)Application.Current)!.Version;
+        [ObservableProperty] public partial bool IsRequired { get; set; }
 
         // O app abre o endpoint do servidor, que cuida de todo o OAuth com o Google.
         // O servidor redireciona de volta via deep link com o token da API já pronto.

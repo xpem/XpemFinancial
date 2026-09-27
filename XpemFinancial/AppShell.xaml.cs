@@ -41,7 +41,7 @@ namespace XpemFinancial
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Erro ao navegar para {Target}. Causa provável: recurso de estilo ausente ou XamlParseException.", args.Current?.Location);
-                await DisplayAlert("Erro de navegação", $"Não foi possível abrir a tela.\n\n{ex.GetBaseException().Message}", "OK");
+                await DisplayAlertAsync("Erro de navegação", $"Não foi possível abrir a tela.\n\n{ex.GetBaseException().Message}", "OK");
             }
         }
     }

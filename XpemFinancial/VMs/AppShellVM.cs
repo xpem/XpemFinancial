@@ -12,16 +12,16 @@ namespace XpemFinancial.VMs
     public partial class AppShellVM(IUserSessionService userSessionService, IBuildDbService buildDbService, SyncService syncService) : ObservableObject
     {
         [ObservableProperty]
-        private string? email;
+        public partial string? Email { get; set; }
 
         [ObservableProperty]
-        private string? name;
+        public partial string? Name { get; set; }
 
         [ObservableProperty]
-        private string? lastSyncDate;
+        public partial string? LastSyncDate { get; set; }
 
         [ObservableProperty]
-        private bool hasSyncError;
+        public partial bool HasSyncError { get; set; }
 
         public async Task UserFlyoutAsync()
         {
