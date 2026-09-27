@@ -105,7 +105,7 @@ public partial class CurrencyEntry : ContentView
     // Máximo de 9 dígitos (7 inteiros + 2 decimais = até 9.999.999,99)
     private const int MaxDigits = 9;
 
-    private void EntryCurrency_TextChanged(object sender, TextChangedEventArgs e)
+    private void EntryCurrency_TextChanged(object? sender, TextChangedEventArgs e)
     {
         if (_isUpdating || EntryCurrency == null) return;
 

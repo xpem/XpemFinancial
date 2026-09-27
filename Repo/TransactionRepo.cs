@@ -248,7 +248,7 @@ namespace Repo
                     TransactionID = t.Id,
                     Description = t.Description,
                     CategoryId = t.CategoryId,
-                    CategoryName = t.Category.Name,
+                    CategoryName = t.Category != null ? t.Category.Name : string.Empty,
                     AccountId = t.AccountId
                 })
                 .ToListAsync();

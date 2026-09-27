@@ -132,7 +132,7 @@ namespace Service.Category
         {
             var all = await categoryRepo.GetAllAsync();
 
-            var mainById = all.Where(c => c.IsMainCategory && c.ExternalId != null).ToDictionary(c => c.ExternalId, c => c.Name);
+            var mainById = all.Where(c => c.IsMainCategory && c.ExternalId != null).ToDictionary(c => c.ExternalId!.Value, c => c.Name);
 
             return all
                 .OrderBy(c => c.IsMainCategory ? c.Name : mainById.GetValueOrDefault(c.ParentExternalId ?? 0, string.Empty))

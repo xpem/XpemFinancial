@@ -62,9 +62,7 @@ namespace Model.DTO
 
         public required int UserId { get; set; }
 
-        public UserDTO User { get; set; }
-
-        public int? ExternalId { get; set; }
+        public UserDTO User { get; set; } = null!;
 
         /// <summary>
         /// Controls the synchronization lifecycle of this transaction.

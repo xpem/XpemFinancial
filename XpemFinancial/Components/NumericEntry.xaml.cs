@@ -55,7 +55,7 @@ public partial class NumericEntry : ContentView
         });
     }
 
-    private void EntryNumeric_TextChanged(object sender, TextChangedEventArgs e)
+    private void EntryNumeric_TextChanged(object? sender, TextChangedEventArgs e)
     {
         if (_isUpdating || EntryNumeric == null) return;
 

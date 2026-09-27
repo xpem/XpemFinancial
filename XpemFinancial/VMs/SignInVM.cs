@@ -16,7 +16,7 @@ namespace XpemFinancial.VMs
         [ObservableProperty] public partial bool ErrorMessageIsVisible { get; set; }
         [ObservableProperty] public partial string SignInText { get; set; } = "Acessar";
         [ObservableProperty] public partial bool BtnSignEnabled { get; set; } = true;
-        [ObservableProperty] public partial string Version { get; set; } = ((App)Application.Current)!.Version;
+        [ObservableProperty] public partial string Version { get; set; } = (Application.Current as App)?.Version ?? string.Empty;
         [ObservableProperty] public partial bool IsRequired { get; set; }
 
         // O app abre o endpoint do servidor, que cuida de todo o OAuth com o Google.

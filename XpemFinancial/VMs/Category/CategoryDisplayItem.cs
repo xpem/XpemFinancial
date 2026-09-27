@@ -4,7 +4,7 @@ namespace XpemFinancial.VMs.Category
 {
     public class CategoryDisplayItem
     {
-        public CategoryDTO Category { get; set; }
+        public required CategoryDTO Category { get; set; }
 
         public bool IsMainCategory => Category.IsMainCategory;
 

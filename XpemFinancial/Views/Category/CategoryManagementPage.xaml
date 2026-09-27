@@ -6,6 +6,7 @@
     xmlns:Icons="clr-namespace:XpemFinancial.Resources"
     xmlns:Utils="clr-namespace:XpemFinancial.Utils"
     xmlns:vms="clr-namespace:XpemFinancial.VMs"
+    xmlns:vmsCategory="clr-namespace:XpemFinancial.VMs.Category"
     x:DataType="vms:CategoryManagementVM"
     BackgroundColor="{StaticResource BodyBackground}">
 
@@ -76,7 +77,7 @@
         <!--  Category List  -->
         <CollectionView IsVisible="{Binding IsNotBusy}" ItemsSource="{Binding Categories}">
             <CollectionView.ItemTemplate>
-                <DataTemplate x:DataType="vms:CategoryDisplayItem">
+                <DataTemplate x:DataType="vmsCategory:CategoryDisplayItem">
                     <Border
                         Margin="16,4"
                         Padding="12"

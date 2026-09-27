@@ -8,7 +8,7 @@ using XpemFinancial.Views;
 
 namespace XpemFinancial.VMs;
 
-public partial class CategoryPickerVM(ICategoryService categoryService, IUserSessionService userSessionService) : VMBase, IQueryAttributable
+public partial class CategoryPickerVM(ICategoryService categoryService) : VMBase, IQueryAttributable
 {
     // Instance-level cache: scoped to this navigation instance.
     private List<CategoryDTO> _cachedCategories = [];
@@ -54,7 +54,7 @@ public partial class CategoryPickerVM(ICategoryService categoryService, IUserSes
     /// Filtra a lista de categorias conforme o texto de busca é alterado.
     /// O filtro roda em background para não bloquear a UI, com debounce via CancellationToken.
     /// </summary>
-    partial void OnSearchTextChanged(string? oldValue, string newValue)
+    partial void OnSearchTextChanged(string oldValue, string newValue)
     {
         if (newValue == null || oldValue == newValue) return;
 

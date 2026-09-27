@@ -61,7 +61,7 @@ namespace XpemFinancial.VMs
 
         partial void OnIsNullAccountChanged(bool value) => IsNotNullAccount = !value;
 
-        partial void OnSelectedTransactionChanged(TransactionDTO? oldValue, TransactionDTO? newValue)
+        partial void OnSelectedTransactionChanged(TransactionDTO oldValue, TransactionDTO newValue)
         {
             if (newValue == null)
                 return;

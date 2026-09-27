@@ -17,7 +17,7 @@ public partial class RequiredEntry : ContentView
     /// </summary>
     public bool IsPasswordActive => IsPassword && !_isPasswordVisible;
 
-    private void OnTogglePasswordVisibility(object sender, EventArgs e)
+    private void OnTogglePasswordVisibility(object? sender, EventArgs e)
     {
         _isPasswordVisible = !_isPasswordVisible;
         OnPropertyChanged(nameof(IsPasswordActive));
