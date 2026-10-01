@@ -113,6 +113,7 @@ namespace XpemFinancial.Utils.Services
                         DateTime categoryLastUpdate = await categoryService.GetLastUpdatedAtAsync().ConfigureAwait(false);
                         await categoryService.PullAsync(user.Id, categoryLastUpdate).ConfigureAwait(false);
 
+                        bool accountSyncOk = true;
                         try
                         {
                             await accountService.PushPendingAsync(user.Id).ConfigureAwait(false);
@@ -120,15 +121,23 @@ namespace XpemFinancial.Utils.Services
                         }
                         catch (Exception ex)
                         {
-                            // Account sync falhou → interromper RecurringRules e Transactions (Req 9.4)
-                            Debug.WriteLine($"[SyncService] Account sync failed, skipping dependents: {ex.Message}");
-                            return;
+                            // Account sync falhou → interromper apenas os PULLs dependentes (Req 9.4).
+                            // O push de transações pendentes continua abaixo: TransactionService.PushAsync
+                            // já adia graciosamente quando falta o ExternalId da conta, então uma falha
+                            // temporária na sincronização de contas não deve travar transações já
+                            // pendentes indefinidamente (cada ciclo de 30s voltaria a cair aqui).
+                            accountSyncOk = false;
+                            Debug.WriteLine($"[SyncService] Account sync failed, skipping pull dependents: {ex.Message}");
                         }
+
+                        // Push de transações pendentes não depende do pull de contas ter sucedido.
+                        await transactionService.PushPendingAsync(user.Id).ConfigureAwait(false);
+
+                        if (!accountSyncOk)
+                            return;
 
                         DateTime recurringLastUpdate = await recurringRuleService.GetLastUpdatedAtAsync().ConfigureAwait(false);
                         await recurringRuleService.PullAsync(user.Id, recurringLastUpdate).ConfigureAwait(false);
-
-                        await transactionService.PushPendingAsync(user.Id).ConfigureAwait(false);
 
                         DateTime transactionLastUpdate = await transactionService.GetLastUpdatedAtAsync().ConfigureAwait(false);
                         await transactionService.PullAsync(user.Id, transactionLastUpdate).ConfigureAwait(false);

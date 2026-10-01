@@ -33,10 +33,9 @@ namespace XpemFinancial.VMs
         [ObservableProperty] public partial MonthOption? SelectedMonthOption { get; set; }
         [ObservableProperty] public partial bool IsRequired { get; set; }
 
-        // ── Account filter (Task 12) ──
         [ObservableProperty] public partial ObservableCollection<AccountFilterItem> AccountFilterOptions { get; set; } = [];
         [ObservableProperty] public partial AccountFilterItem? SelectedAccountFilter { get; set; }
-        [ObservableProperty] public partial bool HasMultipleAccounts { get; set; }
+        [ObservableProperty] public partial bool HasMultipleAccounts { get; set; } = false;
 
         /// <summary>
         /// Preserves the selected account filter across VM re-creations within the same app session.

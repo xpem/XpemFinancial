@@ -28,6 +28,14 @@ namespace ApiRepo
         private const string ErrorProperty = "error";
         private const string ErrorsProperty = "errors";
 
+        // IUserApiRepo é registrado como Transient, então este lock precisa ser static
+        // para serializar de fato o refresh entre instâncias diferentes (ex: a chamada
+        // disparada pelo SyncService em background e uma chamada da UI ao mesmo tempo).
+        // Sem isso, duas chamadas concorrentes enviam o mesmo refresh token (que é
+        // rotacionado a cada uso pelo servidor) e uma delas acaba recebendo
+        // "Invalid or expired refresh token" mesmo a sessão sendo válida.
+        private static readonly SemaphoreSlim RefreshLock = new(1, 1);
+
         public async Task<ApiResp> SignUpAsync(string name, string email, string password)
         {
             email = email.ToLowerInvariant();
@@ -177,32 +185,56 @@ namespace ApiRepo
             if (!resp.TryRefreshToken)
                 return resp;
 
-            // Token expirou, tentar refresh
-            (bool refreshTokenSuccess, string? newToken, ErrorTypes? refreshError) = await RefreshToken();
-
-            if (!refreshTokenSuccess)
+            // Token expirou. Serializa o refresh: se outra chamada concorrente (ex: o
+            // SyncService em background) já estiver renovando, espera ela terminar em
+            // vez de disparar um segundo refresh com o mesmo refreshToken (que seria
+            // rejeitado pelo servidor por já ter sido rotacionado pela primeira).
+            await RefreshLock.WaitAsync();
+            string? newToken;
+            try
             {
-                // Refresh falhou - retornar erro específico
-                return new ApiResp
+                UserDTO? currentUser = await userRepo.GetAsync();
+
+                if (!string.IsNullOrWhiteSpace(currentUser?.Token) && currentUser.Token != userToken)
                 {
-                    Success = false,
-                    Error = refreshError ?? ErrorTypes.RefreshTokenExpired,
-                    TryRefreshToken = false,
-                    Content = refreshError == ErrorTypes.RefreshTokenExpired 
-                        ? "Sessão expirada. Por favor, faça login novamente." 
-                        : resp.Content
-                };
+                    // Outra chamada já renovou o token enquanto esperávamos o lock.
+                    newToken = currentUser.Token;
+                }
+                else
+                {
+                    (bool refreshTokenSuccess, string? refreshedToken, ErrorTypes? refreshError) = await RefreshToken();
+
+                    if (!refreshTokenSuccess)
+                    {
+                        // Refresh falhou - retornar erro específico
+                        return new ApiResp
+                        {
+                            Success = false,
+                            Error = refreshError ?? ErrorTypes.RefreshTokenExpired,
+                            TryRefreshToken = false,
+                            Content = refreshError == ErrorTypes.RefreshTokenExpired
+                                ? "Sessão expirada. Por favor, faça login novamente."
+                                : resp.Content
+                        };
+                    }
+
+                    if (string.IsNullOrWhiteSpace(refreshedToken))
+                    {
+                        return new ApiResp
+                        {
+                            Success = false,
+                            Error = ErrorTypes.Unknown,
+                            TryRefreshToken = false,
+                            Content = "Erro ao renovar token de autenticação."
+                        };
+                    }
+
+                    newToken = refreshedToken;
+                }
             }
-
-            if (string.IsNullOrWhiteSpace(newToken))
+            finally
             {
-                return new ApiResp
-                {
-                    Success = false,
-                    Error = ErrorTypes.Unknown,
-                    TryRefreshToken = false,
-                    Content = "Erro ao renovar token de autenticação."
-                };
+                RefreshLock.Release();
             }
 
             // Refresh bem-sucedido - tentar novamente a requisição original
