@@ -15,8 +15,6 @@
             HorizontalOptions="End"
             Spacing="8"
             VerticalOptions="Center">
-
-
             <Button
                 BackgroundColor="{StaticResource Transfer}"
                 Command="{Binding GoToNewTransactionCommand}"
@@ -71,7 +69,7 @@
             <Utils:IsNotNullConverter x:Key="IsNotNullConverter" />
             <Utils:TransactionAmountColorConverter x:Key="TransactionAmountColorConverter" />
         </ResourceDictionary>
-        <Style x:Key="btnDefault" TargetType="Button">
+        <Style x:Key="BtnDefault" TargetType="Button">
             <Setter Property="BorderColor" Value="#9da9b9" />
             <Setter Property="BorderWidth" Value="1" />
             <Setter Property="CornerRadius" Value="0" />
@@ -107,15 +105,11 @@
                     </StackLayout>
                 </Border>
             </Grid>
-            <FlexLayout
-                Margin="5,0,5,10"
-                AlignItems="Center"
-                Direction="Row"
-                Wrap="Wrap">
+            <HorizontalStackLayout Margin="5,0,5,10">
                 <Button
                     x:Name="PreviousMonthButton"
                     Command="{Binding LoadPreviousMonthCommand}"
-                    Style="{StaticResource btnDefault}">
+                    Style="{StaticResource BtnDefault}">
                     <Button.ImageSource>
                         <FontImageSource
                             FontFamily="Icons"
@@ -130,6 +124,7 @@
                     StrokeShape="0">
                     <Picker
                         BackgroundColor="Transparent"
+                        HeightRequest="20"
                         HorizontalOptions="Center"
                         ItemsSource="{Binding MonthOptions}"
                         SelectedItem="{Binding SelectedMonthOption}"
@@ -138,7 +133,7 @@
                 <Button
                     x:Name="NextMonthButton"
                     Command="{Binding LoadNextMonthCommand}"
-                    Style="{StaticResource btnDefault}">
+                    Style="{StaticResource BtnDefault}">
                     <Button.ImageSource>
                         <FontImageSource
                             FontFamily="Icons"
@@ -147,7 +142,7 @@
                     </Button.ImageSource>
                 </Button>
 
-            </FlexLayout>
+            </HorizontalStackLayout>
             <!--
             <Border
                 Margin="5,0,5,10"
