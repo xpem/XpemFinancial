@@ -1,4 +1,5 @@
-﻿using Model.DTO;
+﻿using Microsoft.Extensions.Logging;
+using Model.DTO;
 using Service;
 using Service.Account;
 using Service.Category;
@@ -18,7 +19,8 @@ namespace XpemFinancial.Utils.Services
         ICategoryService categoryService,
         IAccountService accountService,
         IRecurringRuleService recurringRuleService,
-        ITransactionService transactionService)
+        ITransactionService transactionService,
+        ILogger<SyncService> logger)
     {
         // ── sync status ───────────────────────────────────────────────────────
         // Fix #3: use a volatile int so reads/writes from different threads are
@@ -127,7 +129,7 @@ namespace XpemFinancial.Utils.Services
                             // temporária na sincronização de contas não deve travar transações já
                             // pendentes indefinidamente (cada ciclo de 30s voltaria a cair aqui).
                             accountSyncOk = false;
-                            Debug.WriteLine($"[SyncService] Account sync failed, skipping pull dependents: {ex.Message}");
+                            logger.LogError(ex, "[SyncService] Account sync failed, skipping pull dependents");
                         }
 
                         // Push de transações pendentes não depende do pull de contas ter sucedido.
@@ -174,7 +176,7 @@ namespace XpemFinancial.Utils.Services
                 // from a timer callback path, as that would crash the process via an unobserved
                 // task exception. Log and continue; the next timer tick will retry.
                 Synchronizing = SyncStatus.Sleeping;
-                Debug.WriteLine($"[SyncService] Unexpected sync error: {ex}");
+                logger.LogError(ex, "[SyncService] Unexpected sync error");
             }
             finally
             {
