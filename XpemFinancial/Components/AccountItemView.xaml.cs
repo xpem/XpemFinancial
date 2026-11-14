@@ -9,6 +9,14 @@ public partial class AccountItemView : ContentView
         InitializeComponent();
     }
 
+    /// <summary>Brief fade on tap, as touch feedback (a Border has no Pressed visual state).</summary>
+    private async void OnItemTapped(object? sender, TappedEventArgs e)
+    {
+        double original = ItemBorder.Opacity;
+        await ItemBorder.FadeToAsync(original * 0.6, 60);
+        await ItemBorder.FadeToAsync(original, 120);
+    }
+
     public static readonly BindableProperty AccountNameProperty = BindableProperty.Create(
         nameof(AccountName), typeof(string), typeof(AccountItemView), string.Empty);
 

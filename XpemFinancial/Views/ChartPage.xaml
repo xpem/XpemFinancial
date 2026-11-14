@@ -4,6 +4,7 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:Icons="clr-namespace:XpemFinancial.Resources"
+    xmlns:Components="clr-namespace:XpemFinancial.Components"
     xmlns:Utils="clr-namespace:XpemFinancial.Utils"
     xmlns:dto="clr-namespace:Model.DTO;assembly=Model"
     xmlns:vms="clr-namespace:XpemFinancial.VMs"
@@ -31,22 +32,18 @@
             <Utils:AmountToColorConverter x:Key="AmountToColorConverter" />
             <Utils:IsRecurringConverter x:Key="IsRecurringConverter" />
             <Utils:IsFutureDateConverter x:Key="IsFutureDateConverter" />
-
-            <Style x:Key="NavButton" TargetType="Button">
-                <Setter Property="BorderColor" Value="#9da9b9" />
-                <Setter Property="BorderWidth" Value="1" />
-                <Setter Property="CornerRadius" Value="0" />
-                <Setter Property="HeightRequest" Value="20" />
-                <Setter Property="BackgroundColor" Value="Transparent" />
-            </Style>
+            <Utils:InvertedBoolConverter x:Key="InvertedBoolConverter" />
         </ResourceDictionary>
     </ContentPage.Resources>
 
     <ScrollView Margin="0">
         <VerticalStackLayout Padding="10" Spacing="10">
 
-            <Grid ColumnDefinitions="*,*">
-                <HorizontalStackLayout Margin="0,0,0,0">
+            <FlexLayout
+                AlignItems="Center"
+                JustifyContent="SpaceBetween"
+                Wrap="Wrap">
+                <HorizontalStackLayout Margin="0,5,10,5">
                     <Button Command="{Binding LoadPreviousPeriodCommand}" Style="{StaticResource NavButton}">
                         <Button.ImageSource>
                             <FontImageSource
@@ -55,12 +52,12 @@
                                 Size="20" />
                         </Button.ImageSource>
                     </Button>
-                    <Border Margin="5,0" Stroke="#9da9b9">
+                    <Border Style="{StaticResource FieldBorder}" Margin="5,0">
                         <Label
                             Margin="10"
                             HeightRequest="20"
                             Text="{Binding MonthYearDisplay}"
-                            TextColor="#d6e0eb" />
+                            TextColor="{StaticResource FontLight}" />
                     </Border>
                     <Button Command="{Binding LoadNextPeriodCommand}" Style="{StaticResource NavButton}">
                         <Button.ImageSource>
@@ -71,248 +68,144 @@
                         </Button.ImageSource>
                     </Button>
                 </HorizontalStackLayout>
-                <HorizontalStackLayout
-                    Grid.Column="1"
-                    Margin="10,0,0,0"
-                    HorizontalOptions="Center"
-                    Spacing="0">
+                <Border
+                    Margin="0,5"
+                    Padding="0"
+                    Style="{StaticResource FieldBorder}">
+                    <HorizontalStackLayout Spacing="0">
                     <Button
-                        BorderColor="#9da9b9"
-                        BorderWidth="1"
                         Command="{Binding SetScopeCommand}"
                         CommandParameter="{x:Boolean False}"
-                        CornerRadius="0"
-                        FontSize="13"
-                        HeightRequest="30"
-                        Text="Mensal"
-                        TextColor="#d6e0eb">
+                        Style="{StaticResource ScopeButton}"
+                        Text="Mensal">
                         <Button.Triggers>
                             <DataTrigger
                                 Binding="{Binding IsAnnualMode}"
                                 TargetType="Button"
                                 Value="False">
-                                <Setter Property="BackgroundColor" Value="#2b3548" />
-                            </DataTrigger>
-                            <DataTrigger
-                                Binding="{Binding IsAnnualMode}"
-                                TargetType="Button"
-                                Value="True">
-                                <Setter Property="BackgroundColor" Value="Transparent" />
+                                <Setter Property="BackgroundColor" Value="{StaticResource InputBackground}" />
+                                <Setter Property="TextColor" Value="{StaticResource White}" />
                             </DataTrigger>
                         </Button.Triggers>
                     </Button>
+                    <BoxView Color="{StaticResource BorderMuted}" WidthRequest="1" />
                     <Button
-                        BorderColor="#9da9b9"
-                        BorderWidth="1"
                         Command="{Binding SetScopeCommand}"
                         CommandParameter="{x:Boolean True}"
-                        CornerRadius="0"
-                        FontSize="13"
-                        HeightRequest="30"
-                        Text="Anual"
-                        TextColor="#d6e0eb">
+                        Style="{StaticResource ScopeButton}"
+                        Text="Anual">
                         <Button.Triggers>
                             <DataTrigger
                                 Binding="{Binding IsAnnualMode}"
                                 TargetType="Button"
                                 Value="True">
-                                <Setter Property="BackgroundColor" Value="#2b3548" />
-                            </DataTrigger>
-                            <DataTrigger
-                                Binding="{Binding IsAnnualMode}"
-                                TargetType="Button"
-                                Value="False">
-                                <Setter Property="BackgroundColor" Value="Transparent" />
+                                <Setter Property="BackgroundColor" Value="{StaticResource InputBackground}" />
+                                <Setter Property="TextColor" Value="{StaticResource White}" />
                             </DataTrigger>
                         </Button.Triggers>
                     </Button>
-                </HorizontalStackLayout>
-            </Grid>
+                    </HorizontalStackLayout>
+                </Border>
+            </FlexLayout>
 
             <!--  Loading indicator  -->
             <ActivityIndicator
                 HorizontalOptions="Center"
                 IsRunning="{Binding IsBusy}"
                 IsVisible="{Binding IsBusy}"
-                Color="#2bbf69" />
+                Color="{StaticResource Income}" />
 
-            <!--  Include previous balance  -->
-            <HorizontalStackLayout Spacing="0" VerticalOptions="Center">
-                <HorizontalStackLayout.Triggers>
-                    <DataTrigger
-                        Binding="{Binding IsAnnualMode}"
-                        TargetType="HorizontalStackLayout"
-                        Value="True">
-                        <Setter Property="IsVisible" Value="False" />
-                    </DataTrigger>
-                </HorizontalStackLayout.Triggers>
-                <CheckBox IsChecked="{Binding IncludePreviousBalance}" Color="White" />
-                <Label
-                    Text="Incluir saldo anterior"
-                    TextColor="#d6e0eb"
-                    VerticalOptions="Center">
-                    <Label.GestureRecognizers>
-                        <TapGestureRecognizer Command="{Binding ToggleIncludePreviousBalanceCommand}" />
-                    </Label.GestureRecognizers>
-                </Label>
-            </HorizontalStackLayout>
+            <!--  Include previous balance (monthly mode only)  -->
+            <Components:LabeledCheckBox
+                IsChecked="{Binding IncludePreviousBalance}"
+                IsVisible="{Binding IsAnnualMode, Converter={StaticResource InvertedBoolConverter}}"
+                Text="Incluir saldo anterior" />
 
             <!--  Accumulated vs month-by-month (annual mode only)  -->
-            <HorizontalStackLayout Spacing="0" VerticalOptions="Center">
-                <HorizontalStackLayout.Triggers>
-                    <DataTrigger
-                        Binding="{Binding IsAnnualMode}"
-                        TargetType="HorizontalStackLayout"
-                        Value="False">
-                        <Setter Property="IsVisible" Value="False" />
-                    </DataTrigger>
-                </HorizontalStackLayout.Triggers>
-                <CheckBox IsChecked="{Binding IsAnnualCumulative}" Color="White" />
-                <Label
-                    Text="Valores acumulados"
-                    TextColor="#d6e0eb"
-                    VerticalOptions="Center">
-                    <Label.GestureRecognizers>
-                        <TapGestureRecognizer Command="{Binding ToggleAnnualCumulativeCommand}" />
-                    </Label.GestureRecognizers>
-                </Label>
-            </HorizontalStackLayout>
+            <Components:LabeledCheckBox
+                IsChecked="{Binding IsAnnualCumulative}"
+                IsVisible="{Binding IsAnnualMode}"
+                Text="Valores acumulados" />
 
             <Border>
                 <!--  Chart canvas  -->
                 <GraphicsView
                     x:Name="ChartCanvas"
                     HeightRequest="320"
-                    HorizontalOptions="Fill" />
+                    HorizontalOptions="Fill"
+                    SemanticProperties.Description="{Binding ChartSummary}" />
             </Border>
-            <!--  Legend  -->
+            <!--  Legend: income = solid line, expense = dashed line  -->
             <HorizontalStackLayout Spacing="16">
                 <HorizontalStackLayout Spacing="6">
-                    <BoxView
-                        CornerRadius="2"
-                        HeightRequest="10"
+                    <Line
+                        Stroke="{StaticResource Income}"
+                        StrokeThickness="2"
                         VerticalOptions="Center"
                         WidthRequest="20"
-                        Color="#2bbf69" />
+                        X1="0"
+                        X2="20" />
                     <Label
                         FontSize="12"
-                        TextColor="#d6e0eb"
-                        VerticalOptions="Center">
-                        <Label.Triggers>
-                            <MultiTrigger TargetType="Label">
-                                <MultiTrigger.Conditions>
-                                    <BindingCondition Binding="{Binding IsAnnualMode}" Value="True" />
-                                    <BindingCondition Binding="{Binding IsAnnualCumulative}" Value="False" />
-                                </MultiTrigger.Conditions>
-                                <Setter Property="Text" Value="Entradas" />
-                            </MultiTrigger>
-                        </Label.Triggers>
-                        <Label.Style>
-                            <Style TargetType="Label">
-                                <Setter Property="Text" Value="Entradas acumuladas" />
-                            </Style>
-                        </Label.Style>
-                    </Label>
+                        Text="{Binding IncomeLegend}"
+                        TextColor="{StaticResource FontLight}"
+                        VerticalOptions="Center" />
                 </HorizontalStackLayout>
                 <HorizontalStackLayout Spacing="6">
-                    <BoxView
-                        CornerRadius="2"
-                        HeightRequest="10"
+                    <Line
+                        Stroke="{StaticResource Expense}"
+                        StrokeDashArray="3,2"
+                        StrokeThickness="2"
                         VerticalOptions="Center"
                         WidthRequest="20"
-                        Color="#f75c5c" />
+                        X1="0"
+                        X2="20" />
                     <Label
                         FontSize="12"
-                        TextColor="#d6e0eb"
-                        VerticalOptions="Center">
-                        <Label.Triggers>
-                            <MultiTrigger TargetType="Label">
-                                <MultiTrigger.Conditions>
-                                    <BindingCondition Binding="{Binding IsAnnualMode}" Value="True" />
-                                    <BindingCondition Binding="{Binding IsAnnualCumulative}" Value="False" />
-                                </MultiTrigger.Conditions>
-                                <Setter Property="Text" Value="Saídas" />
-                            </MultiTrigger>
-                        </Label.Triggers>
-                        <Label.Style>
-                            <Style TargetType="Label">
-                                <Setter Property="Text" Value="Saídas acumuladas" />
-                            </Style>
-                        </Label.Style>
-                    </Label>
+                        Text="{Binding ExpenseLegend}"
+                        TextColor="{StaticResource FontLight}"
+                        VerticalOptions="Center" />
                 </HorizontalStackLayout>
             </HorizontalStackLayout>
 
-            <!--  Saldo Geral  -->
-            <!--<Border
-                Padding="10"
-                Stroke="#232c39"
-                StrokeShape="5">
-                <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
-                    <Label
-                        FontFamily="Icons"
-                        FontSize="15"
-                        Text="{x:Static Icons:IconFont.Wallet}"
-                        TextColor="#6cc8ef"
-                        VerticalOptions="Center" />
-                    <Label
-                        FontAttributes="Bold"
-                        FontSize="15"
-                        Text="Saldo Geral:"
-                        TextColor="#d6e0eb"
-                        VerticalOptions="Center" />
-                    <Label
-                        FontAttributes="Bold"
-                        FontSize="Large"
-                        Text="{Binding GeneralBalance, StringFormat='{}{0:N2}'}"
-                        TextColor="{StaticResource Income}"
-                        VerticalOptions="Center" />
-                </HorizontalStackLayout>
-            </Border>-->
-
             <!--  Top 10 Maiores Despesas  -->
-            <Border
-                Margin="0,5,0,0"
-                Padding="0"
-                Stroke="#232c39"
-                StrokeShape="5">
+            <Border Padding="0">
                 <Grid RowDefinitions="Auto, *">
 
                     <!--  Header  -->
                     <Label
                         Padding="10"
-                        BackgroundColor="#232c39"
+                        BackgroundColor="{StaticResource HeaderBackground}"
                         FontAttributes="Bold"
-                        FontSize="20"
+                        FontSize="16"
                         Text="Top 10 Maiores Despesas"
-                        TextColor="#d6e0eb" />
+                        TextColor="{StaticResource FontLight}" />
 
                     <!--  List  -->
                     <CollectionView
                         Grid.Row="1"
-                        Margin="0,10,0,0"
                         ItemsSource="{Binding TopExpenses}"
                         SelectedItem="{Binding SelectedTransaction}"
                         SelectionMode="Single">
                         <CollectionView.ItemTemplate>
                             <DataTemplate x:DataType="dto:TransactionDTO">
                                 <Grid
-                                    Padding="5,0,5,0"
+                                    Padding="10,8"
                                     ColumnDefinitions="2*, 1.2*, 1*, Auto"
-                                    RowDefinitions="Auto, Auto"
+                                    RowDefinitions="Auto, Auto, 1"
                                     RowSpacing="0"
                                     VerticalOptions="Center">
                                     <Label
                                         LineBreakMode="TailTruncation"
                                         Text="{Binding Description}"
-                                        TextColor="#d6e0eb"
+                                        TextColor="{StaticResource FontLight}"
                                         VerticalOptions="Center" />
                                     <Label
                                         Grid.Column="1"
                                         FontAttributes="{Binding Date, Converter={StaticResource IsFutureDateConverter}}"
                                         HorizontalTextAlignment="Center"
                                         Text="{Binding Date, StringFormat='{0:dd/MM}'}"
-                                        TextColor="#d6e0eb"
+                                        TextColor="{StaticResource FontLight}"
                                         VerticalOptions="Center" />
                                     <Label
                                         Grid.Column="2"
@@ -333,7 +226,7 @@
                                                 FontFamily="Icons"
                                                 Glyph="{x:Static Icons:IconFont.ArrowsRotate}"
                                                 Size="12"
-                                                Color="#6cc8ef" />
+                                                Color="{StaticResource Transfer}" />
                                         </Image.Source>
                                     </Image>
 
@@ -343,12 +236,18 @@
                                         Grid.ColumnSpan="4"
                                         Margin="5,0,0,0"
                                         FontAttributes="Italic"
-                                        FontSize="9"
+                                        FontSize="11"
                                         IsVisible="{Binding Source={RelativeSource AncestorType={x:Type vms:ChartVM}}, Path=HasMultipleAccounts}"
                                         LineBreakMode="TailTruncation"
                                         Text="{Binding Account.Name}"
-                                        TextColor="#758292"
+                                        TextColor="{StaticResource FontMuted}"
                                         VerticalOptions="Start" />
+
+                                    <BoxView
+                                        Grid.Row="2"
+                                        Grid.ColumnSpan="4"
+                                        Margin="0,8,0,-8"
+                                        Color="{StaticResource HeaderBackground}" />
                                 </Grid>
                             </DataTemplate>
                         </CollectionView.ItemTemplate>
@@ -357,7 +256,7 @@
                                 Margin="20"
                                 HorizontalOptions="Center"
                                 Text="Nenhuma despesa encontrada para o período selecionado."
-                                TextColor="#758292" />
+                                TextColor="{StaticResource FontMuted}" />
                         </CollectionView.EmptyView>
                     </CollectionView>
 

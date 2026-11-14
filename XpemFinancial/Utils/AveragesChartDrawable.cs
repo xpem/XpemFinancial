@@ -113,8 +113,8 @@ namespace XpemFinancial.Utils
             DrawReferenceLine(canvas, ExpensePoints, plotW, plotH, ExpenseColor);
 
             // ── Series lines ──────────────────────────────────────────────────
-            DrawSeries(canvas, IncomePoints, plotW, plotH, IncomeColor, IncomeOutlierIndex);
-            DrawSeries(canvas, ExpensePoints, plotW, plotH, ExpenseColor, ExpenseOutlierIndex);
+            DrawSeries(canvas, IncomePoints, plotW, plotH, IncomeColor, IncomeOutlierIndex, square: false);
+            DrawSeries(canvas, ExpensePoints, plotW, plotH, ExpenseColor, ExpenseOutlierIndex, square: true);
 
             // ── Simulated "what-if" scenario line (solid, drawn on top so it stands out) ──
             if (SimulatedProjectionPoints is { Count: > 0 })
@@ -153,7 +153,7 @@ namespace XpemFinancial.Utils
                 HorizontalAlignment.Left, VerticalAlignment.Bottom);
         }
 
-        private void DrawSeries(ICanvas canvas, List<ChartPoint> points, float plotW, float plotH, Color color, int? outlierIndex)
+        private void DrawSeries(ICanvas canvas, List<ChartPoint> points, float plotW, float plotH, Color color, int? outlierIndex, bool square)
         {
             if (points.Count == 0) return;
 
@@ -162,18 +162,18 @@ namespace XpemFinancial.Utils
             // Solid segment: points[0..realCount)
             if (realCount > 0)
             {
-                DrawSegment(canvas, points.Take(realCount).ToList(), plotW, plotH, color, dashed: false, outlierIndex);
+                DrawSegment(canvas, points.Take(realCount).ToList(), plotW, plotH, color, dashed: false, outlierIndex, square);
             }
 
             // Dashed segment: from the last real point (transition) through the projected points.
             if (realCount < points.Count)
             {
                 var dashedPoints = points.Skip(Math.Max(realCount - 1, 0)).ToList();
-                DrawSegment(canvas, dashedPoints, plotW, plotH, color, dashed: true, outlierIndex: null);
+                DrawSegment(canvas, dashedPoints, plotW, plotH, color, dashed: true, outlierIndex: null, square);
             }
         }
 
-        private void DrawSegment(ICanvas canvas, List<ChartPoint> points, float plotW, float plotH, Color color, bool dashed, int? outlierIndex)
+        private void DrawSegment(ICanvas canvas, List<ChartPoint> points, float plotW, float plotH, Color color, bool dashed, int? outlierIndex, bool square = false)
         {
             if (points.Count == 0) return;
 
@@ -208,12 +208,14 @@ namespace XpemFinancial.Utils
                 {
                     canvas.StrokeColor = color.WithAlpha(ProjectionOpacity);
                     canvas.StrokeSize = 1.5f;
-                    canvas.DrawCircle(x, y, 3f);
+                    if (square) canvas.DrawRectangle(x - 3f, y - 3f, 6f, 6f);
+                    else canvas.DrawCircle(x, y, 3f);
                 }
                 else
                 {
                     canvas.FillColor = color;
-                    canvas.FillCircle(x, y, 3f);
+                    if (square) canvas.FillRectangle(x - 3f, y - 3f, 6f, 6f);
+                    else canvas.FillCircle(x, y, 3f);
 
                     if (outlierIndex.HasValue && pt.Day == outlierIndex.Value)
                     {

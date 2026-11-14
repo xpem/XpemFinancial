@@ -106,8 +106,10 @@ namespace XpemFinancial.Utils
             }
 
             // ── Series lines ──────────────────────────────────────────────────
-            DrawSeries(canvas, IncomePoints, plotW, plotH, IncomeColor);
-            DrawSeries(canvas, ExpensePoints, plotW, plotH, ExpenseColor);
+            // Income: solid line + round markers. Expense: dashed line + square markers,
+            // so the series stay distinguishable without relying on colour alone.
+            DrawSeries(canvas, IncomePoints, plotW, plotH, IncomeColor, dashed: false);
+            DrawSeries(canvas, ExpensePoints, plotW, plotH, ExpenseColor, dashed: true);
 
             // ── Axes (drawn on top of grid) ───────────────────────────────────
             canvas.StrokeColor = AxisLabelColor;
@@ -118,7 +120,7 @@ namespace XpemFinancial.Utils
             canvas.DrawLine(PadLeft, PadTop + plotH, PadLeft + plotW, PadTop + plotH);
         }
 
-        private void DrawSeries(ICanvas canvas, List<ChartPoint> points, float plotW, float plotH, Color color)
+        private void DrawSeries(ICanvas canvas, List<ChartPoint> points, float plotW, float plotH, Color color, bool dashed)
         {
             if (points.Count == 0) return;
 
@@ -126,6 +128,7 @@ namespace XpemFinancial.Utils
             canvas.StrokeSize = 2f;
             canvas.StrokeLineCap = LineCap.Round;
             canvas.StrokeLineJoin = LineJoin.Round;
+            canvas.StrokeDashPattern = dashed ? [6f, 4f] : null;
 
             // Build path
             var path = new PathF();
@@ -141,6 +144,7 @@ namespace XpemFinancial.Utils
             }
 
             canvas.DrawPath(path);
+            canvas.StrokeDashPattern = null;
 
             // Dots at each data point
             canvas.FillColor = color;
@@ -148,7 +152,8 @@ namespace XpemFinancial.Utils
             {
                 float x = PadLeft + PointToX(pt.Day, plotW);
                 float y = PadTop + ValueToY((double)pt.Value, plotH);
-                canvas.FillCircle(x, y, 3f);
+                if (dashed) canvas.FillRectangle(x - 3f, y - 3f, 6f, 6f);
+                else canvas.FillCircle(x, y, 3f);
             }
         }
 

@@ -10,8 +10,17 @@
         <Setter Property="SelectedIndicatorColor" Value="{AppThemeBinding Light={StaticResource Gray950}, Dark={StaticResource Gray100}}" />
     </Style>
 
+    <!--  Default Border = card: subtle outline.  -->
     <Style TargetType="Border">
-        <Setter Property="Stroke" Value="#495057" />
+        <Setter Property="Stroke" Value="{StaticResource HeaderBackgroundBrush}" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 5" />
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="BackgroundColor" Value="{StaticResource InputBackground}" />
+    </Style>
+
+    <!--  Input-like container (entries, pickers, segmented controls): visible outline.  -->
+    <Style x:Key="FieldBorder" TargetType="Border">
+        <Setter Property="Stroke" Value="{StaticResource BorderMutedBrush}" />
         <Setter Property="StrokeShape" Value="RoundRectangle 5" />
         <Setter Property="StrokeThickness" Value="1" />
         <Setter Property="BackgroundColor" Value="{StaticResource InputBackground}" />
@@ -544,6 +553,26 @@
                 </VisualStateGroup>
             </VisualStateGroupList>
         </Setter>
+    </Style>
+
+    <!--  Outlined icon button used for period navigation  -->
+    <Style x:Key="NavButton" TargetType="Button">
+        <Setter Property="BorderColor" Value="{StaticResource BorderMuted}" />
+        <Setter Property="BorderWidth" Value="1" />
+        <Setter Property="CornerRadius" Value="5" />
+        <Setter Property="HeightRequest" Value="40" />
+        <Setter Property="MinimumWidthRequest" Value="44" />
+        <Setter Property="BackgroundColor" Value="Transparent" />
+    </Style>
+
+    <!--  Segment of a segmented control; the wrapping Border draws the outline  -->
+    <Style x:Key="ScopeButton" TargetType="Button">
+        <Setter Property="BorderWidth" Value="0" />
+        <Setter Property="CornerRadius" Value="0" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="HeightRequest" Value="40" />
+        <Setter Property="TextColor" Value="{StaticResource FontMuted}" />
+        <Setter Property="BackgroundColor" Value="Transparent" />
     </Style>
 
 </ResourceDictionary>

@@ -44,7 +44,7 @@
             <!--  Nome  -->
             <VerticalStackLayout Spacing="4">
                 <Label Text="Nome" />
-                <Border BackgroundColor="{StaticResource InputBackground}">
+                <Border Style="{StaticResource FieldBorder}">
                     <Entry
                         MaxLength="50"
                         Placeholder="Nome da categoria"
@@ -56,7 +56,7 @@
             <!--  Tipo  -->
             <VerticalStackLayout Spacing="8">
                 <Label Text="Tipo" />
-                <Border Padding="0,5,0,0" BackgroundColor="{StaticResource InputBackground}">
+                <Border Style="{StaticResource FieldBorder}" Padding="0,5,0,0">
                     <HorizontalStackLayout
                         IsEnabled="{Binding CanChangeType}"
                         RadioButtonGroup.GroupName="CategoryType"
@@ -86,7 +86,7 @@
             <!--  Categoria pai — visível apenas quando é subcategoria  -->
             <VerticalStackLayout IsVisible="{Binding IsSubcategory}" Spacing="4">
                 <Label Text="Categoria pai" />
-                <Border Padding="10" BackgroundColor="{StaticResource InputBackground}">
+                <Border Style="{StaticResource FieldBorder}" Padding="10">
                     <Border.GestureRecognizers>
                         <TapGestureRecognizer Command="{Binding SelectParentCommand}" />
                     </Border.GestureRecognizers>
@@ -102,7 +102,7 @@
             <!--  Tipo da categoria (Receita/Despesa/Ambos) — visível apenas para categoria principal  -->
             <VerticalStackLayout IsVisible="{Binding IsMainCategory}" Spacing="4">
                 <Label Text="Tipo da categoria" />
-                <Border BackgroundColor="{StaticResource InputBackground}" StrokeShape="RoundRectangle 5">
+                <Border Style="{StaticResource FieldBorder}">
                     <Picker
                         ItemsSource="{Binding CategoryTypeOptions}"
                         SelectedIndex="{Binding SelectedCategoryTypeIndex}"
@@ -113,7 +113,7 @@
             <!--  Tipo herdado — visível apenas para subcategorias (read-only)  -->
             <VerticalStackLayout IsVisible="{Binding IsSubcategory}" Spacing="4">
                 <Label Text="Tipo (herdado)" />
-                <Border Padding="10" BackgroundColor="{StaticResource InputBackground}">
+                <Border Style="{StaticResource FieldBorder}" Padding="10">
                     <Label
                         FontSize="16"
                         Text="{Binding InheritedTypeDisplayText}"

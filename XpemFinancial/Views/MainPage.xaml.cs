@@ -25,11 +25,6 @@ namespace XpemFinancial.Views
             BindingContext = _vm;
         }
 
-        private void TapGestureRecognizer_Tapped(object sender, TappedEventArgs e)
-        {
-            CheckBoxIncludePreviousBalance.IsChecked = !CheckBoxIncludePreviousBalance.IsChecked;
-        }
-
         protected override async void OnAppearing()
         {
             base.OnAppearing();

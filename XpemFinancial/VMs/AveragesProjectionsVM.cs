@@ -36,6 +36,9 @@ namespace XpemFinancial.VMs
         [ObservableProperty] public partial string ScenarioDeltaText { get; set; } = "0,00";
         [ObservableProperty] public partial string ScenarioSummary { get; set; } = string.Empty;
 
+        /// <summary>Text description of the chart for screen readers.</summary>
+        [ObservableProperty] public partial string ChartSummary { get; set; } = string.Empty;
+
         /// <summary>Linha simulada (ponto de transição + 3 meses projetados), null quando o cenário está inativo.</summary>
         public List<ChartPoint>? SimulatedProjectionPoints { get; private set; }
 
@@ -168,6 +171,8 @@ namespace XpemFinancial.VMs
                 MaxValue = allValues.Any() ? Math.Max(allValues.Max(), 1) : 1;
 
                 RecomputeScenario();
+                ChartSummary = $"Gráfico dos últimos {HistoryMonths} meses com projeção de {ProjectionMonths} meses: " +
+                               $"entrada média {AverageIncome:C2}, saída média {AverageExpense:C2}, saldo médio {AverageBalance:C2}.";
                 DataChanged?.Invoke();
             }
             finally

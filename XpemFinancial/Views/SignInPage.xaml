@@ -128,7 +128,7 @@
             <HorizontalStackLayout HorizontalOptions="End" VerticalOptions="Center">
                 <Label
                     FontFamily="OpenSansRegular"
-                    FontSize="10"
+                    FontSize="11"
                     SemanticProperties.Description="Versão do Aplicativo"
                     Text="{Binding Version, StringFormat='@Emanuel Martins v{0}'}"
                     TextColor="{StaticResource Gray100}" />
@@ -138,7 +138,7 @@
                 Grid.Row="1"
                 Grid.Column="0"
                 Grid.ColumnSpan="2"
-                FontSize="10"
+                FontSize="11"
                 HorizontalOptions="Center"
                 IsVisible="False"
                 Text="⚠ Ver log de erros"
