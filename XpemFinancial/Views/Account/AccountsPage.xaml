@@ -41,10 +41,7 @@
             IsVisible="{Binding IsNotBusy}">
             <VerticalStackLayout Spacing="16">
                 <!--  Saldo Geral  -->
-                <Border
-                    Padding="12"
-                    BackgroundColor="{StaticResource InputBackground}"
-                    StrokeShape="RoundRectangle 8">
+                <Border Padding="12">
                     <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
                         <Label
                             FontAttributes="Bold"

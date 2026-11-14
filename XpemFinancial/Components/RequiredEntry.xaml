@@ -8,18 +8,15 @@
     <VerticalStackLayout>
         <Label Padding="0,10,0,0" Text="{Binding Source={x:Reference this}, Path=LabelText}" />
         <Border
-            BackgroundColor="Transparent"
             HorizontalOptions="Fill"
-            Stroke="{StaticResource DeleteAction}"
-            StrokeShape="RoundRectangle 5"
-            StrokeThickness="0"
+            Style="{StaticResource FieldBorder}"
             VerticalOptions="Fill">
             <Border.Triggers>
                 <DataTrigger
                     Binding="{Binding Source={x:Reference this}, Path=IsRequired}"
                     TargetType="Border"
                     Value="True">
-                    <Setter Property="StrokeThickness" Value="1" />
+                    <Setter Property="Stroke" Value="{StaticResource DeleteActionBrush}" />
                 </DataTrigger>
             </Border.Triggers>
             <Grid ColumnDefinitions="*, Auto">

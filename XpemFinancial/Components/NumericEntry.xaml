@@ -7,10 +7,12 @@
     x:Name="this"
     x:DataType="local:NumericEntry">
     <VerticalStackLayout>
-        <Entry
-            x:Name="EntryNumeric"
-            Keyboard="Numeric"
-            MaxLength="999"
-            TextChanged="EntryNumeric_TextChanged" />
+        <Border Style="{StaticResource FieldBorder}">
+            <Entry
+                x:Name="EntryNumeric"
+                Keyboard="Numeric"
+                MaxLength="999"
+                TextChanged="EntryNumeric_TextChanged" />
+        </Border>
     </VerticalStackLayout>
 </ContentView>

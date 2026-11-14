@@ -33,8 +33,8 @@
     <ContentPage.Resources>
         <Utils:InvertedBoolConverter x:Key="InvertedBoolConverter" />
         <Style x:Key="RadioButton" TargetType="RadioButton">
-            <Setter Property="TextColor" Value="#d6e0eb" />
-            <Setter Property="BorderColor" Value="#d6e0eb" />
+            <Setter Property="TextColor" Value="{StaticResource FontLight}" />
+            <Setter Property="BorderColor" Value="{StaticResource FontLight}" />
             <Setter Property="ControlTemplate">
                 <Setter.Value>
                     <ControlTemplate>
@@ -45,11 +45,11 @@
                                 WidthRequest="20">
                                 <Ellipse
                                     Fill="Transparent"
-                                    Stroke="#d6e0eb"
+                                    Stroke="{StaticResource FontLight}"
                                     StrokeThickness="2" />
                                 <Ellipse
                                     x:Name="checkedDot"
-                                    Fill="#d6e0eb"
+                                    Fill="{StaticResource FontLight}"
                                     HeightRequest="10"
                                     HorizontalOptions="Center"
                                     IsVisible="False"
@@ -85,7 +85,10 @@
         </Grid.RowDefinitions>
         <ScrollView Margin="10">
             <VerticalStackLayout>
-                <Border Margin="0,0,0,10" Padding="0,5,0,0">
+                <Border
+                    Margin="0,0,0,10"
+                    Padding="0,5,0,0"
+                    Style="{StaticResource FieldBorder}">
                     <HorizontalStackLayout RadioButtonGroup.GroupName="TransactionType" RadioButtonGroup.SelectedValue="{Binding SelectedTransactionType}">
                         <RadioButton
                             Margin="10,0"
@@ -110,7 +113,7 @@
                 <Grid ColumnDefinitions="auto, auto">
                     <VerticalStackLayout>
                         <Label Text="Data" />
-                        <Border>
+                        <Border Style="{StaticResource FieldBorder}">
                             <DatePicker
                                 x:Name="DataDtPkr"
                                 BackgroundColor="{StaticResource InputBackground}"
@@ -125,7 +128,7 @@
                         Margin="10,0,0,0"
                         IsVisible="{Binding IsTransfer, Converter={StaticResource InvertedBoolConverter}}">
                         <Label FontSize="14" Text="Categoria" />
-                        <Border Padding="10" BackgroundColor="{StaticResource InputBackground}">
+                        <Border Style="{StaticResource FieldBorder}" Padding="10">
                             <Border.GestureRecognizers>
                                 <TapGestureRecognizer Command="{Binding OpenCategoryPickerCommand}" />
                             </Border.GestureRecognizers>
@@ -165,10 +168,7 @@
                     </VerticalStackLayout>
                     <VerticalStackLayout Grid.Column="1">
                         <Label Text="Conta" />
-                        <Border
-                            Padding="0"
-                            BackgroundColor="{StaticResource InputBackground}"
-                            StrokeShape="RoundRectangle 5">
+                        <Border Style="{StaticResource FieldBorder}" Padding="0">
                             <Picker
                                 ItemDisplayBinding="{Binding Name}"
                                 ItemsSource="{Binding ActiveAccounts}"
@@ -179,10 +179,7 @@
                 <!--  Conta destino — visível apenas para transferências  -->
                 <VerticalStackLayout Padding="0,10,0,0" IsVisible="{Binding IsTransfer}">
                     <Label Text="Conta destino" />
-                    <Border
-                        Padding="0"
-                        BackgroundColor="{StaticResource InputBackground}"
-                        StrokeShape="RoundRectangle 5">
+                    <Border Style="{StaticResource FieldBorder}" Padding="0">
                         <Picker
                             ItemDisplayBinding="{Binding Name}"
                             ItemsSource="{Binding DestinationAccounts}"
@@ -190,9 +187,10 @@
                     </Border>
                 </VerticalStackLayout>
                 <Border
+                    IsVisible="{Binding IsTransfer, Converter={StaticResource InvertedBoolConverter}}"
                     Margin="0,10,0,10"
                     Padding="0,5,0,0"
-                    IsVisible="{Binding IsTransfer, Converter={StaticResource InvertedBoolConverter}}">
+                    Style="{StaticResource FieldBorder}">
                     <HorizontalStackLayout
                         x:Name="Repetition"
                         HorizontalOptions="Start"
@@ -243,9 +241,9 @@
                 </HorizontalStackLayout>
                 <!--  Escopo de edição — visível apenas ao editar ocorrência recorrente  -->
                 <Border
+                    IsVisible="{Binding IsRecurring}"
                     Margin="0,10,0,0"
                     Padding="10"
-                    IsVisible="{Binding IsRecurring}"
                     Stroke="{StaticResource PrimaryAction}">
                     <VerticalStackLayout Spacing="4">
                         <Label
@@ -274,11 +272,8 @@
 
                 <Label Padding="0,10,0,0" Text="Notas" />
                 <Border
-                    BackgroundColor="Transparent"
                     HorizontalOptions="Fill"
-                    Stroke="{StaticResource DeleteAction}"
-                    StrokeShape="RoundRectangle 5"
-                    StrokeThickness="0"
+                    Style="{StaticResource FieldBorder}"
                     VerticalOptions="Fill">
                     <Editor
                         HeightRequest="100"

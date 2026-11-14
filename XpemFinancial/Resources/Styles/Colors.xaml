@@ -53,5 +53,10 @@
     <Color x:Key="BodyBackground">#191d24</Color>
     <Color x:Key="FontLight">#d6e0eb</Color>
     <Color x:Key="FontDark">#6b7a8d</Color>
+    <Color x:Key="FontMuted">#758292</Color>
+    <Color x:Key="BorderMuted">#9da9b9</Color>
+    <SolidColorBrush x:Key="HeaderBackgroundBrush" Color="{StaticResource HeaderBackground}" />
+    <SolidColorBrush x:Key="BorderMutedBrush" Color="{StaticResource BorderMuted}" />
+    <SolidColorBrush x:Key="DeleteActionBrush" Color="{StaticResource DeleteAction}" />
 
 </ResourceDictionary>

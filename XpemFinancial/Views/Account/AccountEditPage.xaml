@@ -29,7 +29,7 @@
             <!--  Nome  -->
             <VerticalStackLayout Spacing="4">
                 <Label Text="Nome" TextColor="{StaticResource FontLight}" />
-                <Border BackgroundColor="{StaticResource InputBackground}" StrokeShape="RoundRectangle 5">
+                <Border Style="{StaticResource FieldBorder}">
                     <Entry
                         MaxLength="100"
                         Placeholder="Nome da conta"
@@ -42,7 +42,7 @@
             <!--  Tipo  -->
             <VerticalStackLayout Spacing="4">
                 <Label Text="Tipo" TextColor="{StaticResource FontLight}" />
-                <Border BackgroundColor="{StaticResource InputBackground}" StrokeShape="RoundRectangle 5">
+                <Border Style="{StaticResource FieldBorder}">
                     <Picker
                         ItemsSource="{Binding AccountTypeOptions}"
                         SelectedIndex="{Binding SelectedTypeIndex}"

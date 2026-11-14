@@ -78,11 +78,7 @@
         <CollectionView IsVisible="{Binding IsNotBusy}" ItemsSource="{Binding Categories}">
             <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="vmsCategory:CategoryDisplayItem">
-                    <Border
-                        Margin="16,4"
-                        Padding="12"
-                        BackgroundColor="{StaticResource InputBackground}"
-                        StrokeShape="RoundRectangle 8">
+                    <Border Margin="16,4" Padding="12">
                         <Border.GestureRecognizers>
                             <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type vms:CategoryManagementVM}}, Path=EditCategoryCommand}" CommandParameter="{Binding Category}" />
                         </Border.GestureRecognizers>

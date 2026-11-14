@@ -28,10 +28,23 @@ namespace XpemFinancial.VMs
         [ObservableProperty] public partial bool IncludePreviousBalance { get; set; }
         //[ObservableProperty] private decimal generalBalance;
 
-        [ObservableProperty] public partial bool IsAnnualMode { get; set; }
-        [ObservableProperty] public partial bool IsAnnualCumulative { get; set; } = true;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(IncomeLegend), nameof(ExpenseLegend))]
+        public partial bool IsAnnualMode { get; set; }
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(IncomeLegend), nameof(ExpenseLegend))]
+        public partial bool IsAnnualCumulative { get; set; } = true;
         [ObservableProperty] public partial ObservableCollection<TransactionDTO> TopExpenses { get; set; } = [];
         [ObservableProperty] public partial bool HasMultipleAccounts { get; set; }
+
+        /// <summary>Text description of the chart for screen readers.</summary>
+        [ObservableProperty] public partial string ChartSummary { get; set; } = string.Empty;
+
+        private bool ShowsAccumulated => !IsAnnualMode || IsAnnualCumulative;
+
+        public string IncomeLegend => ShowsAccumulated ? "Entradas acumuladas" : "Entradas";
+        public string ExpenseLegend => ShowsAccumulated ? "Saídas acumuladas" : "Saídas";
 
         /// <summary>Cumulative income points, ordered by day.</summary>
         public List<ChartPoint> IncomePoints { get; private set; } = [];
@@ -197,6 +210,7 @@ namespace XpemFinancial.VMs
 
                 ComputeTop10(allTransactions);
 
+                UpdateChartSummary();
                 DataChanged?.Invoke();
             }
             finally
@@ -275,12 +289,23 @@ namespace XpemFinancial.VMs
                 MaxValue = allValues.Any() ? Math.Max(allValues.Max(), 1) : 1;
 
                 ComputeTop10(allTransactions);
+                UpdateChartSummary();
                 DataChanged?.Invoke();
             }
             finally
             {
                 IsBusy = false;
             }
+        }
+
+        private void UpdateChartSummary()
+        {
+            decimal income = IncomePoints.Count > 0 ? IncomePoints[^1].Value : 0;
+            decimal expense = ExpensePoints.Count > 0 ? ExpensePoints[^1].Value : 0;
+
+            ChartSummary = ShowsAccumulated
+                ? $"Gráfico de {MonthYearDisplay}: entradas acumuladas {income:C2}, saídas acumuladas {expense:C2}."
+                : $"Gráfico de {MonthYearDisplay}: entradas e saídas por mês. Último mês: entradas {income:C2}, saídas {expense:C2}.";
         }
 
         private void ComputeTop10(IEnumerable<TransactionDTO> transactions)

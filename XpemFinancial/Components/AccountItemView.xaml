@@ -8,11 +8,7 @@
     <ContentView.Resources>
         <Utils:AccountTypeConverter x:Key="AccountTypeConverter" />
     </ContentView.Resources>
-    <Border
-        x:Name="ItemBorder"
-        Padding="12"
-        BackgroundColor="{StaticResource InputBackground}"
-        StrokeShape="RoundRectangle 8">
+    <Border x:Name="ItemBorder" Padding="12">
         <Border.Triggers>
             <DataTrigger
                 Binding="{Binding IsInactive, Source={x:Reference Root}}"
@@ -21,6 +17,9 @@
                 <Setter Property="Opacity" Value="0.6" />
             </DataTrigger>
         </Border.Triggers>
+        <Border.GestureRecognizers>
+            <TapGestureRecognizer Tapped="OnItemTapped" />
+        </Border.GestureRecognizers>
         <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
             <Label
                 Grid.Row="0"
