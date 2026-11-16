@@ -8,6 +8,7 @@ using Service.Transaction;
 using XpemFinancial.Messages;
 using XpemFinancial.Utils.Services;
 using XpemFinancial.Views;
+using XpemFinancial.Utils;
 
 namespace XpemFinancial.VMs
 {
@@ -50,24 +51,25 @@ namespace XpemFinancial.VMs
                 await accountService.PullAsync(user.Id);
                 Progress = 0.4;
 
-                await recurringRuleService.PullAsync(user.Id, mindate);
+                // Transações antes das regras: o pull de regras gera ocorrências locais e, se rodasse
+                // primeiro, elas esconderiam edições/exclusões vindas de outro dispositivo.
+                await transactionService.PullAsync(user.Id, mindate);
                 Progress = 0.6;
 
-                await transactionService.PullAsync(user.Id, mindate);
+                await recurringRuleService.PullAsync(user.Id, mindate);
                 Progress = 0.8;
 
                 Progress = 1;
 
                 WeakReferenceMessenger.Default.Send(new UserLoggedInMessage());
 
-                _ = Task.Run(() => { Task.Delay(5000); syncService.StartThread(); });
+                _ = Task.Run(async () => { await Task.Delay(5000); syncService.StartThread(); });
                                
                 await Shell.Current.GoToAsync($"//{nameof(MainPage)}");
             }
             catch (UnauthorizedAccessException)
             {
-                await ShowMessage("Sessão expirada", "Sessão expirada. Faça login novamente.");
-                await Shell.Current.GoToAsync($"//{nameof(SignInPage)}");
+                await SessionExpiredHandler.HandleAsync();
             }
             catch (Exception ex)
             {

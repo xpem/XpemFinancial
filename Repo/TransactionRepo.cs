@@ -267,11 +267,18 @@ namespace Repo
         {
             using var db = await DbCtx.CreateDbContextAsync();
             var stuck = await db.Transaction
-                .Where(t => t.SyncStatus == TransactionSyncStatus.Pushing)
+                .Where(t => t.SyncStatus == TransactionSyncStatus.Pushing || t.ExternalId == 0)
                 .ToListAsync();
 
             foreach (var t in stuck)
+            {
+                // ExternalId == 0 was stored by a legacy bug when the server was unreachable:
+                // the record never reached the server, so it must be created again.
+                if (t.ExternalId == 0)
+                    t.ExternalId = null;
+
                 t.SyncStatus = TransactionSyncStatus.Pending;
+            }
 
             await db.SaveChangesAsync();
         }

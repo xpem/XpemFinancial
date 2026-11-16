@@ -67,8 +67,16 @@ namespace Service.Transaction
                     return;
                 }
 
+                // A recurring occurrence generated locally by the scheduler that never reached the
+                // server carries a "now" UpdatedAt, which would always beat the server's copy
+                // (edits/deletions made on another device). The server version wins in that case.
+                bool isLocalProjection = existing.SyncStatus == TransactionSyncStatus.Pending
+                    && !HasServerId(existing)
+                    && existing.RecurringRuleId.HasValue
+                    && !existing.IsCustomized;
+
                 // Last-writer-wins: update only if pulled UpdatedAt > local UpdatedAt
-                if (existing.UpdatedAt < transaction.UpdatedAt)
+                if (isLocalProjection || existing.UpdatedAt < transaction.UpdatedAt)
                 {
                     transaction.Id = existing.Id;
                     transaction.SyncStatus = TransactionSyncStatus.Synced;
@@ -253,9 +261,29 @@ namespace Service.Transaction
             }
 
             // Customized occurrence without a server record yet → POST to create it.
-            if (transaction.IsCustomized && !transaction.ExternalId.HasValue)
+            if (transaction.IsCustomized && !HasServerId(transaction))
             {
                 await PushAsync(transaction);
+                return;
+            }
+
+            await PutExistingAsync(transaction);
+        }
+
+        // ExternalId == 0 is never a valid server id (a legacy bug stored 0 when the server was unreachable).
+        private static bool HasServerId(TransactionDTO t) => t.ExternalId is > 0;
+
+        /// <summary>
+        /// Sends an UPDATE (PUT) of a transaction that already exists on the server.
+        /// The record only becomes Synced when the server confirmed it; any failure
+        /// (including an unreachable server) leaves it Pending so the next sync cycle retries.
+        /// </summary>
+        private async Task PutExistingAsync(TransactionDTO transaction)
+        {
+            if (!HasServerId(transaction))
+            {
+                // Never reached the server (or the id is invalid): it must be created by a POST later.
+                await transactionRepo.SetSyncStatusAsync(transaction.Id, TransactionSyncStatus.Pending);
                 return;
             }
 
@@ -266,6 +294,7 @@ namespace Service.Transaction
             {
                 // Conta não sincronizada — adiar push para próximo ciclo
                 System.Diagnostics.Debug.WriteLine($"[TransactionService] Deferring push of transaction {transaction.Id}: account has no ExternalId.");
+                await transactionRepo.SetSyncStatusAsync(transaction.Id, TransactionSyncStatus.Pending);
                 return;
             }
 
@@ -285,41 +314,48 @@ namespace Service.Transaction
                 }
             }
 
-            if (transaction.ExternalId.HasValue)
+            // CategoryExternalId is [NotMapped]: resolve it from the local CategoryId when missing.
+            int? categoryExternalId = transaction.CategoryExternalId ?? transaction.Category?.ExternalId;
+            if (categoryExternalId is null && transaction.CategoryId.HasValue)
+                categoryExternalId = (await categoryRepo.GetByIdAsync(transaction.CategoryId.Value))?.ExternalId;
+
+            await transactionRepo.SetSyncStatusAsync(transaction.Id, TransactionSyncStatus.Pushing);
+
+            TransactionReq req = new()
             {
-                await transactionRepo.SetSyncStatusAsync(transaction.Id, TransactionSyncStatus.Pushing);
+                UpdatedAt = transaction.UpdatedAt,
+                Inactive = transaction.Inactive,
+                Description = transaction.Description,
+                Date = transaction.Date,
+                Amount = transaction.Amount,
+                Repetition = transaction.Repetition,
+                TotalInstallments = transaction.TotalInstallments,
+                InstallmentId = transaction.InstallmentId,
+                Installment = transaction.Installment,
+                CategoryId = categoryExternalId,
+                Type = transaction.Type,
+                Note = transaction.Note,
+                AccountId = accountExternalId.Value,
+                DestinationAccountId = destAccountExternalId,
+                RecurringRuleId = transaction.RecurringRuleId,
+                IsCustomized = transaction.IsCustomized,
+                TransactionId = transaction.TransactionId == Guid.Empty ? null : transaction.TransactionId,
+            };
 
-                TransactionReq req = new()
-                {
-                    UpdatedAt = transaction.UpdatedAt,
-                    Inactive = transaction.Inactive,
-                    Description = transaction.Description,
-                    Date = transaction.Date,
-                    Amount = transaction.Amount,
-                    Repetition = transaction.Repetition,
-                    TotalInstallments = transaction.TotalInstallments,
-                    InstallmentId = transaction.InstallmentId,
-                    Installment = transaction.Installment,
-                    CategoryId = transaction.CategoryExternalId,
-                    Type = transaction.Type,
-                    Note = transaction.Note,
-                    AccountId = accountExternalId.Value,
-                    DestinationAccountId = destAccountExternalId,
-                    RecurringRuleId = transaction.RecurringRuleId,
-                    IsCustomized = transaction.IsCustomized,
-                    TransactionId = transaction.TransactionId == Guid.Empty ? null : transaction.TransactionId,
-                };
-
-                try
-                {
-                    await transactionApiRepo.PutAsync(transaction.ExternalId.Value, req);
-                    await transactionRepo.SetSyncStatusAsync(transaction.Id, TransactionSyncStatus.Synced);
-                }
-                catch
-                {
-                    await transactionRepo.SetSyncStatusAsync(transaction.Id, TransactionSyncStatus.Pending);
-                    throw;
-                }
+            try
+            {
+                await transactionApiRepo.PutAsync(transaction.ExternalId!.Value, req);
+                await transactionRepo.SetSyncStatusAsync(transaction.Id, TransactionSyncStatus.Synced);
+            }
+            catch (ServerUnavailableException)
+            {
+                // Not delivered: keep Pending and let the next cycle retry. Not an error for the caller.
+                await transactionRepo.SetSyncStatusAsync(transaction.Id, TransactionSyncStatus.Pending);
+            }
+            catch
+            {
+                await transactionRepo.SetSyncStatusAsync(transaction.Id, TransactionSyncStatus.Pending);
+                throw;
             }
         }
 
@@ -366,6 +402,8 @@ namespace Service.Transaction
                     $"  → Marking inactive: ID={occurrence.Id}, Date={occurrence.Date:yyyy-MM-dd}, Desc={occurrence.Description}");
                 occurrence.Inactive = true;
                 occurrence.UpdatedAt = DateTime.Now;
+                // Must be pushed so other devices also see the occurrence as deleted.
+                occurrence.SyncStatus = TransactionSyncStatus.Pending;
                 await transactionRepo.Update(occurrence);
             }
         }
@@ -375,7 +413,7 @@ namespace Service.Transaction
             // ═══════════════════════════════════════════════════════════════════════
             // PROTEÇÃO CONTRA DUPLICAÇÃO: Verifica se já foi sincronizado
             // ═══════════════════════════════════════════════════════════════════════
-            if (transaction.ExternalId.HasValue)
+            if (HasServerId(transaction))
             {
                 System.Diagnostics.Debug.WriteLine($"[TransactionService] Skipping push of transaction {transaction.Id}: already has ExternalId {transaction.ExternalId}.");
                 return;
@@ -464,12 +502,20 @@ namespace Service.Transaction
                 throw;
             }
 
+            // The API returns 0 when the server was unreachable: nothing was created there.
+            // Never store 0 as ExternalId nor mark as Synced — keep Pending for the next cycle.
+            if (serverId <= 0)
+            {
+                await transactionRepo.SetSyncStatusAsync(transaction.Id, TransactionSyncStatus.Pending);
+                return;
+            }
+
             // ═══════════════════════════════════════════════════════════════════════
             // PROTEÇÃO CONTRA DUPLICAÇÃO: Recarrega do banco antes de atualizar
             // para evitar sobrescrever um ExternalId já salvo por outro thread
             // ═══════════════════════════════════════════════════════════════════════
             var freshCopy = await transactionRepo.GetByIdAsync(transaction.Id);
-            if (freshCopy.ExternalId.HasValue)
+            if (HasServerId(freshCopy))
             {
                 System.Diagnostics.Debug.WriteLine($"[TransactionService] Transaction {transaction.Id} was already updated with ExternalId {freshCopy.ExternalId} by another process.");
                 await transactionRepo.SetSyncStatusAsync(transaction.Id, TransactionSyncStatus.Synced);
@@ -522,7 +568,12 @@ namespace Service.Transaction
             {
                 try
                 {
-                    await PushAsync(transaction);
+                    // Records that already exist on the server need an UPDATE (PUT); only the
+                    // ones without a server id are created (POST).
+                    if (HasServerId(transaction))
+                        await PutExistingAsync(transaction);
+                    else
+                        await PushAsync(transaction);
                 }
                 catch
                 {

@@ -141,12 +141,10 @@ namespace ApiRepo
             if (!resp.Success)
             {
                 // Se o servidor retornou erro, verificar se é refresh token expirado ou inválido
-                if (resp.Error == ErrorTypes.Unauthorized || 
-                    (resp.Content?.Contains("Invalid or expired refresh token") ?? false) ||
-                    (resp.Content?.Contains("expired") ?? false))
-                {
+                // Only a rejection of the refresh token itself ends the session. A generic match on
+                // "expired" (or any 5xx body mentioning it) must NOT force the user to sign in again.
+                if (resp.Error == ErrorTypes.Unauthorized || IsRefreshTokenRejection(resp.Content))
                     return (false, null, ErrorTypes.RefreshTokenExpired);
-                }
 
                 // Outro tipo de erro (rede, servidor, etc)
                 return (false, null, resp.Error ?? ErrorTypes.ServerUnavaliable);
@@ -165,15 +163,19 @@ namespace ApiRepo
 
             string? newRefreshToken = GetStringValue(jResp, RefreshTokenProperty);
 
-            user.Token = newToken;
-            user.RefreshToken = newRefreshToken;
-            await userRepo.UpdateAsync(user);
+            // Writes only the token columns (does not clobber other user fields) and keeps the current
+            // refresh token when the server did not rotate it: storing null here would make the next
+            // refresh fail and sign the user out for no reason.
+            await userRepo.UpdateTokensAsync(user.Id, newToken, string.IsNullOrWhiteSpace(newRefreshToken) ? null : newRefreshToken);
 
             return (true, newToken, null);
         }
 
         public async Task<ApiResp> AuthRequestAsync(RequestsTypes requestsType, string url, string? jsonContent = null)
         {
+            // Circuit breaker: the session is already known to be expired, do not touch the network.
+            SessionMonitor.ThrowIfExpired();
+
             UserDTO? user = await userRepo.GetAsync();
             string? userToken = user?.Token;
 
@@ -193,6 +195,9 @@ namespace ApiRepo
             string? newToken;
             try
             {
+                // A concurrent call may have just discovered the session is gone.
+                SessionMonitor.ThrowIfExpired();
+
                 UserDTO? currentUser = await userRepo.GetAsync();
 
                 if (!string.IsNullOrWhiteSpace(currentUser?.Token) && currentUser.Token != userToken)
@@ -206,7 +211,15 @@ namespace ApiRepo
 
                     if (!refreshTokenSuccess)
                     {
-                        // Refresh falhou - retornar erro específico
+                        // The refresh token was rejected: the session is over. Raise it once, centrally,
+                        // as a typed exception instead of every ApiRepo translating an error code.
+                        if (refreshError == ErrorTypes.RefreshTokenExpired)
+                        {
+                            SessionMonitor.MarkExpired();
+                            throw new SessionExpiredException();
+                        }
+
+                        // Outro erro (rede/servidor): o refresh pode ser tentado de novo depois
                         return new ApiResp
                         {
                             Success = false,
@@ -243,6 +256,15 @@ namespace ApiRepo
 
         public async Task<ApiResp> GetAsync(string userToken) =>
             await HttpClientFunctions.Request(RequestsTypes.Get, ApiKeys.ApiAddress + UserEndpoint, userToken: userToken);
+
+        private static bool IsRefreshTokenRejection(string? content)
+        {
+            if (string.IsNullOrWhiteSpace(content)) return false;
+
+            return content.Contains("refresh token", StringComparison.OrdinalIgnoreCase)
+                && (content.Contains("invalid", StringComparison.OrdinalIgnoreCase)
+                    || content.Contains("expired", StringComparison.OrdinalIgnoreCase));
+        }
 
         private static bool TryParseJson(string content, out JsonNode? node)
         {

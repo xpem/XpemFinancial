@@ -74,20 +74,7 @@ namespace Service
                                 RefreshToken = refreshToken
                             };
 
-                            UserDTO? actualUser = await userRepo.GetAsync();
-
-                            if (actualUser != null)
-                            {
-                                if (actualUser.Id == user.Id)
-                                    await userRepo.UpdateAsync(user);
-                                else
-                                {
-                                    await buildDbService.CleanLocalDatabaseAsync();
-                                    await userRepo.AddAsync(user);
-                                }
-                            }
-                            else
-                                await userRepo.AddAsync(user);
+                            await PersistSignedInUserAsync(user);
 
                             return new ServiceResp(true, user);
                         }
@@ -126,20 +113,7 @@ namespace Service
                 RefreshToken = refreshToken
             };
 
-            UserDTO? actualUser = await userRepo.GetAsync();
-
-            if (actualUser != null)
-            {
-                if (actualUser.Id == user.Id)
-                    await userRepo.UpdateAsync(user);
-                else
-                {
-                    await buildDbService.CleanLocalDatabaseAsync();
-                    await userRepo.AddAsync(user);
-                }
-            }
-            else
-                await userRepo.AddAsync(user);
+            await PersistSignedInUserAsync(user);
 
             return new ServiceResp(true, user);
         }
@@ -172,20 +146,7 @@ namespace Service
                                 RefreshToken = refreshToken
                             };
 
-                            UserDTO? actualUser = await userRepo.GetAsync();
-
-                            if (actualUser != null)
-                            {
-                                if (actualUser.Id == user.Id)
-                                    await userRepo.UpdateAsync(user);
-                                else
-                                {
-                                    await buildDbService.CleanLocalDatabaseAsync();
-                                    await userRepo.AddAsync(user);
-                                }
-                            }
-                            else
-                                await userRepo.AddAsync(user);
+                            await PersistSignedInUserAsync(user);
 
                             return new ServiceResp(true, user);
                         }
@@ -229,6 +190,32 @@ namespace Service
                 return new ServiceResp(false, ErrorTypes.EmailAlreadyExists);
 
             return new ServiceResp(false, ErrorTypes.ServerUnavaliable);
+        }
+
+        /// <summary>
+        /// Persists the signed-in user. Same user: only name/e-mail/tokens are refreshed (local preferences
+        /// are kept). Different user: the local database belongs to someone else, so it is wiped first.
+        /// A successful sign-in also ends the "session expired" state that paused the background sync.
+        /// </summary>
+        private async Task PersistSignedInUserAsync(UserDTO user)
+        {
+            UserDTO? actualUser = await userRepo.GetAsync();
+
+            if (actualUser is null)
+            {
+                await userRepo.AddAsync(user);
+            }
+            else if (actualUser.Id == user.Id)
+            {
+                await userRepo.UpdateSessionAsync(user);
+            }
+            else
+            {
+                await buildDbService.CleanLocalDatabaseAsync();
+                await userRepo.AddAsync(user);
+            }
+
+            SessionMonitor.Reset();
         }
 
         public async Task UpdateLastUpdate(int uid) => await userRepo.UpdateLastUpdateAsync(DateTime.Now, uid);

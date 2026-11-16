@@ -64,8 +64,10 @@ namespace XpemFinancial.VMs
 
                 if (resp.Success)
                 {
-                    if (resp.Content is not null and UserDTO user)
-                        userSessionService.GetCurrentUserAsync().Wait();
+                    // The cached user may belong to an expired session or to another account:
+                    // drop it so the first sync runs with the user that just signed in.
+                    userSessionService.Invalidate();
+                    await userSessionService.GetCurrentUserAsync();
 
                     await Shell.Current.GoToAsync($"{nameof(FirstSyncProcessPage)}", false);
                 }
@@ -157,8 +159,10 @@ namespace XpemFinancial.VMs
 
                 if (resp.Success)
                 {
-                    if (resp.Content is not null and UserDTO user)
-                        userSessionService.GetCurrentUserAsync().Wait();
+                    // The cached user may belong to an expired session or to another account:
+                    // drop it so the first sync runs with the user that just signed in.
+                    userSessionService.Invalidate();
+                    await userSessionService.GetCurrentUserAsync();
 
                     await Shell.Current.GoToAsync($"{nameof(FirstSyncProcessPage)}", false);
                 }

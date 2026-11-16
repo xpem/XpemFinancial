@@ -12,6 +12,9 @@ namespace Repo
         Task<DateTime> GetMaxUpdatedAtAsync();
         Task<IEnumerable<RecurringRuleDTO>> GetAllActiveAsync();
         Task UpsertAsync(RecurringRuleDTO rule);
+
+        /// <summary>Rules never confirmed by the server (no/invalid ExternalId).</summary>
+        Task<List<RecurringRuleDTO>> GetPendingPushAsync(int userId);
     }
 
     public class RecurringRuleRepo(IDbContextFactory<DbCtx> DbCtx) : IRecurringRuleRepo
@@ -53,6 +56,14 @@ namespace Repo
         {
             using var db = await DbCtx.CreateDbContextAsync();
             return await db.RecurringRule.Where(r => r.Inactive == false).ToListAsync();
+        }
+
+        public async Task<List<RecurringRuleDTO>> GetPendingPushAsync(int userId)
+        {
+            using var db = await DbCtx.CreateDbContextAsync();
+            return await db.RecurringRule
+                .Where(r => r.UserId == userId && (r.ExternalId == null || r.ExternalId == 0))
+                .ToListAsync();
         }
 
         public async Task UpsertAsync(RecurringRuleDTO rule)

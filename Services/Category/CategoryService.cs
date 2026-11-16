@@ -237,6 +237,7 @@ namespace Service.Category
             }
 
             await categoryRepo.UpdateAsync(category);
+            await MarkPendingAsync(category);
         }
 
         public async Task UpdateMainCategoryTypeAsync(CategoryDTO mainCategory, CategoryType newType)
@@ -244,6 +245,7 @@ namespace Service.Category
             mainCategory.Type = newType;
             mainCategory.UpdatedAt = DateTime.UtcNow;
             await categoryRepo.UpdateAsync(mainCategory);
+            await MarkPendingAsync(mainCategory);
 
             // Cascade to active subcategories
             var all = await categoryRepo.GetAllAsync();
@@ -257,13 +259,50 @@ namespace Service.Category
                 sub.Type = newType;
                 sub.UpdatedAt = DateTime.UtcNow;
                 await categoryRepo.UpdateAsync(sub);
+                await MarkPendingAsync(sub);
             }
+        }
+
+        /// <summary>Records that the category has local changes that still have to be pushed.</summary>
+        private async Task MarkPendingAsync(CategoryDTO category)
+        {
+            if (category.CategoryId == Guid.Empty) return;
+            await syncCursorRepo.SaveAsync(SyncCursorKeys.CategoryOutbox(category.CategoryId), category.UpdatedAt);
+        }
+
+        // Clears the marker only if no newer edit happened while the push was in flight.
+        private async Task ClearMarkerAsync(CategoryDTO category)
+        {
+            if (category.CategoryId == Guid.Empty) return;
+
+            string name = SyncCursorKeys.CategoryOutbox(category.CategoryId);
+            if (await syncCursorRepo.GetAsync(name) == category.UpdatedAt)
+                await syncCursorRepo.DeleteAsync(name);
         }
 
         public async Task PushPendingAsync(int userId)
         {
-            var pending = await categoryRepo.GetPendingPushAsync();
-            foreach (var category in pending)
+            // 1) categories that never reached the server (no ExternalId)
+            var pending = (await categoryRepo.GetPendingPushAsync() ?? []).ToList();
+
+            // 2) categories edited locally whose push did not complete (rename, inactivate, type, parent...)
+            foreach (string name in await syncCursorRepo.ListNamesAsync(SyncCursorKeys.CategoryOutboxPrefix) ?? [])
+            {
+                Guid? categoryId = SyncCursorKeys.ParseGuid(name, SyncCursorKeys.CategoryOutboxPrefix);
+                CategoryDTO? category = categoryId.HasValue ? await categoryRepo.GetByCategoryIdAsync(categoryId.Value) : null;
+
+                if (category is null)
+                {
+                    await syncCursorRepo.DeleteAsync(name); // orphan marker
+                    continue;
+                }
+
+                if (pending.All(p => p.Id != category.Id))
+                    pending.Add(category);
+            }
+
+            // Main categories first so a subcategory is never pushed before its parent.
+            foreach (var category in pending.OrderByDescending(c => c.IsMainCategory))
             {
                 await PushAsync(category);
             }
@@ -288,12 +327,13 @@ namespace Service.Category
                 {
                     category.ExternalId = response.Id;
                     await categoryRepo.UpdateAsync(category);
+                    await ClearMarkerAsync(category);
                 }
             }
             catch (Exception)
             {
-                // Silently ignore push failures - category remains with ExternalId = null
-                // and will be retried in the next sync attempt
+                // Silently ignore push failures: the category stays pending (ExternalId = null or an
+                // outbox marker written when it was edited) and is retried in the next sync cycle.
             }
         }
 

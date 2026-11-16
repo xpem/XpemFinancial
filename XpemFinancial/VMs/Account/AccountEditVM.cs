@@ -4,6 +4,7 @@ using Model.DTO;
 using Service;
 using Service.Account;
 using Service.Transaction;
+using XpemFinancial.Utils;
 
 namespace XpemFinancial.VMs;
 
@@ -130,8 +131,7 @@ public partial class AccountEditVM(IAccountService accountService, IUserSessionS
         }
         catch (UnauthorizedAccessException)
         {
-            await ShowMessage("Sessão expirada", "Sessão expirada. Faça login novamente.");
-            await Shell.Current.GoToAsync($"//SignInPage");
+            await SessionExpiredHandler.HandleAsync();
         }
         catch (InvalidOperationException ex)
         {
@@ -166,8 +166,7 @@ public partial class AccountEditVM(IAccountService accountService, IUserSessionS
         }
         catch (UnauthorizedAccessException)
         {
-            await ShowMessage("Sessão expirada", "Sessão expirada. Faça login novamente.");
-            await Shell.Current.GoToAsync($"//SignInPage");
+            await SessionExpiredHandler.HandleAsync();
         }
         catch (InvalidOperationException ex)
         {

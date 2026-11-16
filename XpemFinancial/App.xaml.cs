@@ -97,13 +97,14 @@ namespace XpemFinancial
             var appShellVM = new AppShellVM(_userSessionService, _buildDbService, _syncService);
             await appShellVM.UserFlyoutAsync();
 
-            // Se o usuário já está logado, inicia o sync em background
+            // Só navega para o Shell após tudo pronto
+            window.Page = new AppShell(appShellVM, _appShellLogger);
+
+            // Se o usuário já está logado, inicia o sync em background — DEPOIS do Shell estar de pé:
+            // o primeiro ciclo pode detectar sessão expirada e precisa de uma janela para avisar.
             var user = await _userSessionService.GetCurrentUserAsync();
             if (user != null)
                 _syncService.StartThread();
-
-            // Só navega para o Shell após tudo pronto
-            window.Page = new AppShell(appShellVM, _appShellLogger);
         }
     }
 }

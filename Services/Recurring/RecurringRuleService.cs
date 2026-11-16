@@ -15,6 +15,12 @@ namespace Service.Recurring
         Task<IEnumerable<RecurringRuleDTO>> GetAllActiveAsync();
         Task<DateTime> GetLastUpdatedAtAsync();
         Task PullAsync(int uid, DateTime lastUpdatedAt);
+
+        /// <summary>
+        /// Pushes rules that were created or edited locally and have not been confirmed by the server
+        /// (e.g. saved offline, or the server was unreachable). Failures keep the rule pending.
+        /// </summary>
+        Task PushPendingAsync(int uid);
     }
 
     public class RecurringRuleService(
@@ -50,27 +56,10 @@ namespace Service.Recurring
             await recurringRuleRepo.AddAsync(rule);
             await recurringScheduler.GeneratePendingAsync([rule]);
 
+            // If the push does not complete (offline, server down, account/category not synced yet)
+            // the rule stays pending and PushPendingAsync retries it on the next sync cycle.
             if (isOnline)
-            {
-                RecurringRuleReq req = new()
-                {
-                    RecurringRuleId = rule.RecurringRuleId,
-                    Description = rule.Description,
-                    Amount = rule.Amount,
-                    Type = (int)rule.Type,
-                    CategoryId = rule.CategoryExternalId,
-                    AccountId = rule.AccountId,
-                    Frequency = (int)rule.Frequency,
-                    StartDate = rule.StartDate,
-                    EndDate = rule.EndDate,
-                    Inactive = rule.Inactive,
-                    UpdatedAt = rule.UpdatedAt,
-                };
-
-                int serverId = await recurringRuleApiRepo.PostAsync(req);
-                rule.ExternalId = serverId;
-                await recurringRuleRepo.UpdateAsync(rule);
-            }
+                await TryPushRuleAsync(rule);
 
             return new ServiceResp(true);
         }
@@ -122,6 +111,7 @@ namespace Service.Recurring
 
                             // Update the rule in local DB
                             await recurringRuleRepo.UpdateAsync(rule);
+                            await MarkRulePendingAsync(rule);
 
                             // Push rule to server FIRST (if online) to ensure other clients
                             // see the new StartDate before receiving converted transactions
@@ -157,6 +147,7 @@ namespace Service.Recurring
                             rule.UpdatedAt = DateTime.Now;
 
                             await recurringRuleRepo.UpdateAsync(rule);
+                            await MarkRulePendingAsync(rule);
 
                             var occurrences = await transactionService.GetByRecurringRuleIdAsync(req.RecurringRuleId);
                             foreach (var occurrence in occurrences.Where(o => !o.Inactive))
@@ -201,6 +192,7 @@ namespace Service.Recurring
 
                             await transactionService.DeleteFutureOccurrencesAsync(req.RecurringRuleId, targetOccurrence.Date);
                             await recurringRuleRepo.UpdateAsync(rule);
+                            await MarkRulePendingAsync(rule);
 
                             if (isOnline)
                                 await PushRuleAsync(rule);
@@ -218,6 +210,7 @@ namespace Service.Recurring
 
                             await transactionService.DeleteFutureOccurrencesAsync(req.RecurringRuleId, DateTime.MinValue);
                             await recurringRuleRepo.UpdateAsync(rule);
+                            await MarkRulePendingAsync(rule);
 
                             if (isOnline)
                                 await PushRuleAsync(rule);
@@ -352,26 +345,123 @@ namespace Service.Recurring
             }
         }
 
-        private async Task PushRuleAsync(RecurringRuleDTO rule)
+        private async Task PushRuleAsync(RecurringRuleDTO rule) => await TryPushRuleAsync(rule);
+
+        public async Task PushPendingAsync(int uid)
         {
-            RecurringRuleReq req = new()
+            // 1) rules that never reached the server (no ExternalId)
+            var pending = (await recurringRuleRepo.GetPendingPushAsync(uid) ?? []).ToList();
+
+            // 2) rules edited locally whose push did not complete (outbox markers)
+            foreach (string name in await syncCursorRepo.ListNamesAsync(SyncCursorKeys.RuleOutboxPrefix) ?? [])
+            {
+                Guid? ruleId = SyncCursorKeys.ParseGuid(name, SyncCursorKeys.RuleOutboxPrefix);
+                RecurringRuleDTO? rule = ruleId.HasValue ? await recurringRuleRepo.GetByIdAsync(ruleId.Value) : null;
+
+                if (rule is null)
+                {
+                    await syncCursorRepo.DeleteAsync(name); // orphan marker
+                    continue;
+                }
+
+                if (pending.All(p => p.RecurringRuleId != rule.RecurringRuleId))
+                    pending.Add(rule);
+            }
+
+            // Failures are kept pending (marker/ExternalId) and retried on the next cycle.
+            foreach (var rule in pending)
+                await TryPushRuleAsync(rule);
+        }
+
+        /// <summary>Records that the rule has local changes that still have to be pushed.</summary>
+        private async Task MarkRulePendingAsync(RecurringRuleDTO rule)
+        {
+            if (rule.RecurringRuleId == Guid.Empty) return;
+            await syncCursorRepo.SaveAsync(SyncCursorKeys.RuleOutbox(rule.RecurringRuleId), rule.UpdatedAt);
+        }
+
+        // Clears the marker only if no newer edit happened while the push was in flight.
+        private async Task ClearRuleMarkerAsync(RecurringRuleDTO rule)
+        {
+            string name = SyncCursorKeys.RuleOutbox(rule.RecurringRuleId);
+            if (await syncCursorRepo.GetAsync(name) == rule.UpdatedAt)
+                await syncCursorRepo.DeleteAsync(name);
+        }
+
+        /// <summary>
+        /// Builds the API request translating LOCAL ids to SERVER ids (account and category).
+        /// Returns null when a referenced account/category exists locally but has no server id yet:
+        /// pushing it would erase the reference on the server, so the push is deferred.
+        /// </summary>
+        private async Task<RecurringRuleReq?> BuildRequestAsync(RecurringRuleDTO rule)
+        {
+            int? accountExternalId = null;
+            if (rule.AccountId.HasValue)
+            {
+                var account = await accountRepo.GetByIdAsync(rule.AccountId.Value);
+                if (account is not null)
+                {
+                    if (account.ExternalId is not > 0) return null;
+                    accountExternalId = account.ExternalId;
+                }
+            }
+
+            // CategoryExternalId is [NotMapped]: it is null whenever the rule was loaded from the database.
+            int? categoryExternalId = rule.CategoryExternalId;
+            if (categoryExternalId is null && rule.CategoryId != 0)
+            {
+                var category = await categoryRepo.GetByIdAsync(rule.CategoryId);
+                if (category is not null)
+                {
+                    if (category.ExternalId is not > 0) return null;
+                    categoryExternalId = category.ExternalId;
+                }
+            }
+
+            return new RecurringRuleReq
             {
                 RecurringRuleId = rule.RecurringRuleId,
                 Description = rule.Description,
                 Amount = rule.Amount,
                 Type = (int)rule.Type,
-                CategoryId = rule.CategoryExternalId,
-                AccountId = rule.AccountId,
+                CategoryId = categoryExternalId,
+                AccountId = accountExternalId,
                 Frequency = (int)rule.Frequency,
                 StartDate = rule.StartDate,
                 EndDate = rule.EndDate,
                 Inactive = rule.Inactive,
                 UpdatedAt = rule.UpdatedAt,
             };
+        }
 
-            int serverId = await recurringRuleApiRepo.PostAsync(req);
-            rule.ExternalId = serverId;
-            await recurringRuleRepo.UpdateAsync(rule);
+        /// <summary>
+        /// Tries to deliver the rule. Returns false (rule stays pending) when the server is unreachable
+        /// (the API returns 0), a dependency has no server id yet, or the request fails.
+        /// </summary>
+        private async Task<bool> TryPushRuleAsync(RecurringRuleDTO rule)
+        {
+            try
+            {
+                RecurringRuleReq? req = await BuildRequestAsync(rule);
+                if (req is null) return false;
+
+                int serverId = await recurringRuleApiRepo.PostAsync(req);
+                if (serverId <= 0) return false;
+
+                rule.ExternalId = serverId;
+                await recurringRuleRepo.UpdateAsync(rule);
+                await ClearRuleMarkerAsync(rule);
+                return true;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[RecurringRuleService] Push of rule {rule.RecurringRuleId} failed: {ex.Message}");
+                return false;
+            }
         }
     }
 }
