@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using ApiRepo;
+using Microsoft.Extensions.Logging;
 using Model.DTO;
 using Service;
 using Service.Account;
@@ -26,7 +27,13 @@ namespace XpemFinancial.Utils.Services
         // Fix #3: use a volatile int so reads/writes from different threads are
         // always visible and the compiler cannot reorder around them.
         // Mapping: 0 = Sleeping, 1 = Processing, 2 = ServerOff, 3 = Unauthorized
+        // This is only a STATUS for the UI. It must never gate whether a cycle may run: ServerOff and
+        // Unauthorized used to be terminal (the cycle only started from Sleeping), which stopped the
+        // sync until the app was restarted — even after the user signed in again.
         private volatile int _syncStatus = (int)SyncStatus.Sleeping;
+
+        // Mutual exclusion between cycles: 0 = idle, 1 = a cycle is running.
+        private int _cycleRunning = 0;
 
         public SyncStatus Synchronizing
         {
@@ -57,6 +64,12 @@ namespace XpemFinancial.Utils.Services
         /// </summary>
         public event Action? SyncCompleted;
 
+        /// <summary>
+        /// Raised once when the sync detects that the session is no longer valid (refresh token expired).
+        /// The sync stays paused until the user signs in again (<see cref="SessionMonitor.Reset"/>).
+        /// </summary>
+        public event Action? SessionExpiredDetected;
+
         // ── lifecycle ─────────────────────────────────────────────────────────
 
         public void StartThread()
@@ -66,6 +79,16 @@ namespace XpemFinancial.Utils.Services
                 Synchronizing = SyncStatus.Sleeping;
                 Thread thread = new(SetTimer) { IsBackground = true };
                 thread.Start();
+            }
+            else
+            {
+                // The thread is already running (e.g. the user signed in again after the session
+                // expired): clear the error status so the next tick starts a normal cycle.
+                if (!SessionMonitor.IsExpired)
+                {
+                    Interlocked.CompareExchange(ref _syncStatus, (int)SyncStatus.Sleeping, (int)SyncStatus.Unauthorized);
+                    Interlocked.CompareExchange(ref _syncStatus, (int)SyncStatus.Sleeping, (int)SyncStatus.ServerOff);
+                }
             }
         }
 
@@ -92,15 +115,29 @@ namespace XpemFinancial.Utils.Services
 
         public async Task ExecSyncAsync()
         {
+            bool acquired = false;
+
             try
             {
                 UserDTO? user = await userSessionService.GetCurrentUserAsync().ConfigureAwait(false);
 
-                // Fix #3: compare-exchange so only one concurrent invocation enters Processing
-                if (user == null || Interlocked.CompareExchange(ref _syncStatus,
-                        (int)SyncStatus.Processing,
-                        (int)SyncStatus.Sleeping) != (int)SyncStatus.Sleeping)
+                if (user == null)
                     return;
+
+                // Circuit breaker: with an expired session every request would just fail (401 + a
+                // refresh attempt). Stay paused, without touching the network, until the user signs in.
+                if (SessionMonitor.IsExpired)
+                {
+                    MarkUnauthorized();
+                    return;
+                }
+
+                // Only one cycle at a time (the timer tick and the first-sync can overlap).
+                if (Interlocked.CompareExchange(ref _cycleRunning, 1, 0) != 0)
+                    return;
+
+                acquired = true;
+                Synchronizing = SyncStatus.Processing;
 
                 try
                 {
@@ -132,17 +169,29 @@ namespace XpemFinancial.Utils.Services
                             logger.LogError(ex, "[SyncService] Account sync failed, skipping pull dependents");
                         }
 
+                        // Pushes below swallow individual failures, so make sure an expired session is not
+                        // mistaken for "everything fine": abort the cycle and pause the sync.
+                        SessionMonitor.ThrowIfExpired();
+
+                        // Regras recorrentes pendentes (criadas/editadas offline) também precisam subir.
+                        // Falhas individuais são tratadas dentro do serviço (ficam pendentes para o próximo ciclo).
+                        if (accountSyncOk)
+                            await recurringRuleService.PushPendingAsync(user.Id).ConfigureAwait(false);
+
                         // Push de transações pendentes não depende do pull de contas ter sucedido.
                         await transactionService.PushPendingAsync(user.Id).ConfigureAwait(false);
 
                         if (!accountSyncOk)
                             return;
 
-                        DateTime recurringLastUpdate = await recurringRuleService.GetLastUpdatedAtAsync().ConfigureAwait(false);
-                        await recurringRuleService.PullAsync(user.Id, recurringLastUpdate).ConfigureAwait(false);
-
+                        // IMPORTANTE: transações ANTES das regras. O pull de regras gera as ocorrências locais
+                        // (com UpdatedAt = agora); se isso acontecesse antes, essas projeções esconderiam as
+                        // edições/exclusões de ocorrências feitas em outro dispositivo.
                         DateTime transactionLastUpdate = await transactionService.GetLastUpdatedAtAsync().ConfigureAwait(false);
                         await transactionService.PullAsync(user.Id, transactionLastUpdate).ConfigureAwait(false);
+
+                        DateTime recurringLastUpdate = await recurringRuleService.GetLastUpdatedAtAsync().ConfigureAwait(false);
+                        await recurringRuleService.PullAsync(user.Id, recurringLastUpdate).ConfigureAwait(false);
 
                         // All steps completed — record the successful sync time.
                         LastSuccessfulSync = DateTime.Now;
@@ -168,7 +217,10 @@ namespace XpemFinancial.Utils.Services
             }
             catch (UnauthorizedAccessException)
             {
-                Synchronizing = SyncStatus.Unauthorized;
+                // SessionExpiredException was already registered in SessionMonitor where it was detected,
+                // which is what keeps the next ticks paused. Any other UnauthorizedAccessException (e.g. no
+                // token stored) only flags the status and is retried on the next tick without a network call.
+                MarkUnauthorized();
             }
             catch (Exception ex)
             {
@@ -180,12 +232,24 @@ namespace XpemFinancial.Utils.Services
             }
             finally
             {
+                if (acquired)
+                    Interlocked.Exchange(ref _cycleRunning, 0);
+
                 // Reschedule the next tick unconditionally.
                 Timer?.Change(_interval, Timeout.Infinite);
 
                 // Fix #4: notify subscribers that the sync cycle ended so they can reload data.
                 SyncCompleted?.Invoke();
             }
+        }
+
+        private void MarkUnauthorized()
+        {
+            bool alreadyKnown = Synchronizing == SyncStatus.Unauthorized;
+            Synchronizing = SyncStatus.Unauthorized;
+
+            if (!alreadyKnown)
+                SessionExpiredDetected?.Invoke();
         }
 
         public void Stop()

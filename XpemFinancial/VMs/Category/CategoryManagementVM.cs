@@ -5,6 +5,7 @@ using Service;
 using Service.Category;
 using XpemFinancial.Views;
 using XpemFinancial.VMs.Category;
+using XpemFinancial.Utils;
 
 namespace XpemFinancial.VMs;
 
@@ -99,8 +100,7 @@ public partial class CategoryManagementVM(
         }
         catch (UnauthorizedAccessException)
         {
-            await ShowMessage("Sessão expirada", "Sessão expirada. Faça login novamente.");
-            await Shell.Current.GoToAsync($"//SignInPage");
+            await SessionExpiredHandler.HandleAsync();
         }
         catch
         {
@@ -142,8 +142,7 @@ public partial class CategoryManagementVM(
         }
         catch (UnauthorizedAccessException)
         {
-            await ShowMessage("Sessão expirada", "Sessão expirada. Faça login novamente.");
-            await Shell.Current.GoToAsync($"//SignInPage");
+            await SessionExpiredHandler.HandleAsync();
         }
         catch
         {

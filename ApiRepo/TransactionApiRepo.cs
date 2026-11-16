@@ -68,9 +68,10 @@ namespace ApiRepo
                 ApiKeys.ApiAddress + $"/financial/transaction/{externalId}",
                 json);
 
-            // Server unreachable — local update already applied, sync will retry later.
+            // Server unreachable — the update was NOT delivered. Signal it so the caller keeps
+            // the record Pending (returning normally would make it look synced).
             if (resp.Error == ErrorTypes.ServerUnavaliable)
-                return;
+                throw new ServerUnavailableException("Servidor indisponível ao atualizar transação.");
 
             if (resp.Error == ErrorTypes.RefreshTokenExpired)
                 throw new UnauthorizedAccessException("Sessão expirada.");

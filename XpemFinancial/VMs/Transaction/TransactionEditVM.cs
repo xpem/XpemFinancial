@@ -11,6 +11,7 @@ using Service.Recurring;
 using Service.Transaction;
 using System.Collections.ObjectModel;
 using XpemFinancial.Views;
+using XpemFinancial.Utils;
 
 namespace XpemFinancial.VMs
 {
@@ -637,8 +638,7 @@ namespace XpemFinancial.VMs
             }
             catch (UnauthorizedAccessException)
             {
-                await ShowMessage("Sessão expirada", "Sessão expirada. Faça login novamente.");
-                await Shell.Current.GoToAsync($"//{nameof(SignInPage)}");
+                await SessionExpiredHandler.HandleAsync();
             }
             catch (Exception ex)
             {
@@ -780,8 +780,7 @@ namespace XpemFinancial.VMs
             }
             catch (UnauthorizedAccessException)
             {
-                await ShowMessage("Sessão expirada", "Sessão expirada. Faça login novamente.");
-                await Shell.Current.GoToAsync($"//{nameof(SignInPage)}");
+                await SessionExpiredHandler.HandleAsync();
             }
             catch (Exception ex)
             {

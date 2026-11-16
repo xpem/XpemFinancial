@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Messaging;
 using Model.DTO;
 using Service;
 using XpemFinancial.Messages;
+using XpemFinancial.Utils;
 using XpemFinancial.Utils.Services;
 using XpemFinancial.Views;
 
@@ -67,6 +68,7 @@ namespace XpemFinancial.VMs
             });
 
             syncService.SyncCompleted += OnSyncCompleted;
+            syncService.SessionExpiredDetected += () => _ = SessionExpiredHandler.NotifyBackgroundAsync();
         }
 
         private void OnSyncCompleted()
